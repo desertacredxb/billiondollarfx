@@ -31,7 +31,7 @@ interface WithdrawalResponse {
   status: boolean; // true = completed, false = pending
 }
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const PAGE_SIZE_OPTIONS = [2, 10, 25, 50, 100];
 
 export default function TransactionPage() {
   const [activeTab, setActiveTab] = useState<"deposit" | "withdrawal">(

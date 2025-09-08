@@ -256,7 +256,7 @@ export default function TransactionPage() {
   }, [withPage]);
 
   // ---------- pagination UI helpers ----------
-  const getPageButtons = (current: number, total: number, maxButtons = 7) => {
+  const getPageButtons = (current: number, total: number, maxButtons = 3) => {
     if (total <= maxButtons)
       return Array.from({ length: total }, (_, i) => i + 1);
 
