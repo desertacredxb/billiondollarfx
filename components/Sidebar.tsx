@@ -95,11 +95,11 @@ export default function Sidebar({
             onToggle={() => toggle("mt5")}
             items={[
               { label: "Live Accounts", href: "live-accounts", icon: FileText },
-              {
-                label: "Demo Accounts",
-                href: "demo-accounts",
-                icon: FileCheck,
-              },
+              // {
+              //   label: "Demo Accounts",
+              //   href: "demo-accounts",
+              //   icon: FileCheck,
+              // },
             ]}
             pathname={pathname}
             onClose={onClose}

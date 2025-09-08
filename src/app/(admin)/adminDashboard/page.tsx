@@ -27,7 +27,7 @@ export default function AdminDashboard() {
       });
 
     axios
-      .get(`${process.env.NEXT_PUBLIC_API_BASE}/api/brokers`)
+      .get(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib`)
       .then((res) => {
         setTotalBrokers(res.data.length || 0);
       })
