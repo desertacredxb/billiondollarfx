@@ -74,6 +74,12 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             icon={MessageSquare}
             pathname={pathname}
           />
+          <NavLink
+            href="/bankapproval"
+            label="Bank Approval"
+            icon={MessageSquare}
+            pathname={pathname}
+          />
         </Section>
 
         <Section title="Account">
