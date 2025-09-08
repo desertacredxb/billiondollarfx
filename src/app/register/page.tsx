@@ -210,7 +210,7 @@ export default function SignUpPage() {
       console.log(data);
       if (!res.ok) return alert(data.message || "Something went wrong.");
 
-      alert("OTP sent to email and WhatsApp.");
+      alert("OTP sent to email.");
       setStep("otp");
     } catch (error) {
       console.error(error);
