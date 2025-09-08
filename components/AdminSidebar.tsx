@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, LogOut, X, MessageSquare } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  LogOut,
+  X,
+  MessageSquare,
+  UserSquare2,
+  CreditCard,
+  Briefcase,
+} from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
 import logo from "../assets/bdfx.gif";
@@ -51,26 +60,32 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             pathname={pathname}
           />
           <NavLink
-            href="/users"
-            label="Users"
-            icon={Users}
-            pathname={pathname}
-          />
-          <NavLink
             href="/brokers"
             label="Brokers"
-            icon={Users}
+            icon={Briefcase} // ✅ Brokers = Briefcase
             pathname={pathname}
           />
           <NavLink
             href="/tickets"
             label="Support Ticket"
-            icon={MessageSquare}
+            icon={MessageSquare} // ✅ Support Ticket = Message
             pathname={pathname}
           />
           <NavLink
             href="/IB"
             label="IB"
+            icon={UserSquare2} // ✅ IB = UserSquare2
+            pathname={pathname}
+          />
+          <NavLink
+            href="/all-transactions"
+            label="Transactions"
+            icon={CreditCard} // ✅ Transactions = CreditCard
+            pathname={pathname}
+          />
+          <NavLink
+            href="/bankapproval"
+            label="Bank Approval"
             icon={MessageSquare}
             pathname={pathname}
           />
