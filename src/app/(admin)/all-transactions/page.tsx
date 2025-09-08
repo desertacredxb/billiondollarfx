@@ -114,26 +114,6 @@ export default function AdminTransactionPage() {
       return;
     }
   }, []);
-  const fetchAccounts = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userString = localStorage.getItem("user");
-      if (!token || !userString) return;
-
-      const email = JSON.parse(userString).email;
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
-      );
-
-      if (res.data?.accounts?.length > 0) {
-        setAccounts(res.data.accounts);
-        const firstAccNo = String(res.data.accounts[0].accountNo);
-        setAccountNo(firstAccNo);
-      }
-    } catch (err) {
-      console.error("Error fetching accounts:", err);
-    }
-  };
 
   // ---------- fetch transactions (server first, fallback client) ----------
   const fetchDeposits = async (page = 1, limit = pageSize) => {
@@ -208,22 +188,17 @@ export default function AdminTransactionPage() {
   };
 
   // ---------- effects ----------
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
 
   // When accountNo is ready, load the active tab
   useEffect(() => {
-    if (!accountNo) return;
     setDepPage(1);
     setWithPage(1);
     if (activeTab === "deposit") fetchDeposits(1, pageSize);
     else fetchWithdrawals(1, pageSize);
-  }, [accountNo]); // eslint-disable-line
+  }, []); // eslint-disable-line
 
   // When tab changes, (re)fetch page 1 for that tab
   useEffect(() => {
-    if (!accountNo) return;
     if (activeTab === "deposit") fetchDeposits(depPage, pageSize);
     else fetchWithdrawals(withPage, pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,7 +206,6 @@ export default function AdminTransactionPage() {
 
   // When pageSize changes, reset to page 1 for active tab and refetch
   useEffect(() => {
-    if (!accountNo) return;
     if (activeTab === "deposit") {
       setDepPage(1);
       fetchDeposits(1, pageSize);
@@ -244,7 +218,6 @@ export default function AdminTransactionPage() {
 
   // When page changes (per tab), refetch or slice
   useEffect(() => {
-    if (!accountNo) return;
     if (activeTab === "deposit") {
       if (depositAll) {
         setDepositPageData(sliceForPage(depositAll, depPage, pageSize));
@@ -256,7 +229,6 @@ export default function AdminTransactionPage() {
   }, [depPage]);
 
   useEffect(() => {
-    if (!accountNo) return;
     if (activeTab === "withdrawal") {
       if (withdrawAll) {
         setWithdrawPageData(sliceForPage(withdrawAll, withPage, pageSize));
