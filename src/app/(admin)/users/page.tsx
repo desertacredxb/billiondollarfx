@@ -43,6 +43,10 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [verifying, setVerifying] = useState(false);
 
+  // ✅ Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(5);
+
   // ✅ For document preview modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -88,12 +92,34 @@ export default function UsersPage() {
     }
   };
 
+  // ✅ Pagination logic
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+
+  const totalPages = Math.ceil(users.length / usersPerPage);
+
   return (
     <div className="min-h-screen text-white">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Users</h1>
-        <p className="text-gray-400 mt-1 text-sm">List of registered users</p>
-        <hr className="mt-4 border-gray-700" />
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Users</h1>
+          <p className="text-gray-400 mt-1 text-sm">List of registered users</p>
+        </div>
+
+        {/* ✅ Select how many users per page */}
+        <select
+          value={usersPerPage}
+          onChange={(e) => {
+            setUsersPerPage(Number(e.target.value));
+            setCurrentPage(1); // reset to first page
+          }}
+          className="bg-[#1f2937] text-white border border-gray-600 rounded px-3 py-1"
+        >
+          <option value={5}>5 </option>
+          <option value={10}>10</option>
+          <option value={20}>20 </option>
+        </select>
       </div>
 
       {loading ? (
@@ -112,14 +138,14 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {currentUsers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-6 text-gray-400">
                     No users found.
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                currentUsers.map((user) => (
                   <tr
                     key={user._id}
                     className="border-b border-gray-700 hover:bg-[#111827]"
@@ -150,6 +176,31 @@ export default function UsersPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* ✅ Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-6">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+            className="px-3 py-1 bg-gray-700 rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+            className="px-3 py-1 bg-gray-700 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       )}
 
