@@ -99,6 +99,28 @@ export default function UsersPage() {
 
   const totalPages = Math.ceil(users.length / usersPerPage);
 
+  const handleDeleteUser = async (email: string) => {
+    if (
+      !confirm(
+        "⚠️ Are you sure you want to delete this user? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/delete/${email}`
+      );
+      setUsers((prev) => prev.filter((u) => u.email !== email));
+      alert("🗑️ User deleted successfully");
+      setSelectedUser(null);
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      alert("❌ Failed to delete user");
+    }
+  };
+
   return (
     <div className="min-h-screen text-white">
       <div className="mb-6 flex justify-between items-center">
@@ -348,12 +370,6 @@ export default function UsersPage() {
 
             {/* Actions */}
             <div className="flex justify-end gap-3 mt-6">
-              {/* <button
-                onClick={() => setSelectedUser(null)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
-              >
-                Close
-              </button> */}
               {!selectedUser.isKycVerified && (
                 <Button
                   onClick={() => handleVerifyKyc(selectedUser.email)}
@@ -362,6 +378,11 @@ export default function UsersPage() {
                   text={verifying ? "Verifying..." : "Verify KYC"}
                 />
               )}
+
+              <Button
+                onClick={() => handleDeleteUser(selectedUser.email)}
+                text="Delete User"
+              />
             </div>
           </div>
         </div>
