@@ -11,6 +11,7 @@ import {
   UserSquare2,
   CreditCard,
   Briefcase,
+  CheckCircle,
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -86,7 +87,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           <NavLink
             href="/bankapproval"
             label="Bank Approval"
-            icon={MessageSquare}
+            icon={CheckCircle}
             pathname={pathname}
           />
         </Section>

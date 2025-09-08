@@ -45,6 +45,8 @@ export default function LoginPage() {
         "admin",
         JSON.stringify({ email: "admin@gmail.com", role: "admin" })
       );
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       router.push("/adminDashboard");
       setLoading(false);
       return;

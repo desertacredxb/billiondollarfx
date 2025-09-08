@@ -259,25 +259,28 @@ export default function TransactionPage() {
   }, [withPage]);
 
   // ---------- pagination UI helpers ----------
-  const getPageButtons = (current: number, total: number, maxButtons = 7) => {
-    if (total <= maxButtons)
-      return Array.from({ length: total }, (_, i) => i + 1);
-
+  const getPageButtons = (current: number, total: number, maxButtons = 5) => {
     const buttons: (number | string)[] = [];
-    const middleCount = maxButtons - 2; // reserve for first & last
-    let start = Math.max(2, current - Math.floor(middleCount / 2));
-    const end = Math.min(total - 1, start + middleCount - 1);
 
-    // shift window if at the end
-    if (end - start + 1 < middleCount) {
-      start = Math.max(2, end - middleCount + 1);
+    if (total <= maxButtons) {
+      // Few pages → show all
+      for (let i = 1; i <= total; i++) buttons.push(i);
+    } else {
+      buttons.push(1); // always show first page
+
+      // Show left dots
+      if (current > 3) buttons.push("…");
+
+      // Middle pages around current
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      for (let i = start; i <= end; i++) buttons.push(i);
+
+      // Show right dots
+      if (current < total - 2) buttons.push("…");
+
+      buttons.push(total); // always show last page
     }
-
-    buttons.push(1);
-    if (start > 2) buttons.push("…");
-    for (let i = start; i <= end; i++) buttons.push(i);
-    if (end < total - 1) buttons.push("…");
-    buttons.push(total);
 
     return buttons;
   };
@@ -517,13 +520,15 @@ export default function TransactionPage() {
                   key={i}
                   onClick={() => jumpTo(btn)}
                   className={`px-3 py-1 rounded ${
-                    btn === currentPage ? "bg-[var(--primary)]" : "bg-gray-700"
+                    btn === currentPage
+                      ? "bg-[var(--primary)] text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                   }`}
                 >
                   {btn}
                 </button>
               ) : (
-                <span key={i} className="px-2 select-none">
+                <span key={i} className="px-2 text-gray-400 select-none">
                   {btn}
                 </span>
               )
