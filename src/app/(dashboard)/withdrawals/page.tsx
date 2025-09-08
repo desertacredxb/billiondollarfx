@@ -304,6 +304,7 @@ function Withdrawal() {
                     value={form.account}
                     onChange={handleChange}
                     required
+                    disabled
                     className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
                   />
                 </div>
@@ -319,6 +320,7 @@ function Withdrawal() {
                     value={form.ifsc}
                     onChange={handleChange}
                     required
+                    disabled
                     className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
                   />
                 </div>
@@ -334,6 +336,7 @@ function Withdrawal() {
                     value={form.name}
                     onChange={handleChange}
                     required
+                    disabled
                     className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
                   />
                 </div>
@@ -349,6 +352,7 @@ function Withdrawal() {
                     value={form.mobile}
                     onChange={handleChange}
                     required
+                    disabled
                     className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
                   />
                 </div>

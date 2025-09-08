@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 type Transaction = {
   date: string;
@@ -33,7 +34,8 @@ interface WithdrawalResponse {
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
-export default function TransactionPage() {
+export default function AdminTransactionPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"deposit" | "withdrawal">(
     "deposit"
   );
@@ -102,6 +104,16 @@ export default function TransactionPage() {
   const currentTotal = activeTab === "deposit" ? depositTotal : withdrawTotal;
 
   // ---------- fetch accounts ----------
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken");
+
+    // 🔐 Redirect to login if no token
+    if (!token || token !== "admin-token") {
+      router.push("/login");
+      return;
+    }
+  }, []);
   const fetchAccounts = async () => {
     try {
       const token = localStorage.getItem("token");
