@@ -61,6 +61,12 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             pathname={pathname}
           />
           <NavLink
+            href="/users"
+            label="Users"
+            icon={Users}
+            pathname={pathname}
+          />
+          <NavLink
             href="/brokers"
             label="Brokers"
             icon={Briefcase} // ✅ Brokers = Briefcase
