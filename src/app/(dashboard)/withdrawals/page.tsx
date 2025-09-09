@@ -171,7 +171,7 @@ function Withdrawal() {
       setLoading(true);
 
       const res = await axios.post(
-        `https://billiondollarfx-backend.onrender.com/api/payment/ramee/withdrawal`,
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
         {
           account: form.account,
           ifsc: form.ifsc,

@@ -90,6 +90,12 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             icon={CheckCircle}
             pathname={pathname}
           />
+          <NavLink
+            href="/payout-requests"
+            label="Payout Requests"
+            icon={CheckCircle}
+            pathname={pathname}
+          />
         </Section>
 
         <Section title="Account">
