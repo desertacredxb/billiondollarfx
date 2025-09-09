@@ -44,6 +44,7 @@ export default function AdminWithdrawals() {
   };
 
   const handleApprove = async (id: string) => {
+    setLoading(true);
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/approve/${id}`
@@ -52,6 +53,8 @@ export default function AdminWithdrawals() {
       fetchWithdrawals();
     } catch {
       toast.error("Approval failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,6 +67,8 @@ export default function AdminWithdrawals() {
       fetchWithdrawals();
     } catch {
       toast.error("Rejection failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -241,7 +246,7 @@ export default function AdminWithdrawals() {
                     await handleApprove(selectedWithdrawal._id);
                     setSelectedWithdrawal(null);
                   }}
-                  text="Approve"
+                  text={loading ? "Approving..." : "Approve"}
                 />
               )}
               {selectedWithdrawal.status !== "Rejected" && (
@@ -250,7 +255,7 @@ export default function AdminWithdrawals() {
                     await handleReject(selectedWithdrawal._id);
                     setSelectedWithdrawal(null);
                   }}
-                  text="Reject"
+                  text={loading ? "Rejecting..." : "Reject"}
                 />
               )}
             </div>
