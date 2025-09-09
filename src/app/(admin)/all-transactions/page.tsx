@@ -7,7 +7,7 @@ type Transaction = {
   date: string;
   amount: number;
   account: string;
-  status: "Pending" | "Completed" | "Failed";
+  status: "Pending" | "Completed" | "Failed" | "Rejected";
 };
 
 interface Account {
@@ -29,7 +29,7 @@ interface WithdrawalResponse {
   createdAt: string;
   amount: string | number;
   accountNo: string | number;
-  status: boolean; // true = completed, false = pending
+  status: "Pending" | "Completed" | "Rejected" | string; // true = completed, false = pending
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -77,9 +77,11 @@ export default function AdminTransactionPage() {
           : row.status === "FAILED"
           ? "Failed"
           : "Pending"
-        : (row as WithdrawalResponse).status
+        : (row as WithdrawalResponse).status === "Completed"
         ? "Completed"
-        : "Pending",
+        : (row as WithdrawalResponse).status === "Rejected"
+        ? "Rejected"
+        : "Pending", // already "Pending" | "Completed" | "Rejected"
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
@@ -318,6 +320,7 @@ export default function AdminTransactionPage() {
                 <option value="Completed">Completed</option>
                 <option value="Pending">Pending</option>
                 <option value="Failed">Failed</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
 
