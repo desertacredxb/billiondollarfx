@@ -7,6 +7,7 @@ type Transaction = {
   amount: number;
   account: string;
   status: "Pending" | "Completed" | "Failed" | "Rejected";
+  txnId?: string;
 };
 
 interface Account {
@@ -29,6 +30,10 @@ interface WithdrawalResponse {
   amount: string | number;
   accountNo: string | number;
   status: "Pending" | "Completed" | "Rejected" | string; // true = completed, false = pending
+  response?: {
+    orderid?: string;
+    [key: string]: any; // in case other fields exist
+  };
 }
 
 const PAGE_SIZE_OPTIONS = [2, 10, 25, 50, 100];
@@ -80,6 +85,11 @@ export default function TransactionPage() {
         : (row as WithdrawalResponse).status === "Rejected"
         ? "Rejected"
         : "Pending",
+
+    txnId:
+      type === "withdrawal"
+        ? (row as WithdrawalResponse).response?.orderid || "-"
+        : (row as any).orderid || "-",
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
@@ -452,20 +462,24 @@ export default function TransactionPage() {
             <table className="w-full border border-gray-700 rounded-lg">
               <thead>
                 <tr className="bg-gray-800 text-left">
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Txn Id</th>
                   <th className="px-4 py-2">Account</th>
+                  <th className="px-4 py-2">Amount</th>
+
                   <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredData.length > 0 ? (
                   filteredData.map((item, idx) => (
                     <tr key={idx} className="border-t border-gray-700">
-                      <td className="px-4 py-2">{item.date}</td>
-                      <td className="px-4 py-2">{item.amount}</td>
+                      <td className="px-4 py-2">{item.txnId}</td>
                       <td className="px-4 py-2">{item.account}</td>
+                      <td className="px-4 py-2">{item.amount}</td>
+
                       <td className="px-4 py-2">{item.status}</td>
+                      <td className="px-4 py-2">{item.date}</td>
                     </tr>
                   ))
                 ) : (
