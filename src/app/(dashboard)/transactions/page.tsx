@@ -6,7 +6,7 @@ type Transaction = {
   date: string;
   amount: number;
   account: string;
-  status: "Pending" | "Completed" | "Failed";
+  status: "Pending" | "Completed" | "Failed" | "Rejected";
 };
 
 interface Account {
@@ -28,7 +28,7 @@ interface WithdrawalResponse {
   createdAt: string;
   amount: string | number;
   accountNo: string | number;
-  status: boolean; // true = completed, false = pending
+  status: "Pending" | "Completed" | "Rejected" | string; // true = completed, false = pending
 }
 
 const PAGE_SIZE_OPTIONS = [2, 10, 25, 50, 100];
@@ -75,8 +75,10 @@ export default function TransactionPage() {
           : row.status === "FAILED"
           ? "Failed"
           : "Pending"
-        : (row as WithdrawalResponse).status
+        : (row as WithdrawalResponse).status === "Completed"
         ? "Completed"
+        : (row as WithdrawalResponse).status === "Rejected"
+        ? "Rejected"
         : "Pending",
   });
 
