@@ -36,7 +36,7 @@ export default function AdminWithdrawals() {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`
       );
       setWithdrawals(res.data.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to load withdrawals");
     } finally {
       setLoading(false);
