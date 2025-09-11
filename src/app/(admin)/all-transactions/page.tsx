@@ -18,6 +18,7 @@ interface Account {
 }
 
 interface DepositResponse {
+  orderid: string;
   _id: string;
   createdAt: string;
   amount: string | number;
@@ -86,12 +87,11 @@ export default function AdminTransactionPage() {
         ? "Completed"
         : (row as WithdrawalResponse).status === "Rejected"
         ? "Rejected"
-        : "Pending", // already "Pending" | "Completed" | "Rejected"
-
+        : "Pending",
     txnId:
       type === "withdrawal"
         ? (row as WithdrawalResponse).response?.orderid || "-"
-        : (row as any).orderid || "-",
+        : (row as DepositResponse).orderid || "-", // Safe and typed
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {

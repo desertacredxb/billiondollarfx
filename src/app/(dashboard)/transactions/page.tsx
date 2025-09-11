@@ -85,11 +85,10 @@ export default function TransactionPage() {
         : (row as WithdrawalResponse).status === "Rejected"
         ? "Rejected"
         : "Pending",
-
     txnId:
       type === "withdrawal"
         ? (row as WithdrawalResponse).response?.orderid || "-"
-        : (row as any).orderid || "-",
+        : "-",
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
