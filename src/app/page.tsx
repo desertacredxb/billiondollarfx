@@ -114,7 +114,7 @@ export default function Home() {
           <div className="bg-[#19232D] flex items-center justify-center p-6">
             <Image
               src={logo}
-              alt="WinproFX Logo"
+              alt="Billion Dollar FX Logo"
               className="w-40 md:w-52 object-contain"
             />
           </div>

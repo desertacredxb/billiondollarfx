@@ -67,14 +67,14 @@ const features = [
     title: "Strategic",
     highlight: "Trading Signals",
     content:
-      "Make optimal use of Trading Central&#39;s signals to formulate your trade plans and techniques. These signals combine a number of analytical techniques, providing traders with a useful tool across all periods and market conditions. You may easily access them through the WinproFX Trade app or your WinproFX Personal Area.",
+      "Make optimal use of Trading Central&#39;s signals to formulate your trade plans and techniques. These signals combine a number of analytical techniques, providing traders with a useful tool across all periods and market conditions. You may easily access them through the Billion Dollar FX Trade app or your Billion Dollar FX Personal Area.",
     image: img1,
   },
   {
     title: "Real-Time",
-    highlight: "Market News from WinproFX",
+    highlight: "Market News from Billion Dollar FX",
     content:
-      "Stay up to date with market news and the most recent updates from the FXStreet News team in real time. Use the WinProFX Trade app or your WinProFX Personal Area to gain access to this useful data.",
+      "Stay up to date with market news and the most recent updates from the FXStreet News team in real time. Use the Billion Dollar FX Trade app or your Billion Dollar FX Personal Area to gain access to this useful data.",
     image: img2,
   },
   {

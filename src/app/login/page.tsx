@@ -151,7 +151,7 @@ export default function LoginPage() {
           <Link href={"/"}>
             <Image
               src={Logo}
-              alt="WinproFX"
+              alt="Billion Dollar FX"
               width={200}
               height={40}
               className="mx-auto mb-2"
