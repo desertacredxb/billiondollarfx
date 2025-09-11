@@ -34,7 +34,7 @@ interface WithdrawalResponse {
   status: "Pending" | "Completed" | "Rejected" | string;
   response?: {
     orderid?: string;
-    [key: string]: any; // in case other fields exist
+    [key: string]: unknown; // safer than any
   };
 }
 

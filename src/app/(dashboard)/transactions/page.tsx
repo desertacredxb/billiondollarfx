@@ -32,7 +32,7 @@ interface WithdrawalResponse {
   status: "Pending" | "Completed" | "Rejected" | string; // true = completed, false = pending
   response?: {
     orderid?: string;
-    [key: string]: any; // in case other fields exist
+    [key: string]: unknown; // safer than any
   };
 }
 
