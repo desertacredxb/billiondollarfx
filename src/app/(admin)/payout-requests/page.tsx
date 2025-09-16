@@ -22,8 +22,8 @@ interface Withdrawal {
 export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isApprove, setIsApprove] = useState(true);
-  const [isReject, setIsReject] = useState(true);
+  const [isApprove, setIsApprove] = useState(false);
+  const [isReject, setIsReject] = useState(false);
 
   const [selectedWithdrawal, setSelectedWithdrawal] =
     useState<Withdrawal | null>(null);
