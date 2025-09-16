@@ -44,11 +44,11 @@ export default function ContactPage() {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            Connect with WinproFX: Unleash Your Trading Potential
+            Connect with Billion Dollar FX: Unleash Your Trading Potential
           </h2>
           <p className="text-gray-300 mb-6">
-            Embark on a journey to success with WinproFX, where your questions
-            and feedback become the compass guiding our commitment to
+            Embark on a journey to success with Billion Dollar FX, where your
+            questions and feedback become the compass guiding our commitment to
             excellence.
           </p>
 
@@ -130,9 +130,9 @@ export default function ContactPage() {
               className="mt-1"
             />
             <p>
-              Here at WinproFX we take your privacy seriously and will only use
-              your personal information to administer your account and to
-              provide the products and services you have requested from us.
+              Here at Billion Dollar FX we take your privacy seriously and will
+              only use your personal information to administer your account and
+              to provide the products and services you have requested from us.
               However, from time to time we would like to contact you with
               details of other products, offers and services we provide. If you
               consent to us contacting you for this purpose please tick to say
@@ -152,7 +152,7 @@ export default function ContactPage() {
         {/* Contact Info */}
         <div className="flex flex-col md:flex-row justify-center items-center gap-8 text-center mt-12 text-gray-300">
           <div>whatsapp</div>
-          <div>support@winprofx.com</div>
+          <div>support@Billion Dollar FX.com</div>
           <div>+971 4 447 1894</div>
           <div>P.O Box 838 Castries, Saint Lucia.</div>
         </div>

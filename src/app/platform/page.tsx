@@ -20,11 +20,11 @@ export default function MT5Page() {
             MT5 Unleashed: Dive into <br />
             <span className="text-white">Limitless </span>
             <span className="text-[var(--primary)]">Trading Success </span>
-            with <br /> WinproFX
+            with <br /> Billion Dollar FX
           </h1>
           <p className="mt-4 text-gray-300 max-w-3xl mx-auto mb-4">
-            WinproFX has achieved significant success in global business
-            expansion. We offer the Best Forex Trading Platform on MT5,
+            Billion Dollar FX has achieved significant success in global
+            business expansion. We offer the Best Forex Trading Platform on MT5,
             accessible on both Android and iPhone, bringing you one step closer
             to success. Take the plunge into a realm of endless trading
             opportunities by downloading MT5 now.
@@ -51,10 +51,11 @@ export default function MT5Page() {
               <span className="text-[var(--primary)]">For Mobile</span>
             </h2>
             <p className="text-gray-300 mb-4">
-              WinproFX has remained highly successful to expand their business
-              all over the world, and now we are MT5 is now available on Android
-              and iPhone, and you are one step closer to success. Download MT5
-              now and dive into the world of limitless trading opportunities.
+              Billion Dollar FX has remained highly successful to expand their
+              business all over the world, and now we are MT5 is now available
+              on Android and iPhone, and you are one step closer to success.
+              Download MT5 now and dive into the world of limitless trading
+              opportunities.
             </p>
             <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
               <a
@@ -95,10 +96,11 @@ export default function MT5Page() {
               <span className="text-[var(--primary)]">For Web</span>
             </h2>
             <p className="text-gray-300 mb-4">
-              WinproFX has remained highly successful to expand their business
-              all over the world, and now we are MT5 is now available on Android
-              and iPhone, and you are one step closer to success. Download MT5
-              now and dive into the world of limitless trading opportunities.
+              Billion Dollar FX has remained highly successful to expand their
+              business all over the world, and now we are MT5 is now available
+              on Android and iPhone, and you are one step closer to success.
+              Download MT5 now and dive into the world of limitless trading
+              opportunities.
             </p>
             <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
               <a

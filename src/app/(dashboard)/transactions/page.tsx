@@ -32,7 +32,7 @@ interface WithdrawalResponse {
   status: "Pending" | "Completed" | "Rejected" | string; // true = completed, false = pending
   response?: {
     orderid?: string;
-    [key: string]: any; // in case other fields exist
+    [key: string]: unknown; // safer than any
   };
 }
 
@@ -85,11 +85,10 @@ export default function TransactionPage() {
         : (row as WithdrawalResponse).status === "Rejected"
         ? "Rejected"
         : "Pending",
-
     txnId:
       type === "withdrawal"
         ? (row as WithdrawalResponse).response?.orderid || "-"
-        : (row as any).orderid || "-",
+        : "-",
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {

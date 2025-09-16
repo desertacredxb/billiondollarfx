@@ -252,7 +252,7 @@ export default function SignUpPage() {
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
       <Head>
-        <title>Sign Up | WinproFX</title>
+        <title>Sign Up | Billion Dollar FX</title>
       </Head>
 
       <video
@@ -270,7 +270,7 @@ export default function SignUpPage() {
           <Link href="/">
             <Image
               src={Logo}
-              alt="WinproFX Logo"
+              alt="Billion Dollar FX Logo"
               width={400}
               className="mb-4"
             />
@@ -384,7 +384,7 @@ export default function SignUpPage() {
                 onChange={handleChange}
               />
               <label>
-                I agree to the WinproFX{" "}
+                I agree to the Billion Dollar FX{" "}
                 <Link href="/Privacy-Policy">
                   <span className="text-[var(--primary)] underline cursor-pointer">
                     Privacy Policy
