@@ -22,6 +22,9 @@ interface Withdrawal {
 export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isApprove, setIsApprove] = useState(true);
+  const [isReject, setIsReject] = useState(true);
+
   const [selectedWithdrawal, setSelectedWithdrawal] =
     useState<Withdrawal | null>(null);
 
@@ -44,7 +47,7 @@ export default function AdminWithdrawals() {
   };
 
   const handleApprove = async (id: string) => {
-    setLoading(true);
+    setIsApprove(true);
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/approve/${id}`
@@ -54,11 +57,12 @@ export default function AdminWithdrawals() {
     } catch {
       toast.error("Approval failed");
     } finally {
-      setLoading(false);
+      setIsApprove(false);
     }
   };
 
   const handleReject = async (id: string) => {
+    setIsReject(true);
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reject/${id}`
@@ -68,7 +72,7 @@ export default function AdminWithdrawals() {
     } catch {
       toast.error("Rejection failed");
     } finally {
-      setLoading(false);
+      setIsReject(false);
     }
   };
 
@@ -246,7 +250,8 @@ export default function AdminWithdrawals() {
                     await handleApprove(selectedWithdrawal._id);
                     setSelectedWithdrawal(null);
                   }}
-                  text={loading ? "Approving..." : "Approve"}
+                  text={isApprove ? "Approving..." : "Approve"}
+                  disabled={isApprove}
                 />
               )}
               {selectedWithdrawal.status !== "Rejected" && (
@@ -255,7 +260,8 @@ export default function AdminWithdrawals() {
                     await handleReject(selectedWithdrawal._id);
                     setSelectedWithdrawal(null);
                   }}
-                  text={loading ? "Rejecting..." : "Reject"}
+                  text={isReject ? "Rejecting..." : "Reject"}
+                  disabled={isReject}
                 />
               )}
             </div>
