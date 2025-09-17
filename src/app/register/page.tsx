@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Logo from "../../../assets/BDFX Logo Animition.gif";
 import Button from "../../../components/Button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const countries = [
@@ -146,6 +146,7 @@ const countries = [
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -163,6 +164,15 @@ export default function SignUpPage() {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"form" | "otp">("form");
   const [loading, setLoading] = useState(false);
+
+  // ✅ Auto-fill referralCode from ?ref=XYZ
+  useEffect(() => {
+    const refCode = searchParams?.get("ref");
+    console.log("Referral Code from URL:", refCode);
+    if (refCode) {
+      setFormData((prev) => ({ ...prev, referralCode: refCode }));
+    }
+  }, [searchParams]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -374,6 +384,7 @@ export default function SignUpPage() {
               className="input md:col-span-2"
               value={formData.referralCode}
               onChange={handleChange}
+              readOnly={!!formData.referralCode} // ✅ lock if auto-filled
             />
             <div className="md:col-span-2 flex items-start text-sm text-gray-300">
               <input

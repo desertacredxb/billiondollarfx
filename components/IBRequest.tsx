@@ -33,6 +33,7 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
     yourShare: "0",
     clientShare: "0",
   });
+  const [loading, setLoading] = useState(false);
 
   // Update form values
   const handleChange = (field: keyof FormData, value: string) => {
@@ -48,6 +49,7 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
         ...formData,
@@ -73,6 +75,8 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
         alert("❌ Something went wrong while submitting IB request");
       }
       console.error("❌ Error submitting IB request:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -242,7 +246,10 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
               >
                 Cancel
               </button>
-              <Button onClick={handleSubmit} text="Submit Request" />
+              <Button
+                onClick={handleSubmit}
+                text={loading ? "Submitting..." : "Submit Request"}
+              />
             </div>
           </div>
         </div>

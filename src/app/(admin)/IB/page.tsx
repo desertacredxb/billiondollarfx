@@ -22,6 +22,8 @@ export default function IBRequestsPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<IBRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isApprove, setIsApprove] = useState(false);
+  const [isReject, setIsReject] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<IBRequest | null>(
     null
   );
@@ -49,6 +51,7 @@ export default function IBRequestsPage() {
   }, []);
 
   const approve = async (email: string) => {
+    setIsApprove(true);
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/approve`,
@@ -59,10 +62,13 @@ export default function IBRequestsPage() {
       fetchRequests();
     } catch (err) {
       console.error("Approve error:", err);
+    } finally {
+      setIsApprove(false);
     }
   };
 
   const reject = async (email: string) => {
+    setIsReject(true);
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/reject`,
@@ -73,6 +79,8 @@ export default function IBRequestsPage() {
       fetchRequests();
     } catch (err) {
       console.error("Reject error:", err);
+    } finally {
+      setIsReject(false);
     }
   };
 
@@ -248,7 +256,7 @@ export default function IBRequestsPage() {
                     await approve(selectedRequest.email);
                     setSelectedRequest(null); // ✅ Close modal after approve
                   }}
-                  text="Approve"
+                  text={isApprove ? "Approving..." : "Approve"}
                 />
               )}
               {selectedRequest.status !== "rejected" && (
@@ -257,7 +265,7 @@ export default function IBRequestsPage() {
                     await reject(selectedRequest.email);
                     setSelectedRequest(null); // ✅ Close modal after reject
                   }}
-                  text="Reject"
+                  text={isReject ? "Rejecting..." : "Reject"}
                 />
               )}
             </div>

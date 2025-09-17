@@ -72,8 +72,8 @@ function IBPage({ user }: IBPageProps) {
       <div className="w-full max-w-xl mx-auto bg-[#111a2e] p-6 rounded-2xl shadow-lg mb-10 flex flex-col items-center">
         <p className="text-gray-400 mb-2">Your Referral Code</p>
         <div className="flex items-center gap-3">
-          <span className="text-yellow-400 font-mono font-bold text-2xl bg-[#1b2744] px-5 py-2 rounded-lg">
-            {referralCode ?? "Loading..."}
+          <span className="text-yellow-400 font-mono font-semibold text-lg bg-[#1b2744] px-5 py-2 rounded-lg">
+            {`https://www.billiondollarfx.com/register?ref=${referralCode}`}
           </span>
           <button
             onClick={copyToClipboard}
