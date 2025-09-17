@@ -244,14 +244,13 @@ export default function LoginPage() {
                 loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
               }`}
             />
-
-            <Button
-              text="SIGN UP"
-              onClick={handleSignUpRedirect}
-              className="w-full border border-white text-white py-2 rounded-full hover:bg-white hover:text-black"
-            />
           </form>
         )}
+        <Button
+          text="SIGN UP"
+          onClick={handleSignUpRedirect}
+          className=" mt-5 w-full border  text-white py-2 rounded-full hover:bg-white hover:text-black"
+        />
 
         {step === "reset-request" && (
           <div className="space-y-4">
