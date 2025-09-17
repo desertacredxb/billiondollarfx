@@ -35,6 +35,23 @@ export default function DepositsPage() {
   const [showKycPopup, setShowKycPopup] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
 
+  useEffect(() => {
+    if (isLoggedIn && userData && !userData.isKycVerified) {
+      // show first popup after 5s
+      const timeout = setTimeout(() => setShowKycPopup(true), 5000);
+
+      // keep showing every 10s
+      const interval = setInterval(() => {
+        setShowKycPopup(true);
+      }, 10000);
+
+      return () => {
+        clearTimeout(timeout);
+        clearInterval(interval);
+      };
+    }
+  }, [isLoggedIn, userData?.isKycVerified]);
+
   const fetchUserData = async () => {
     const token = localStorage.getItem("token");
     const userString = localStorage.getItem("user");
@@ -64,9 +81,6 @@ export default function DepositsPage() {
       }
 
       setIsLoggedIn(true);
-      if (!userData.isKycVerified) {
-        setTimeout(() => setShowKycPopup(true), 5000);
-      }
     } catch (err) {
       console.error("Error fetching user data:", err);
       setAccounts([]);
