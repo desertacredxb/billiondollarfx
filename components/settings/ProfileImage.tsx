@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Camera } from "lucide-react";
+import { Camera, ShieldCheck } from "lucide-react";
 
 function ProfileImage() {
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isKycVerified, setIsKycVerified] = useState(false);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,7 +34,7 @@ function ProfileImage() {
       if (res.data?.user?.profileImage) {
         setProfileImage(res.data.user.profileImage);
 
-        // Optional: also update localStorage
+        // Update localStorage
         const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
         const updatedUser = {
           ...storedUser,
@@ -58,7 +59,8 @@ function ProfileImage() {
           const parsedUser = JSON.parse(storedUser);
           setUserName(parsedUser.fullName || "U");
           setEmail(parsedUser.email);
-          setProfileImage(parsedUser.profileImage || null); // ✅ Load existing profile image
+          setProfileImage(parsedUser.profileImage || null);
+          setIsKycVerified(parsedUser.isKycVerified || false); // ✅ Load KYC status
         } catch (e) {
           setUserName("U");
         }
@@ -90,7 +92,15 @@ function ProfileImage() {
           />
         </label>
       </div>
+
       <p className="mt-2 text-sm text-gray-400">Click to change photo</p>
+
+      {isKycVerified && (
+        <div className="mt-3 flex items-center gap-2 px-3 py-1 bg-green-600/20 text-green-400 rounded-full text-xs font-medium">
+          <ShieldCheck className="w-4 h-4" />
+          <span>KYC Verified</span>
+        </div>
+      )}
     </div>
   );
 }

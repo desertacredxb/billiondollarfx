@@ -122,26 +122,80 @@ export default function IdentityVerification() {
   if (hasSubmittedDocuments) {
     if (isKycVerified) {
       return (
-        <div className="bg-[#121a2a] text-white p-6 rounded-lg shadow-lg text-center">
-          <h2 className="text-xl font-semibold mb-4 flex items-center justify-center gap-2">
-            ✅ KYC Verified
-          </h2>
-          <p>Your documents have been verified successfully.</p>
+        <div className="space-y-6">
+          <ProfileImage />
+
+          <div className="bg-[#121a2a]  p-6 rounded-xl shadow-lg text-center">
+            {/* Icon + Badge */}
+            <div className="flex flex-col items-center space-y-3">
+              <div className="bg-green-600/20 p-4 rounded-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-green-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span className="px-3 py-1 text-sm font-medium bg-green-600/20 text-green-400 rounded-full">
+                Verified
+              </span>
+            </div>
+
+            <h2 className="text-xl font-semibold mt-4 text-white">
+              Documents Verified
+            </h2>
+            <p className="text-gray-400 mt-2">
+              Your documents have been successfully verified. You can now
+              continue using all available services without restrictions.
+            </p>
+          </div>
         </div>
       );
     } else {
       return (
-        <div className="bg-[#121a2a] text-white p-6 rounded-lg shadow-lg text-center">
-          <h2 className="text-xl font-semibold mb-4">
-            Documents Already Submitted
-          </h2>
-          <p className="mb-2">
-            You have already submitted your documents. You cannot submit again.
-          </p>
-          <p>
-            We are currently reviewing your data, and you will be notified once
-            it is approved.
-          </p>
+        <div className="space-y-6">
+          <ProfileImage />
+
+          <div className="bg-[#121a2a] border border-yellow-600/40 p-6 rounded-xl shadow-lg text-center">
+            {/* Icon + Badge */}
+            <div className="flex flex-col items-center space-y-3">
+              <div className="bg-yellow-600/20 p-4 rounded-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 text-yellow-400 animate-pulse"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+                  />
+                </svg>
+              </div>
+              <span className="px-3 py-1 text-sm font-medium bg-yellow-600/20 text-yellow-400 rounded-full">
+                Pending Review
+              </span>
+            </div>
+
+            <h2 className="text-xl font-semibold mt-4 text-white">
+              Documents Under Review
+            </h2>
+            <p className="text-gray-400 mt-2">
+              You have already submitted your documents. Our team is reviewing
+              them, and you’ll be notified once they are approved.
+            </p>
+          </div>
         </div>
       );
     }

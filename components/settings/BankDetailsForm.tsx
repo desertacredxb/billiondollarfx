@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProfileImage from "./ProfileImage";
 import axios from "axios";
 
@@ -32,6 +32,39 @@ export default function BankDetailsForm() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<string>("pending");
+
+  // Fetch user details by email
+  useEffect(() => {
+    const fetchUser = async () => {
+      const email = JSON.parse(localStorage.getItem("user") || "{}").email;
+      if (!email) return;
+
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+        );
+        const userData = res.data;
+
+        // Prefill form with user bank details
+        setForm({
+          accountHolderName: userData.accountHolderName || "",
+          accountNumber: userData.accountNumber || "",
+          ifscCode: userData.ifscCode || "",
+          iban: userData.iban || "",
+          bankName: userData.bankName || "",
+          bankAddress: userData.bankAddress || "",
+        });
+
+        // Store approval status
+        setApprovalStatus(userData.bankApprovalStatus || "pending");
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -72,14 +105,6 @@ export default function BankDetailsForm() {
         form
       );
       alert("Bank details saved successfully!");
-      setForm({
-        accountHolderName: "",
-        accountNumber: "",
-        ifscCode: "",
-        iban: "",
-        bankName: "",
-        bankAddress: "",
-      });
     } catch (err) {
       console.error(err);
       alert("Something went wrong. Try again.");
@@ -109,12 +134,7 @@ export default function BankDetailsForm() {
       required: true,
       placeholder: "Enter IFSC/SWIFT code",
     },
-    {
-      label: "IBAN",
-      name: "iban",
-      required: false,
-      placeholder: "Enter IBAN",
-    },
+    { label: "IBAN", name: "iban", required: false, placeholder: "Enter IBAN" },
     {
       label: "Bank Name",
       name: "bankName",
@@ -137,9 +157,23 @@ export default function BankDetailsForm() {
         className="bg-[#121a2a] border border-gray-800 p-6 rounded-xl shadow-lg space-y-6"
         onSubmit={handleSubmit}
       >
-        <h2 className="text-xl font-semibold mb-1 text-white">
-          Add Bank Details
-        </h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold mb-1 text-white">
+            Add Bank Details
+          </h2>
+
+          {/* Bank Approval Status */}
+          <span
+            className={`px-3 py-1 rounded-md text-sm font-medium ${
+              approvalStatus === "approved"
+                ? "bg-green-600 text-white"
+                : "bg-yellow-600 text-white"
+            }`}
+          >
+            {approvalStatus === "approved" ? "Approved" : "Pending"}
+          </span>
+        </div>
+
         <hr className="border-gray-700" />
 
         {fields.map((field) => (
