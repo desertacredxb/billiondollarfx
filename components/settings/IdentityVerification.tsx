@@ -18,6 +18,8 @@ export default function IdentityVerification() {
   const [loading, setLoading] = useState(false);
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [hasSubmittedDocuments, setHasSubmittedDocuments] = useState(false);
+  const [isKycVerified, setIsKycVerified] = useState(false);
   const [email, setEmail] = useState("");
   const [formFiles, setFormFiles] = useState<{
     identityFront?: File;
@@ -25,6 +27,30 @@ export default function IdentityVerification() {
     addressProof?: File;
     selfieProof?: File;
   }>({});
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const email = JSON.parse(localStorage.getItem("user") || "{}").email;
+      if (!email) {
+        alert("User email not found.");
+        return;
+      }
+      setEmail(email);
+
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+        );
+        console.log(response.data.hasSubmittedDocuments);
+        setHasSubmittedDocuments(response.data.hasSubmittedDocuments);
+        setIsKycVerified(response.data.isKycVerified);
+      } catch (err) {
+        console.error("Failed to fetch user data", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -64,7 +90,8 @@ export default function IdentityVerification() {
         formData
       );
       alert("Documents submitted successfully!");
-      setCurrentStep(1); // ⬅️ Go back to Step 1
+
+      window.location.reload();
       setFormFiles({});
     } catch (err) {
       console.error(err);
@@ -92,10 +119,38 @@ export default function IdentityVerification() {
       );
     }
   };
+  if (hasSubmittedDocuments) {
+    if (isKycVerified) {
+      return (
+        <div className="bg-[#121a2a] text-white p-6 rounded-lg shadow-lg text-center">
+          <h2 className="text-xl font-semibold mb-4 flex items-center justify-center gap-2">
+            ✅ KYC Verified
+          </h2>
+          <p>Your documents have been verified successfully.</p>
+        </div>
+      );
+    } else {
+      return (
+        <div className="bg-[#121a2a] text-white p-6 rounded-lg shadow-lg text-center">
+          <h2 className="text-xl font-semibold mb-4">
+            Documents Already Submitted
+          </h2>
+          <p className="mb-2">
+            You have already submitted your documents. You cannot submit again.
+          </p>
+          <p>
+            We are currently reviewing your data, and you will be notified once
+            it is approved.
+          </p>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="space-y-4">
       <ProfileImage />
+
       {/* Timeline */}
       <div className="w-full flex flex-col items-center">
         <div className="flex items-center justify-between w-full">
@@ -223,6 +278,9 @@ export default function IdentityVerification() {
               />
               {filePreview(formFiles.identityBack)}
             </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Note: Images should be in JPG or PNG format only.
+            </p>
           </div>
           <div className="flex justify-between mt-6">
             <button
@@ -259,7 +317,11 @@ export default function IdentityVerification() {
             onChange={(e) => handleFileChange(e, "addressProof")}
             className="mt-1 file:bg-white file:text-black file:px-3 file:py-1 file:rounded file:border-0 file:font-medium text-sm text-white w-full cursor-pointer"
           />
+          <p className="text-xs text-gray-400 mt-2">
+            Note: Images should be in JPG or PNG format only.
+          </p>
           {filePreview(formFiles.addressProof)}
+
           <div className="flex justify-between mt-6">
             <button
               onClick={() => setCurrentStep(2)}
@@ -293,6 +355,9 @@ export default function IdentityVerification() {
             onChange={(e) => handleFileChange(e, "selfieProof")}
             className="mt-1 file:bg-white file:text-black file:px-3 file:py-1 file:rounded file:border-0 file:font-medium text-sm text-white w-full cursor-pointer"
           />
+          <p className="text-xs text-gray-400 mt-2">
+            Note: Images should be in JPG or PNG format only.
+          </p>
           {filePreview(formFiles.selfieProof)}
           <div className="flex justify-between mt-6">
             <button
