@@ -246,11 +246,6 @@ export default function LoginPage() {
             />
           </form>
         )}
-        <Button
-          text="SIGN UP"
-          onClick={handleSignUpRedirect}
-          className=" mt-5 w-full border  text-white py-2 rounded-full hover:bg-white hover:text-black"
-        />
 
         {step === "reset-request" && (
           <div className="space-y-4">
