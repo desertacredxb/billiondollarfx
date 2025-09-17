@@ -55,7 +55,9 @@ function IBPage({ user }: IBPageProps) {
 
   const copyToClipboard = () => {
     if (referralCode) {
-      navigator.clipboard.writeText(referralCode);
+      navigator.clipboard.writeText(
+        `https://www.billiondollarfx.com/register?ref=${referralCode}`
+      );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -69,10 +71,10 @@ function IBPage({ user }: IBPageProps) {
       </h1>
 
       {/* Referral Code Panel */}
-      <div className="w-full max-w-xl mx-auto bg-[#111a2e] p-6 rounded-2xl shadow-lg mb-10 flex flex-col items-center">
+      <div className="w-full max-w-2xl mx-auto bg-[#111a2e] p-6 rounded-2xl shadow-lg mb-10 flex flex-col items-center">
         <p className="text-gray-400 mb-2">Your Referral Code</p>
         <div className="flex items-center gap-3">
-          <span className="text-yellow-400 font-mono font-semibold text-lg bg-[#1b2744] px-5 py-2 rounded-lg">
+          <span className="text-yellow-400 font-mono font-semibold text-sm bg-[#1b2744] px-5 py-2 rounded-lg">
             {`https://www.billiondollarfx.com/register?ref=${referralCode}`}
           </span>
           <button
