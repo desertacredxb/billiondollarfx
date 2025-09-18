@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
 
 interface User {
-  totalDeposit: any;
+  totalDeposit: number;
   totalAccounts: number;
   accountType: string;
   createdAt: string;
