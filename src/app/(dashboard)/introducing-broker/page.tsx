@@ -4,6 +4,7 @@ import axios from "axios";
 import IBRequest from "../../../../components/IBRequest";
 import IBPage from "../../../../components/IBPage";
 
+// 👤 User type used in this page
 interface User {
   email: string;
   ibRequestPending?: boolean;
@@ -28,9 +29,9 @@ function IntroducingBroker() {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
       setUser(res.data);
-      console.log(res.data.isApprovedIB);
+      console.log("IB approved:", res.data.isApprovedIB);
     } catch (err) {
-      console.error("Error fetching user:", err);
+      console.error("❌ Error fetching user:", err);
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,8 @@ function IntroducingBroker() {
       {!user?.isApprovedIB ? (
         <IBRequest user={user!} refreshUser={fetchUser} setUser={setUser} />
       ) : (
-        <IBPage user={user!} />
+        // ✅ Pass user safely to IBPage
+        <IBPage user={{ email: user.email, isApprovedIB: user.isApprovedIB }} />
       )}
     </div>
   );

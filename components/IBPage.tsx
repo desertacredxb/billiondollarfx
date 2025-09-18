@@ -13,7 +13,10 @@ interface User {
 }
 
 interface IBPageProps {
-  user: User;
+  user: {
+    email: string;
+    isApprovedIB?: boolean;
+  };
 }
 
 function IBPage({ user }: IBPageProps) {
