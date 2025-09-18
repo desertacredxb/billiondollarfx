@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
 
 interface User {
+  totalDeposit: any;
+  totalAccounts: number;
   accountType: string;
   createdAt: string;
   email: string;
@@ -19,6 +21,14 @@ interface IBPageProps {
   };
 }
 
+interface DepositResponse {
+  _id: string;
+  createdAt: string;
+  amount: string | number;
+  accountNo: string | number;
+  status: "SUCCESS" | "FAILED" | "PENDING" | string;
+}
+
 function IBPage({ user }: IBPageProps) {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [connections, setConnections] = useState<User[]>([]);
@@ -29,6 +39,43 @@ function IBPage({ user }: IBPageProps) {
   const [searchName, setSearchName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // ✅ Fetch deposits for a user (all accounts)
+  const fetchUserDeposits = async (
+    email: string
+  ): Promise<{ totalDeposit: number; totalAccounts: number }> => {
+    try {
+      const userRes = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+      );
+      const accounts = userRes.data?.accounts || [];
+
+      let depositSum = 0;
+
+      for (const acc of accounts) {
+        try {
+          const res = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
+          );
+          const deposits: DepositResponse[] = res.data?.deposits || [];
+
+          depositSum += deposits
+            .filter((d) => d.status === "SUCCESS") // only successful deposits
+            .reduce((sum, d) => sum + Number(d.amount), 0);
+        } catch (err) {
+          console.error(
+            `Error fetching deposits for account ${acc.accountNo}:`,
+            err
+          );
+        }
+      }
+
+      return { totalDeposit: depositSum, totalAccounts: accounts.length };
+    } catch (err) {
+      console.error(`Error fetching accounts for user ${email}:`, err);
+      return { totalDeposit: 0, totalAccounts: 0 };
+    }
+  };
 
   useEffect(() => {
     const fetchReferralAndConnections = async () => {
@@ -48,7 +95,19 @@ function IBPage({ user }: IBPageProps) {
 
         // 3. Filter connections by referral code
         const matchedUsers = allUsers.filter((u) => u.referralCode === code);
-        setConnections(matchedUsers);
+
+        // 4. For each connection → fetch deposits
+        const enrichedUsers = await Promise.all(
+          matchedUsers.map(async (u) => {
+            const { totalDeposit, totalAccounts } = await fetchUserDeposits(
+              u.email
+            );
+            console.log(totalDeposit, totalAccounts);
+            return { ...u, totalDeposit, totalAccounts };
+          })
+        );
+
+        setConnections(enrichedUsers);
       } catch (err: unknown) {
         const axiosErr = err as AxiosError;
         console.error(
@@ -186,8 +245,10 @@ function IBPage({ user }: IBPageProps) {
                     <td className="py-3 px-4">
                       {c.fullName || "Unnamed User"}
                     </td>
-                    <td className="py-3 px-4">—</td>
-                    <td className="py-3 px-4">—</td>
+                    <td className="py-3 px-4">{c.totalAccounts ?? 0}</td>
+                    <td className="py-3 px-4">
+                      ${c.totalDeposit?.toFixed(2) ?? "0.00"}
+                    </td>
                     <td className="py-3 px-4">—</td>
                     <td className="py-3 px-4">—</td>
                     <td className="py-3 px-4">{c.accountType}</td>
@@ -225,7 +286,8 @@ function IBPage({ user }: IBPageProps) {
                   <span className="text-gray-400">Total Accounts:</span> —
                 </p>
                 <p>
-                  <span className="text-gray-400">Total Deposit:</span> —
+                  <span className="text-gray-400">Total Deposit:</span> $
+                  {c.totalDeposit?.toFixed(2) ?? "0.00"}
                 </p>
                 <p>
                   <span className="text-gray-400">Total Lots:</span> —
