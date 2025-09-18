@@ -338,10 +338,10 @@ function IBPage({ user }: IBPageProps) {
 }
 
 export default IBPage;
-function fetchUserDeposits(
-  email: string
-):
-  | { totalDeposit: any; totalAccounts: any }
-  | PromiseLike<{ totalDeposit: any; totalAccounts: any }> {
-  throw new Error("Function not implemented.");
-}
+// function fetchUserDeposits(
+//   email: string
+// ):
+//   | { totalDeposit: any; totalAccounts: any }
+//   | PromiseLike<{ totalDeposit: any; totalAccounts: any }> {
+//   throw new Error("Function not implemented.");
+// }
