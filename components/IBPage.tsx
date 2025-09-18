@@ -5,6 +5,7 @@ import axios, { AxiosError } from "axios";
 
 interface User {
   totalDeposit: number;
+  totalWithdrawal: number;
   totalAccounts: number;
   accountType: string;
   createdAt: string;
@@ -29,6 +30,14 @@ interface DepositResponse {
   status: "SUCCESS" | "FAILED" | "PENDING" | string;
 }
 
+interface WithdrawalResponse {
+  _id: string;
+  createdAt: string;
+  amount: string | number;
+  accountNo: string | number;
+  status: "SUCCESS" | "FAILED" | "PENDING" | string;
+}
+
 function IBPage({ user }: IBPageProps) {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [connections, setConnections] = useState<User[]>([]);
@@ -41,9 +50,9 @@ function IBPage({ user }: IBPageProps) {
   const [endDate, setEndDate] = useState("");
 
   // ✅ Fetch deposits for a user (all accounts)
-  const fetchUserDeposits = async (
+  const fetchUserStats = async (
     email: string
-  ): Promise<{ totalDeposit: number; totalAccounts: number }> => {
+  ): Promise<{ totalDeposit: number; totalWithdrawal: number }> => {
     try {
       const userRes = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
@@ -51,29 +60,40 @@ function IBPage({ user }: IBPageProps) {
       const accounts = userRes.data?.accounts || [];
 
       let depositSum = 0;
+      let withdrawalSum = 0;
 
       for (const acc of accounts) {
         try {
-          const res = await axios.get(
+          // deposits
+          const depRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
           );
-          const deposits: DepositResponse[] = res.data?.deposits || [];
-
+          const deposits: DepositResponse[] = depRes.data?.deposits || [];
           depositSum += deposits
-            .filter((d) => d.status === "SUCCESS") // only successful deposits
+            .filter((d) => d.status === "SUCCESS")
             .reduce((sum, d) => sum + Number(d.amount), 0);
+
+          // withdrawals
+          const wdRes = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
+          );
+          const withdrawals: WithdrawalResponse[] =
+            wdRes.data?.withdrawals || [];
+          withdrawalSum += withdrawals
+            .filter((w) => w.status === "SUCCESS")
+            .reduce((sum, w) => sum + Number(w.amount), 0);
         } catch (err) {
           console.error(
-            `Error fetching deposits for account ${acc.accountNo}:`,
+            `Error fetching transactions for account ${acc.accountNo}:`,
             err
           );
         }
       }
 
-      return { totalDeposit: depositSum, totalAccounts: accounts.length };
+      return { totalDeposit: depositSum, totalWithdrawal: withdrawalSum };
     } catch (err) {
       console.error(`Error fetching accounts for user ${email}:`, err);
-      return { totalDeposit: 0, totalAccounts: 0 };
+      return { totalDeposit: 0, totalWithdrawal: 0 };
     }
   };
 
@@ -99,11 +119,10 @@ function IBPage({ user }: IBPageProps) {
         // 4. For each connection → fetch deposits
         const enrichedUsers = await Promise.all(
           matchedUsers.map(async (u) => {
-            const { totalDeposit, totalAccounts } = await fetchUserDeposits(
+            const { totalDeposit, totalWithdrawal } = await fetchUserStats(
               u.email
             );
-            console.log(totalDeposit, totalAccounts);
-            return { ...u, totalDeposit, totalAccounts };
+            return { ...u, totalDeposit, totalWithdrawal };
           })
         );
 
@@ -204,8 +223,9 @@ function IBPage({ user }: IBPageProps) {
               <tr className="border-b border-gray-700">
                 <th className="py-3 px-4 text-gray-400 font-medium">Client</th>
                 <th className="py-3 px-4 text-gray-400 font-medium">
-                  Total Accounts
+                  Total Withdrawal
                 </th>
+
                 <th className="py-3 px-4 text-gray-400 font-medium">
                   Total Deposit
                 </th>
@@ -245,7 +265,9 @@ function IBPage({ user }: IBPageProps) {
                     <td className="py-3 px-4">
                       {c.fullName || "Unnamed User"}
                     </td>
-                    <td className="py-3 px-4">{c.totalAccounts ?? 0}</td>
+                    <td className="py-3 px-4">
+                      ${c.totalWithdrawal?.toFixed(2) ?? "0.00"}
+                    </td>
                     <td className="py-3 px-4">
                       ${c.totalDeposit?.toFixed(2) ?? "0.00"}
                     </td>
@@ -283,7 +305,8 @@ function IBPage({ user }: IBPageProps) {
                   {c.fullName || "Unnamed User"}
                 </p>
                 <p>
-                  <span className="text-gray-400">Total Accounts:</span> —
+                  <span className="text-gray-400">Total Withdrawal:</span> $
+                  {c.totalWithdrawal?.toFixed(2) ?? "0.00"}
                 </p>
                 <p>
                   <span className="text-gray-400">Total Deposit:</span> $
@@ -315,3 +338,10 @@ function IBPage({ user }: IBPageProps) {
 }
 
 export default IBPage;
+function fetchUserDeposits(
+  email: string
+):
+  | { totalDeposit: any; totalAccounts: any }
+  | PromiseLike<{ totalDeposit: any; totalAccounts: any }> {
+  throw new Error("Function not implemented.");
+}
