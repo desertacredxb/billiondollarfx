@@ -22,6 +22,7 @@ interface DepositResponse {
   amount: string | number;
   accountNo: string | number;
   status: "SUCCESS" | "FAILED" | "PENDING" | string;
+  orderid: string;
 }
 
 interface WithdrawalResponse {
@@ -36,7 +37,7 @@ interface WithdrawalResponse {
   };
 }
 
-const PAGE_SIZE_OPTIONS = [2, 10, 25, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function TransactionPage() {
   const [activeTab, setActiveTab] = useState<"deposit" | "withdrawal">(
@@ -86,9 +87,9 @@ export default function TransactionPage() {
         ? "Rejected"
         : "Pending",
     txnId:
-      type === "withdrawal"
-        ? (row as WithdrawalResponse).response?.orderid || "-"
-        : "-",
+      type === "deposit"
+        ? (row as DepositResponse).orderid || "-"
+        : (row as WithdrawalResponse).response?.orderid || "-",
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
@@ -140,6 +141,7 @@ export default function TransactionPage() {
       setLoading(true);
       const url = `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${accNo}?page=${page}&limit=${limit}`;
       const res = await axios.get(url);
+      console.log(res);
 
       // If API returns paginated structure
       if (
