@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import Button from "../../../../components/Button";
 
 interface Ticket {
   _id: string;
@@ -21,6 +22,7 @@ interface Message {
 }
 
 export default function Support() {
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [newTicket, setNewTicket] = useState({
@@ -74,7 +76,7 @@ export default function Support() {
       alert("All fields required.");
       return;
     }
-
+    setLoading(true);
     axios
       .post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${email}`,
@@ -87,7 +89,8 @@ export default function Support() {
       })
       .catch((err) =>
         alert("Error creating ticket: " + err.response?.data?.message || err)
-      );
+      )
+      .finally(() => setLoading(false));
   };
 
   const openTicketModal = (ticket: Ticket) => {
@@ -162,6 +165,11 @@ export default function Support() {
     }
   };
 
+  // Count tickets that are Open or Pending
+  const activeTicketsCount = tickets.filter(
+    (t) => t.status === "Open" || t.status === "Pending"
+  ).length;
+
   return (
     <div className="min-h-screen bg-black text-white p-6 font-raleway">
       <div className="grid md:grid-cols-2 gap-6">
@@ -202,12 +210,17 @@ export default function Support() {
             }
             className="w-full bg-[#0d1b2a] border border-gray-700 p-2 rounded mb-4 h-28"
           ></textarea>
-          <button
+          <Button
             onClick={handleCreateTicket}
-            className="bg-[var(--primary)] hover:opacity-90 px-4 py-2 rounded text-white w-full"
-          >
-            Submit Ticket
-          </button>
+            disabled={activeTicketsCount >= 2} // ✅ Disable if 2 or more active tickets
+            text={
+              loading
+                ? "Submitting..."
+                : activeTicketsCount >= 2
+                ? "Limit Reached"
+                : "Submit Ticket"
+            }
+          />
         </div>
 
         {/* TICKET LIST */}
