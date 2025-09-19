@@ -13,7 +13,6 @@ import {
   UserSquare2,
   CreditCard,
   Briefcase,
-  CheckCircle,
   Landmark,
   Wallet,
 } from "lucide-react";
@@ -43,10 +42,9 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         const pendingBankUpdates = bankRes.data.filter(
-          (u: { pendingBankDetails: {} }) =>
+          (u: { pendingBankDetails?: Record<string, unknown> }) =>
             u.pendingBankDetails && Object.keys(u.pendingBankDetails).length > 0
         );
-        setBankApprovalCount(pendingBankUpdates.length || 0);
 
         // ✅ Fetch IB Requests (only pending status)
         const ibRes = await axios.get(
