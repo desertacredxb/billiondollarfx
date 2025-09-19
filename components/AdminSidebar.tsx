@@ -14,6 +14,8 @@ import {
   CreditCard,
   Briefcase,
   CheckCircle,
+  Landmark,
+  Wallet,
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -142,14 +144,14 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           <NavLink
             href="/bankapproval"
             label="Bank Approval"
-            icon={CheckCircle}
+            icon={Landmark}
             pathname={pathname}
             count={bankApprovalCount}
           />
           <NavLink
             href="/payout-requests"
             label="Payout Requests"
-            icon={CheckCircle}
+            icon={Wallet}
             pathname={pathname}
             count={payoutCount} // ✅ Pass badge count
           />
