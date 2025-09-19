@@ -19,6 +19,19 @@ interface Withdrawal {
   createdAt: string;
 }
 
+interface AccountSummary {
+  response: string;
+  message: string;
+  accountno: string;
+  balance: string;
+  Credit: string;
+  Floating: string;
+  Margin: string;
+  MarginFree: string;
+  Equity: string;
+  DWBalance: string;
+}
+
 export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +40,10 @@ export default function AdminWithdrawals() {
 
   const [selectedWithdrawal, setSelectedWithdrawal] =
     useState<Withdrawal | null>(null);
+
+  // 👉 state for balance
+  const [balanceData, setBalanceData] = useState<AccountSummary | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState(false);
 
   useEffect(() => {
     fetchWithdrawals();
@@ -43,6 +60,25 @@ export default function AdminWithdrawals() {
       toast.error("Failed to load withdrawals");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 👉 fetch balance when opening modal
+  const fetchBalance = async (accountNo: string) => {
+    setLoadingBalance(true);
+    setBalanceData(null);
+    // console.log(accountNo);
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
+        { accountno: accountNo }
+      );
+      // console.log(res);
+      setBalanceData(res.data.data);
+    } catch {
+      toast.error("Failed to fetch account balance");
+    } finally {
+      setLoadingBalance(false);
     }
   };
 
@@ -129,7 +165,10 @@ export default function AdminWithdrawals() {
                   </td>
                   <td className="px-4 py-3">
                     <Button
-                      onClick={() => setSelectedWithdrawal(w)}
+                      onClick={() => {
+                        setSelectedWithdrawal(w);
+                        fetchBalance(w.accountNo);
+                      }}
                       text="View"
                     />
                   </td>
@@ -172,7 +211,10 @@ export default function AdminWithdrawals() {
                   </span>
                 </p>
                 <Button
-                  onClick={() => setSelectedWithdrawal(w)}
+                  onClick={() => {
+                    setSelectedWithdrawal(w);
+                    fetchBalance(w.accountNo);
+                  }}
                   text="View Details"
                 />
               </div>
@@ -187,7 +229,10 @@ export default function AdminWithdrawals() {
           <div className="bg-[#1f2937] rounded-lg p-6 w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto space-y-3 relative">
             {/* Close Button */}
             <button
-              onClick={() => setSelectedWithdrawal(null)}
+              onClick={() => {
+                setSelectedWithdrawal(null);
+                setBalanceData(null);
+              }}
               className="absolute top-3 right-3 text-gray-400 hover:text-white"
             >
               ✕
@@ -243,6 +288,32 @@ export default function AdminWithdrawals() {
               </div>
             </div>
 
+            {/* ✅ Balance Info */}
+            <div className="mt-6 border-t border-gray-700 pt-4">
+              <h3 className="font-semibold text-lg mb-2">Client Balance</h3>
+              {loadingBalance ? (
+                <p className="text-gray-400">Fetching balance...</p>
+              ) : balanceData ? (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <p>
+                    <b>Total Balance:</b> ₹{balanceData.balance}
+                  </p>
+                  <p>
+                    <b>Equity:</b> ₹{balanceData.Equity}
+                  </p>
+                  <p>
+                    <b>Margin Free:</b> ₹{balanceData.MarginFree}
+                  </p>
+                  <p>
+                    <b>DW Balance:</b> ₹{balanceData.DWBalance}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-400">No balance info available.</p>
+              )}
+            </div>
+
+            {/* ✅ Actions */}
             <div className="flex justify-end gap-3 mt-6">
               {selectedWithdrawal.status !== "Completed" && (
                 <Button
