@@ -43,7 +43,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         const pendingBankUpdates = bankRes.data.filter(
-          (u: any) =>
+          (u: { pendingBankDetails: {} }) =>
             u.pendingBankDetails && Object.keys(u.pendingBankDetails).length > 0
         );
         setBankApprovalCount(pendingBankUpdates.length || 0);
@@ -53,7 +53,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/ib`
         );
         const pendingIbRequests = ibRes.data.filter(
-          (u: any) => u.status === "pending"
+          (u: { status: string }) => u.status === "pending"
         );
         setIbCount(pendingIbRequests.length || 0);
 
@@ -63,7 +63,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         const pendingKyc = userRes.data.filter(
-          (u: any) => u.isKycVerified === false
+          (u: { isKycVerified: boolean }) => u.isKycVerified === false
         );
         setKycCount(pendingKyc.length || 0);
       } catch (err) {

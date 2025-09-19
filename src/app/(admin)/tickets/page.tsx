@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { Delete, Trash2 } from "lucide-react";
 
 interface User {
   fullName: string;
@@ -89,6 +90,30 @@ export default function AdminTicketsPage() {
       fetchTickets();
     } catch {
       alert("Failed to update status.");
+    }
+  };
+
+  const deleteTicket = async (_id: string) => {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete this ticket?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${_id}`
+      );
+
+      // Remove the deleted ticket from state
+      setAllTickets((prev) => prev.filter((t) => t._id !== _id));
+      setTickets((prev) => prev.filter((t) => t._id !== _id));
+
+      // Close modal if the deleted ticket was active
+      if (activeTicket?._id === _id) {
+        closeModal();
+      }
+    } catch {
+      alert("Failed to delete ticket.");
     }
   };
 
@@ -199,34 +224,48 @@ export default function AdminTicketsPage() {
               <div
                 key={ticket._id}
                 onClick={() => openModal(ticket)}
-                className="p-4 border rounded cursor-pointer transition"
+                className="p-4 border rounded cursor-pointer transition hover:shadow-md "
               >
                 <div className="flex justify-between items-center">
+                  {/* Ticket Info */}
                   <div>
-                    <p className="text-lg font-medium">
-                      {ticket.subject}{" "}
+                    <p className="text-lg font-medium flex items-center gap-2">
+                      {ticket.subject}
                       {Number(ticket.unreadByAdmin) > 0 && (
                         <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                           {ticket.unreadByAdmin}
                         </span>
                       )}
                     </p>
-
                     <p className="text-sm text-gray-500">
                       {ticket.user?.fullName}
                     </p>
                   </div>
-                  <span
-                    className={`text-sm px-2 py-1 rounded ${
-                      ticket.status === "Open"
-                        ? "bg-red-100 text-red-500"
-                        : ticket.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-600"
-                        : "bg-green-100 text-green-600"
-                    }`}
-                  >
-                    {ticket.status || "open"}
-                  </span>
+
+                  {/* Status + Delete Button */}
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-sm px-2 py-1 rounded font-medium ${
+                        ticket.status === "Open"
+                          ? "bg-red-100 text-red-600"
+                          : ticket.status === "Pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      {ticket.status || "Open"}
+                    </span>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent modal open
+                        deleteTicket(ticket._id);
+                      }}
+                      className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
