@@ -290,22 +290,24 @@ export default function AdminWithdrawals() {
 
             {/* ✅ Balance Info */}
             <div className="mt-6 border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-lg mb-2">Client Balance</h3>
+              <h3 className="font-semibold text-lg mb-2">
+                Client Remaining Balance
+              </h3>
               {loadingBalance ? (
                 <p className="text-gray-400">Fetching balance...</p>
               ) : balanceData ? (
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <p>
-                    <b>Total Balance:</b> ₹{balanceData.balance}
+                    <b>Total Balance:</b> ${balanceData.balance}
                   </p>
                   <p>
-                    <b>Equity:</b> ₹{balanceData.Equity}
+                    <b>Equity:</b> ${balanceData.Equity}
                   </p>
                   <p>
-                    <b>Margin Free:</b> ₹{balanceData.MarginFree}
+                    <b>Margin Free:</b> ${balanceData.MarginFree}
                   </p>
                   <p>
-                    <b>DW Balance:</b> ₹{balanceData.DWBalance}
+                    <b>DW Balance:</b> ${balanceData.DWBalance}
                   </p>
                 </div>
               ) : (
