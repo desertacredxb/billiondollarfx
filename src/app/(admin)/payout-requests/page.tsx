@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import Button from "../../../../components/Button";
+import { AxiosError } from "axios";
 
 interface Withdrawal {
   _id: string;
@@ -93,18 +94,22 @@ export default function AdminWithdrawals() {
         toast.success("Withdrawal Approved");
         fetchWithdrawals();
       } else {
-        // Backend returned success: false
         toast.error(res.data?.message || "Approval failed");
       }
-    } catch (err: any) {
-      console.error("Approval error:", err);
+    } catch (err: unknown) {
+      let errorMsg = "Approval failed";
 
-      // Get backend message if available
-      const errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        "Approval failed";
+      if (err instanceof AxiosError) {
+        errorMsg =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          errorMsg;
+        console.error("Approval Axios error:", err.response?.data);
+      } else if (err instanceof Error) {
+        errorMsg = err.message;
+        console.error("Approval Error:", err);
+      }
 
       toast.error(errorMsg);
     } finally {
@@ -121,18 +126,24 @@ export default function AdminWithdrawals() {
 
       if (res.data?.success) {
         toast.success(res.data.message || "Withdrawal rejected & refunded");
-        fetchWithdrawals(); // refresh table
+        fetchWithdrawals();
       } else {
         toast.error(res.data?.message || "Rejection failed");
       }
-    } catch (err: any) {
-      console.error("Reject error:", err);
+    } catch (err: unknown) {
+      let errorMsg = "Rejection failed";
 
-      const errorMsg =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        "Rejection failed";
+      if (err instanceof AxiosError) {
+        errorMsg =
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          errorMsg;
+        console.error("Reject Axios error:", err.response?.data);
+      } else if (err instanceof Error) {
+        errorMsg = err.message;
+        console.error("Reject Error:", err);
+      }
 
       toast.error(errorMsg);
     } finally {

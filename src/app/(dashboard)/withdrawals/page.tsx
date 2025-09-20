@@ -189,15 +189,21 @@ function Withdrawal() {
         const errorMsg = res.data?.message || "Withdrawal failed. Try again.";
         toast.error(errorMsg);
       }
-    } catch (err: any) {
-      console.error("❌ Withdrawal Error:", err);
+    } catch (err: unknown) {
+      let errorMsg = "Withdrawal failed. Try again.";
 
-      // Correctly get error message from axios error
-      const errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        "Withdrawal failed. Try again.";
+      if (axios.isAxiosError(err)) {
+        errorMsg =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          errorMsg;
+        console.error("Withdrawal Axios error:", err.response?.data);
+      } else if (err instanceof Error) {
+        errorMsg = err.message;
+        console.error("Withdrawal Error:", err);
+      }
+
       toast.error(errorMsg);
     } finally {
       setLoading(false);
