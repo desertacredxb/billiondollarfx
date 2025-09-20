@@ -163,10 +163,6 @@ function Withdrawal() {
       return;
     }
 
-    // Object.entries(form).forEach(([key, value]) => {
-    //   console.log(`${key}:`, value, "| type:", typeof value);
-    // });
-
     try {
       setLoading(true);
 
@@ -184,15 +180,25 @@ function Withdrawal() {
       );
 
       console.log(res.data);
+
       if (res.data?.success) {
-        toast.success("Withdrawal request submitted!");
+        toast.success("✅ Withdrawal request submitted!");
         fetchAccountSummary(Number(form.accountNo)); // refresh balance
       } else {
-        toast.error("Withdrawal failed. Try again.");
+        // Show backend-provided message if available
+        const errorMsg = res.data?.message || "Withdrawal failed. Try again.";
+        toast.error(errorMsg);
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Withdrawal failed. Try again.");
+    } catch (err: any) {
+      console.error("❌ Withdrawal Error:", err);
+
+      // Correctly get error message from axios error
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Withdrawal failed. Try again.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
       setShowModal(false);

@@ -9,6 +9,7 @@ type Transaction = {
   account: string;
   status: "Pending" | "Completed" | "Failed" | "Rejected";
   txnId?: string;
+  name?: string | "";
 };
 
 interface Account {
@@ -24,12 +25,14 @@ interface DepositResponse {
   amount: string | number;
   accountNo: string | number;
   status: "SUCCESS" | "FAILED" | "PENDING" | string;
+  name: string | "";
 }
 
 interface WithdrawalResponse {
   _id: string;
   createdAt: string;
   amount: string | number;
+  name: string;
   accountNo: string | number;
   status: "Pending" | "Completed" | "Rejected" | string;
   response?: {
@@ -76,6 +79,7 @@ export default function AdminTransactionPage() {
     date: new Date(row.createdAt).toLocaleString(),
     amount: Number(row.amount),
     account: String(row.accountNo),
+    name: row && row.name ? String(row.name) : "-",
     status:
       type === "deposit"
         ? row.status === "SUCCESS"
@@ -420,6 +424,7 @@ export default function AdminTransactionPage() {
                 <tr className="bg-gray-800 text-left">
                   <th className="px-4 py-2">Txn Id</th>
                   <th className="px-4 py-2">Account</th>
+                  <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Amount</th>
 
                   <th className="px-4 py-2">Status</th>
@@ -432,6 +437,7 @@ export default function AdminTransactionPage() {
                     <tr key={idx} className="border-t border-gray-700">
                       <td className="px-4 py-2">{item.txnId}</td>
                       <td className="px-4 py-2">{item.account}</td>
+                      <td className="px-4 py-2">{item.name}</td>
                       <td className="px-4 py-2">{item.amount}</td>
 
                       <td className="px-4 py-2">{item.status}</td>
