@@ -43,6 +43,9 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [verifying, setVerifying] = useState(false);
 
+  // Add filter state
+  const [filter, setFilter] = useState<"all" | "pending" | "approved">("all");
+
   // ✅ Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage, setUsersPerPage] = useState(5);
@@ -70,6 +73,13 @@ export default function UsersPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // ✅ Apply filter on users
+  const filteredUsers = users.filter((u) => {
+    if (filter === "pending") return !u.isKycVerified;
+    if (filter === "approved") return u.isKycVerified;
+    return true;
+  });
+
   const handleVerifyKyc = async (email: string) => {
     try {
       setVerifying(true);
@@ -92,12 +102,12 @@ export default function UsersPage() {
     }
   };
 
-  // ✅ Pagination logic
+  // ✅ Pagination uses filtered users now
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
-  const totalPages = Math.ceil(users.length / usersPerPage);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   const handleDeleteUser = async (email: string) => {
     if (
@@ -129,19 +139,35 @@ export default function UsersPage() {
           <p className="text-gray-400 mt-1 text-sm">List of registered users</p>
         </div>
 
-        {/* ✅ Select how many users per page */}
-        <select
-          value={usersPerPage}
-          onChange={(e) => {
-            setUsersPerPage(Number(e.target.value));
-            setCurrentPage(1); // reset to first page
-          }}
-          className="bg-[#1f2937] text-white border border-gray-600 rounded px-3 py-1"
-        >
-          <option value={5}>5 </option>
-          <option value={10}>10</option>
-          <option value={20}>20 </option>
-        </select>
+        <div className="flex items-center gap-3">
+          {/* ✅ Filter dropdown */}
+          <select
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value as "all" | "pending" | "approved");
+              setCurrentPage(1); // reset to first page
+            }}
+            className="bg-[#1f2937] text-white border border-gray-600 rounded px-3 py-1"
+          >
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+          </select>
+
+          {/* ✅ Users per page dropdown */}
+          <select
+            value={usersPerPage}
+            onChange={(e) => {
+              setUsersPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="bg-[#1f2937] text-white border border-gray-600 rounded px-3 py-1"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
