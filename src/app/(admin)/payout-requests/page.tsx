@@ -85,13 +85,28 @@ export default function AdminWithdrawals() {
   const handleApprove = async (id: string) => {
     setIsApprove(true);
     try {
-      await axios.post(
+      const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/approve/${id}`
       );
-      toast.success("Withdrawal Approved");
-      fetchWithdrawals();
-    } catch {
-      toast.error("Approval failed");
+
+      if (res.data?.success) {
+        toast.success("Withdrawal Approved");
+        fetchWithdrawals();
+      } else {
+        // Backend returned success: false
+        toast.error(res.data?.message || "Approval failed");
+      }
+    } catch (err: any) {
+      console.error("Approval error:", err);
+
+      // Get backend message if available
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Approval failed";
+
+      toast.error(errorMsg);
     } finally {
       setIsApprove(false);
     }
@@ -100,13 +115,26 @@ export default function AdminWithdrawals() {
   const handleReject = async (id: string) => {
     setIsReject(true);
     try {
-      await axios.post(
+      const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reject/${id}`
       );
-      toast.success("Withdrawal Rejected");
-      fetchWithdrawals();
-    } catch {
-      toast.error("Rejection failed");
+
+      if (res.data?.success) {
+        toast.success(res.data.message || "Withdrawal rejected & refunded");
+        fetchWithdrawals(); // refresh table
+      } else {
+        toast.error(res.data?.message || "Rejection failed");
+      }
+    } catch (err: any) {
+      console.error("Reject error:", err);
+
+      const errorMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Rejection failed";
+
+      toast.error(errorMsg);
     } finally {
       setIsReject(false);
     }
