@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import ProfileImage from "./ProfileImage";
 import axios from "axios";
+import { FiEdit } from "react-icons/fi";
 
 type BankDetailsFormFields = {
   accountHolderName: string;
@@ -31,10 +32,12 @@ export default function BankDetailsForm() {
     bankAddress: "",
   });
 
+  const [originalForm, setOriginalForm] = useState<BankDetailsFormFields>(form); // To restore on cancel
   const [loading, setLoading] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<string>("pending");
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  // Fetch user details by email
+  // Fetch user details
   useEffect(() => {
     const fetchUser = async () => {
       const email = JSON.parse(localStorage.getItem("user") || "{}").email;
@@ -46,18 +49,22 @@ export default function BankDetailsForm() {
         );
         const userData = res.data;
 
-        // Prefill form with user bank details
-        setForm({
+        const userForm: BankDetailsFormFields = {
           accountHolderName: userData.accountHolderName || "",
           accountNumber: userData.accountNumber || "",
           ifscCode: userData.ifscCode || "",
           iban: userData.iban || "",
           bankName: userData.bankName || "",
           bankAddress: userData.bankAddress || "",
-        });
+        };
 
-        // Store approval status
+        setForm(userForm);
+        setOriginalForm(userForm); // Keep original
         setApprovalStatus(userData.bankApprovalStatus || "pending");
+
+        // Enable edit if no data
+        const hasData = Object.values(userForm).some((val) => val);
+        setIsEditing(!hasData);
       } catch (err) {
         console.error("Failed to fetch user data:", err);
       }
@@ -72,6 +79,16 @@ export default function BankDetailsForm() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleEdit = () => {
+    setOriginalForm(form); // Save current state
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setForm(originalForm); // Restore original values
+    setIsEditing(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,6 +122,7 @@ export default function BankDetailsForm() {
         form
       );
       alert("Bank details saved successfully!");
+      setIsEditing(false);
     } catch (err) {
       console.error(err);
       alert("Something went wrong. Try again.");
@@ -154,24 +172,45 @@ export default function BankDetailsForm() {
       <ProfileImage />
 
       <form
-        className="bg-[#121a2a] border border-gray-800 p-6 rounded-xl shadow-lg space-y-6"
+        className="bg-[#121a2a] border border-gray-800 p-6 rounded-xl shadow-lg space-y-6 relative"
         onSubmit={handleSubmit}
       >
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold mb-1 text-white">
-            Add Bank Details
+            Bank Details
           </h2>
 
-          {/* Bank Approval Status */}
-          <span
-            className={`px-3 py-1 rounded-md text-sm font-medium ${
-              approvalStatus === "approved"
-                ? "bg-green-600 text-white"
-                : "bg-yellow-600 text-white"
-            }`}
-          >
-            {approvalStatus === "approved" ? "Approved" : "Pending"}
-          </span>
+          <div className="flex items-center space-x-3">
+            {/* Bank Approval Status */}
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                approvalStatus === "approved"
+                  ? "text-green-600 bg-green-600/20"
+                  : "text-yellow-600 bg-yellow-600/20"
+              }`}
+            >
+              {approvalStatus === "approved" ? "Bank Approved" : "Pending"}
+            </span>
+
+            {/* Edit / Cancel buttons */}
+            {!isEditing ? (
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="text-blue-400 hover:text-blue-700"
+              >
+                <FiEdit size={18} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="text-red-400 hover:text-red-600 font-medium"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
 
         <hr className="border-gray-700" />
@@ -199,21 +238,26 @@ export default function BankDetailsForm() {
                 placeholder={field.placeholder}
                 value={form[field.name]}
                 onChange={handleChange}
-                className="w-full bg-transparent border border-gray-700 px-4 py-2 rounded-md text-white"
+                disabled={!isEditing}
+                className={`w-full bg-transparent border border-gray-700 px-4 py-2 rounded-md text-white ${
+                  !isEditing ? "opacity-60 cursor-not-allowed" : ""
+                }`}
               />
             </div>
           </div>
         ))}
 
-        <div className="flex justify-end mt-6">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-[var(--primary)] cursor-pointer text-white px-6 py-2 rounded-md disabled:opacity-50"
-          >
-            {loading ? "Saving..." : "Save Bank Details"}
-          </button>
-        </div>
+        {isEditing && (
+          <div className="flex justify-end mt-6 space-x-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-[var(--primary)] cursor-pointer text-white px-6 py-2 rounded-md disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Bank Details"}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

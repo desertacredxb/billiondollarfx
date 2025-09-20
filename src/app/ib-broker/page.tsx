@@ -321,7 +321,7 @@ function IbBroker() {
 
       <section className="w-11/12 md:w-4/5 mx-auto py-12 text-white space-y-10">
         {/* Heading */}
-        <div className="text-center space-y-2">
+        {/* <div className="text-center space-y-2">
           <h2 className="text-2xl md:text-3xl font-bold">
             How Much You Can Earn?{" "}
             <span className="text-[var(--primary)]">Calculate your profit</span>
@@ -331,10 +331,10 @@ function IbBroker() {
             Introducing Brokers’ client count and their trading volume in lots,
             providing an accurate reflection of earned commissions.
           </p>
-        </div>
+        </div> */}
 
         {/* Slider */}
-        <div className=" p-6 md:p-10">
+        {/* <div className=" p-6 md:p-10">
           <div className="flex justify-between items-center mb-4">
             <span className="bg-cyan-900 px-5 py-1 rounded-full text-white text-sm font-semibold">
               {clients} Clients
@@ -355,7 +355,7 @@ function IbBroker() {
             onChange={(e) => setClients(Number(e.target.value))}
             className="w-full accent-[var(--primary)]"
           />
-        </div>
+        </div> */}
 
         {/* CTA Box */}
         <div className="bg-gradient-to-br from-[#132435] to-[#0F1C2A] rounded-xl p-6 md:p-10 text-center space-y-6">
