@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import Logo from "../../../assets/BDFX Logo Animition.gif";
+import Logo from "../../../assets/bdfx.gif";
 import Button from "../../../components/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
