@@ -401,16 +401,10 @@ export default function SignUpPage() {
                     Privacy Policy
                   </span>
                 </Link>
-                ,{" "}
+                , and{" "}
                 <Link href="/Terms&Conditions">
                   <span className="text-[var(--primary)] underline cursor-pointer">
                     Terms and Conditions
-                  </span>
-                </Link>
-                , and{" "}
-                <Link href="/risk-disclosure">
-                  <span className="text-[var(--primary)] underline cursor-pointer">
-                    Risk Disclosure
                   </span>
                 </Link>
                 .
