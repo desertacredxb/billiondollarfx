@@ -96,7 +96,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) return setError(data.message || "Failed to send OTP");
 
-      alert("OTP sent to email and WhatsApp");
+      alert("OTP sent to email ");
       setStep("reset-verify");
     } catch (err) {
       setError("Something went wrong.");
