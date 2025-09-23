@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import Fuse from "fuse.js";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
@@ -53,6 +54,9 @@ export default function UsersPage() {
   // ✅ For document preview modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Fuse.js search
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
 
@@ -80,6 +84,20 @@ export default function UsersPage() {
     return true;
   });
 
+  // Fuse.js setup
+  const fuse = useMemo(
+    () =>
+      new Fuse(filteredUsers, {
+        keys: ["fullName", "email", "nationality"],
+        threshold: 0.3, // sensitivity
+      }),
+    [filteredUsers]
+  );
+
+  const searchedUsers = searchQuery
+    ? fuse.search(searchQuery).map((res) => res.item)
+    : filteredUsers;
+
   const handleVerifyKyc = async (email: string) => {
     try {
       setVerifying(true);
@@ -102,12 +120,11 @@ export default function UsersPage() {
     }
   };
 
-  // ✅ Pagination uses filtered users now
+  // Pagination
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const currentUsers = searchedUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(searchedUsers.length / usersPerPage);
 
   const handleDeleteUser = async (email: string) => {
     if (
@@ -140,6 +157,16 @@ export default function UsersPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search by name or email "
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-[#1f2937] text-white border border-gray-600 rounded px-3 py-1 w-64"
+          />
           {/* ✅ Filter dropdown */}
           <select
             value={filter}
