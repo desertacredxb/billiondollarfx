@@ -27,6 +27,7 @@ export default function IBRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<IBRequest | null>(
     null
   );
+  const [searchTerm, setSearchTerm] = useState(""); // 🔹 new state
 
   const fetchRequests = async () => {
     try {
@@ -84,6 +85,11 @@ export default function IBRequestsPage() {
     }
   };
 
+  // 🔹 Filter requests by search term
+  const filteredRequests = requests.filter((ib) =>
+    ib.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen text-white p-6">
       <div className="mb-6">
@@ -94,12 +100,24 @@ export default function IBRequestsPage() {
         <hr className="mt-4 border-gray-700" />
       </div>
 
+      {/* 🔹 Search bar */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full md:w-1/3 px-4 py-2 rounded-lg bg-[#111827] border border-gray-600 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+        />
+      </div>
+
       {loading ? (
         <p className="text-gray-400">Loading requests...</p>
-      ) : requests.length === 0 ? (
+      ) : filteredRequests.length === 0 ? (
         <p className="text-gray-400 text-center py-10">No IB requests found.</p>
       ) : (
         <div className="rounded-lg border border-[#1f2937] overflow-hidden">
+          {/* Desktop Table */}
           <table className="hidden md:table w-full text-sm text-left">
             <thead className="bg-[#1f2937] text-gray-300 uppercase text-xs">
               <tr>
@@ -107,15 +125,13 @@ export default function IBRequestsPage() {
                 <th className="px-4 py-3">Existing Clients</th>
                 <th className="px-4 py-3">Offer Education</th>
                 <th className="px-4 py-3">Expected Clients</th>
-                {/* <th className="px-4 py-3">Direct Commission</th>
-                <th className="px-4 py-3">Sub IB Commission</th> */}
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Referral Code</th>
                 <th className="px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody>
-              {requests.map((ib) => (
+              {filteredRequests.map((ib) => (
                 <tr
                   key={ib._id}
                   className="border-b border-gray-700 hover:bg-[#111827]"
@@ -124,9 +140,6 @@ export default function IBRequestsPage() {
                   <td className="px-4 py-3">{ib.existingClientBase}</td>
                   <td className="px-4 py-3">{ib.offerEducation}</td>
                   <td className="px-4 py-3">{ib.expectedClientsNext3Months}</td>
-                  {/* <td className="px-4 py-3">{ib.expectedCommissionDirect}</td>
-                  <td className="px-4 py-3">{ib.expectedCommissionSubIB}</td> */}
-
                   <td
                     className={`px-4 py-3 font-semibold ${
                       ib.status === "approved"
@@ -150,9 +163,9 @@ export default function IBRequestsPage() {
             </tbody>
           </table>
 
-          {/* ✅ Mobile: show as list instead of scrollable table */}
+          {/* Mobile List */}
           <div className="md:hidden space-y-4">
-            {requests.map((ib) => (
+            {filteredRequests.map((ib) => (
               <div
                 key={ib._id}
                 className="p-4 border border-gray-700 rounded-lg bg-[#111827]"
@@ -187,11 +200,9 @@ export default function IBRequestsPage() {
       )}
 
       {/* ✅ Details Modal */}
-      {/* ✅ Details Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-[#1f2937] rounded-lg p-6 w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto space-y-3 relative">
-            {/* 🔹 Close Button (top right) */}
             <button
               onClick={() => setSelectedRequest(null)}
               className="absolute top-3 right-3 text-gray-400 hover:text-white"
@@ -254,7 +265,7 @@ export default function IBRequestsPage() {
                 <Button
                   onClick={async () => {
                     await approve(selectedRequest.email);
-                    setSelectedRequest(null); // ✅ Close modal after approve
+                    setSelectedRequest(null);
                   }}
                   text={isApprove ? "Approving..." : "Approve"}
                 />
@@ -263,7 +274,7 @@ export default function IBRequestsPage() {
                 <Button
                   onClick={async () => {
                     await reject(selectedRequest.email);
-                    setSelectedRequest(null); // ✅ Close modal after reject
+                    setSelectedRequest(null);
                   }}
                   text={isReject ? "Rejecting..." : "Reject"}
                 />
