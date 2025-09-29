@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
 
 interface User {
+  totalCommission: number;
+  symbolLots: { [key: string]: number };
+  totalLots: number;
   totalDeposit: number;
   totalWithdrawal: number;
   totalAccounts: number;
-  accountType: string;
+  accounts?: { accountNo: string | number }[]; // Add this
   createdAt: string;
   email: string;
   fullName?: string;
@@ -49,18 +52,56 @@ function IBPage({ user }: IBPageProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  const COMMISSION_RATES: { [key: string]: number } = {
+    EURUSD: 2,
+    GBPUSD: 2,
+    USDJPY: 2,
+    USDCHF: 2,
+    AUDUSD: 2,
+    USDCAD: 2,
+    NZDUSD: 2,
+    EURGBP: 2,
+    EURJPY: 2,
+    EURAUD: 2,
+    EURCAD: 2,
+    EURNZD: 2,
+    GBPJPY: 2,
+    GBPAUD: 2,
+    GBPCAD: 2,
+    GBPNZD: 2,
+    AUDJPY: 2,
+    AUDNZD: 2,
+    AUDCAD: 2,
+    AUDCHF: 2,
+    CADJPY: 2,
+    CADCHF: 2,
+    NZDJPY: 2,
+    NZDCAD: 2,
+    NZDCHF: 2,
+    CHFJPY: 2,
+    XAUUSD: 2.7,
+    XAGUSD: 20,
+  };
+
+  const IB_SHARE_PERCENTAGE = 0.33;
+
   // ✅ Fetch deposits for a user (all accounts)
-  const fetchUserStats = async (
-    email: string
-  ): Promise<{ totalDeposit: number; totalWithdrawal: number }> => {
+  const fetchUserStats = async (email: string, createdAt: string) => {
     try {
       const userRes = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
       const accounts = userRes.data?.accounts || [];
 
-      let depositSum = 0;
-      let withdrawalSum = 0;
+      let totalDeposit = 0;
+      let totalWithdrawal = 0;
+      let totalLots = 0;
+      let totalCommission = 0;
+
+      const symbolLots: { [key: string]: number } = {}; // lots per symbol
+
+      const sdate = new Date(createdAt).toISOString().split("T")[0];
+      const edate = new Date().toISOString().split("T")[0];
 
       for (const acc of accounts) {
         try {
@@ -68,32 +109,67 @@ function IBPage({ user }: IBPageProps) {
           const depRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
           );
-          const deposits: DepositResponse[] = depRes.data?.deposits || [];
-          depositSum += deposits
-            .filter((d) => d.status === "SUCCESS")
-            .reduce((sum, d) => sum + Number(d.amount), 0);
+          const deposits = depRes.data?.deposits || [];
+          totalDeposit += deposits
+            .filter((d: any) => d.status === "SUCCESS")
+            .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
           // withdrawals
           const wdRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
           );
-          const withdrawals: WithdrawalResponse[] =
-            wdRes.data?.withdrawals || [];
-          withdrawalSum += withdrawals
-            .filter((w) => w.status === "SUCCESS")
-            .reduce((sum, w) => sum + Number(w.amount), 0);
+          const withdrawals = wdRes.data?.withdrawals || [];
+          totalWithdrawal += withdrawals
+            .filter((w: any) => w.status === "SUCCESS")
+            .reduce((sum: number, w: any) => sum + Number(w.amount), 0);
+
+          // deals
+          const dealsRes = await axios.post(
+            `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
+            { accountno: acc.accountNo, sdate, edate }
+          );
+          const dealsData = dealsRes.data?.data || [];
+          console.log("account", dealsData);
+          for (const deal of dealsData) {
+            const symbol = deal.Symbol;
+            const lots = Number(deal.Qty || 0);
+
+            totalLots += lots;
+
+            // symbol-wise lots
+            if (!symbolLots[symbol]) symbolLots[symbol] = 0;
+            symbolLots[symbol] += lots;
+
+            // calculate commission
+            if (COMMISSION_RATES[symbol]) {
+              totalCommission +=
+                lots * COMMISSION_RATES[symbol] * IB_SHARE_PERCENTAGE;
+            }
+          }
         } catch (err) {
           console.error(
-            `Error fetching transactions for account ${acc.accountNo}:`,
+            `Error fetching data for account ${acc.accountNo}:`,
             err
           );
         }
       }
 
-      return { totalDeposit: depositSum, totalWithdrawal: withdrawalSum };
+      return {
+        totalDeposit,
+        totalWithdrawal,
+        totalLots,
+        totalCommission,
+        symbolLots,
+      };
     } catch (err) {
-      console.error(`Error fetching accounts for user ${email}:`, err);
-      return { totalDeposit: 0, totalWithdrawal: 0 };
+      console.error(`Error fetching user stats for ${email}:`, err);
+      return {
+        totalDeposit: 0,
+        totalWithdrawal: 0,
+        totalLots: 0,
+        totalCommission: 0,
+        symbolLots: {},
+      };
     }
   };
 
@@ -105,6 +181,7 @@ function IBPage({ user }: IBPageProps) {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${user.email}`
         );
         const code = ibRes.data.referralCode;
+
         setReferralCode(code);
 
         // 2. Fetch all users
@@ -116,23 +193,38 @@ function IBPage({ user }: IBPageProps) {
         // 3. Filter connections by referral code
         const matchedUsers = allUsers.filter((u) => u.referralCode === code);
 
-        // 4. For each connection → fetch deposits
+        // 4. Fetch stats for each connection
         const enrichedUsers = await Promise.all(
           matchedUsers.map(async (u) => {
-            const { totalDeposit, totalWithdrawal } = await fetchUserStats(
-              u.email
+            const {
+              totalDeposit,
+              totalWithdrawal,
+              totalLots,
+              totalCommission,
+              symbolLots,
+            } = await fetchUserStats(u.email, u.createdAt);
+
+            // Fetch user's accounts
+            const userRes = await axios.get(
+              `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${u.email}`
             );
-            return { ...u, totalDeposit, totalWithdrawal };
+            const accounts = userRes.data?.accounts || [];
+
+            return {
+              ...u,
+              totalDeposit,
+              totalWithdrawal,
+              totalLots,
+              totalCommission,
+              symbolLots,
+              accounts,
+            };
           })
         );
 
         setConnections(enrichedUsers);
-      } catch (err: unknown) {
-        const axiosErr = err as AxiosError;
-        console.error(
-          "❌ Error fetching IB data:",
-          axiosErr.response?.data || axiosErr.message
-        );
+      } catch (err) {
+        console.error("Error fetching IB data:", err);
       } finally {
         setLoading(false);
       }
@@ -225,7 +317,6 @@ function IBPage({ user }: IBPageProps) {
                 <th className="py-3 px-4 text-gray-400 font-medium">
                   Total Withdrawal
                 </th>
-
                 <th className="py-3 px-4 text-gray-400 font-medium">
                   Total Deposit
                 </th>
@@ -233,10 +324,13 @@ function IBPage({ user }: IBPageProps) {
                   Total Lots
                 </th>
                 <th className="py-3 px-4 text-gray-400 font-medium">
-                  Commission
+                  Commission (USD)
                 </th>
                 <th className="py-3 px-4 text-gray-400 font-medium">
-                  Account Type
+                  Symbols Traded
+                </th>
+                <th className="py-3 px-4 text-gray-400 font-medium">
+                  Account Number
                 </th>
                 <th className="py-3 px-4 text-gray-400 font-medium">
                   Registered Date
@@ -246,13 +340,13 @@ function IBPage({ user }: IBPageProps) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-10 text-gray-400">
+                  <td colSpan={8} className="text-center py-10 text-gray-400">
                     Loading connections...
                   </td>
                 </tr>
               ) : filteredConnections.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-10 text-gray-400">
+                  <td colSpan={8} className="text-center py-10 text-gray-400">
                     No Data found
                   </td>
                 </tr>
@@ -271,9 +365,23 @@ function IBPage({ user }: IBPageProps) {
                     <td className="py-3 px-4">
                       ${c.totalDeposit?.toFixed(2) ?? "0.00"}
                     </td>
-                    <td className="py-3 px-4">—</td>
-                    <td className="py-3 px-4">—</td>
-                    <td className="py-3 px-4">{c.accountType}</td>
+                    <td className="py-3 px-4">{c.totalLots ?? 0}</td>
+                    <td className="py-3 px-4">
+                      ${c.totalCommission?.toFixed(2) ?? "0.00"}
+                    </td>
+                    <td className="py-3 px-4">
+                      {c.symbolLots
+                        ? Object.entries(c.symbolLots)
+                            .filter(([_, lots]) => lots > 0)
+                            .map(([sym]) => sym)
+                            .join(", ")
+                        : "—"}
+                    </td>
+                    {/* Desktop Table */}
+                    <td className="py-3 px-4">
+                      {c.accounts?.map((acc) => acc.accountNo).join(", ") ||
+                        "—"}
+                    </td>{" "}
                     <td className="py-3 px-4">
                       {c.createdAt
                         ? new Date(c.createdAt).toLocaleDateString("en-CA")
@@ -319,8 +427,8 @@ function IBPage({ user }: IBPageProps) {
                   <span className="text-gray-400">Commission:</span> —
                 </p>
                 <p>
-                  <span className="text-gray-400">Account Type:</span>{" "}
-                  {c.accountType}
+                  <span className="text-gray-400">Account Number(s):</span>{" "}
+                  {c.accounts?.map((acc) => acc.accountNo).join(", ") || "—"}
                 </p>
                 <p>
                   <span className="text-gray-400">Registered Date:</span>{" "}
