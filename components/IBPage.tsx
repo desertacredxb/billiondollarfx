@@ -108,20 +108,23 @@ function IBPage({ user }: IBPageProps) {
           const depRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
           );
+          const INR_TO_USD = 1 / 88.76; // ≈ 0.01126
+
           const deposits: Deposit[] = depRes.data?.deposits || [];
           totalDeposit += deposits
             .filter((d) => d.status === "SUCCESS")
-            .reduce((sum, d) => sum + Number(d.amount), 0);
+            .reduce((sum, d) => sum + Number(d.amount) * INR_TO_USD, 0);
 
           // withdrawals
           const wdRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
           );
+
           const withdrawals: Withdrawal[] = wdRes.data?.withdrawals || [];
           totalWithdrawal += withdrawals
-            .filter((w) => w.status === "SUCCESS")
-            .reduce((sum, w) => sum + Number(w.amount), 0);
-
+            .filter((w) => w.status === "SUCCESS" || w.status === "Completed")
+            .reduce((sum, w) => sum + Number(w.amount) * INR_TO_USD, 0);
+          console.log(totalWithdrawal);
           // deals
           const dealsRes = await axios.post(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
