@@ -94,7 +94,7 @@ function Deposit() {
       if (res.data?.decrypted?.url) {
         window.location.href = res.data.decrypted.url;
       } else {
-        toast.success("Deposit request sent!");
+        toast.error("Error getting Payout URL");
       }
     } catch (err) {
       console.error(err);
