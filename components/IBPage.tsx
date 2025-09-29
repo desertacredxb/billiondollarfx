@@ -25,20 +25,19 @@ interface IBPageProps {
   };
 }
 
-interface DepositResponse {
-  _id: string;
-  createdAt: string;
+interface Deposit {
   amount: string | number;
-  accountNo: string | number;
   status: "SUCCESS" | "FAILED" | "PENDING" | string;
 }
 
-interface WithdrawalResponse {
-  _id: string;
-  createdAt: string;
+interface Withdrawal {
   amount: string | number;
-  accountNo: string | number;
   status: "SUCCESS" | "FAILED" | "PENDING" | string;
+}
+
+interface Deal {
+  Symbol: string;
+  Qty: string | number;
 }
 
 function IBPage({ user }: IBPageProps) {
@@ -109,38 +108,35 @@ function IBPage({ user }: IBPageProps) {
           const depRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
           );
-          const deposits = depRes.data?.deposits || [];
+          const deposits: Deposit[] = depRes.data?.deposits || [];
           totalDeposit += deposits
-            .filter((d: any) => d.status === "SUCCESS")
-            .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+            .filter((d) => d.status === "SUCCESS")
+            .reduce((sum, d) => sum + Number(d.amount), 0);
 
           // withdrawals
           const wdRes = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
           );
-          const withdrawals = wdRes.data?.withdrawals || [];
+          const withdrawals: Withdrawal[] = wdRes.data?.withdrawals || [];
           totalWithdrawal += withdrawals
-            .filter((w: any) => w.status === "SUCCESS")
-            .reduce((sum: number, w: any) => sum + Number(w.amount), 0);
+            .filter((w) => w.status === "SUCCESS")
+            .reduce((sum, w) => sum + Number(w.amount), 0);
 
           // deals
           const dealsRes = await axios.post(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
             { accountno: acc.accountNo, sdate, edate }
           );
-          const dealsData = dealsRes.data?.data || [];
-          console.log("account", dealsData);
+          const dealsData: Deal[] = dealsRes.data?.data || [];
           for (const deal of dealsData) {
             const symbol = deal.Symbol;
             const lots = Number(deal.Qty || 0);
 
             totalLots += lots;
 
-            // symbol-wise lots
             if (!symbolLots[symbol]) symbolLots[symbol] = 0;
             symbolLots[symbol] += lots;
 
-            // calculate commission
             if (COMMISSION_RATES[symbol]) {
               totalCommission +=
                 lots * COMMISSION_RATES[symbol] * IB_SHARE_PERCENTAGE;
