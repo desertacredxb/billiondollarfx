@@ -40,7 +40,9 @@ interface Deal {
   Symbol: string;
   Qty: string | number;
 }
-
+interface Account {
+  accountNo: string | number;
+}
 function IBPage({ user }: IBPageProps) {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [connections, setConnections] = useState<User[]>([]);
@@ -54,7 +56,7 @@ function IBPage({ user }: IBPageProps) {
   const [ibCommission, setIbCommission] = useState(0); // IB's own total commission
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState("");
   const [message, setMessage] = useState("");
   const handleOpenWithdraw = () => setShowWithdrawModal(true);
