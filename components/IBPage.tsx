@@ -247,12 +247,35 @@ function IBPage({ user }: IBPageProps) {
         const user = JSON.parse(userString);
         const email = user.email;
 
+        // 2️⃣ Fetch user with updated commission
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
 
+        const lastWithdrawalDate = res.data?.lastWithdrawalDate;
+        const createdAt = res.data?.createdAt; // ✅ safely fetch createdAt from backend response
+
+        // 1️⃣ Call update commission first
+        const updateRes = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/update-commission`,
+          {
+            email,
+            sdate: lastWithdrawalDate
+              ? new Date(lastWithdrawalDate).toISOString().split("T")[0]
+              : new Date(createdAt).toISOString().split("T")[0], // ✅ fallback to createdAt
+            edate: new Date().toISOString().split("T")[0], // today
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        console.log("Commission updated:", updateRes.data);
+
         setIbCommission(res.data.commission);
-        // console.log("commission:", res.data.commission);
       } catch (error) {
         console.error("Error fetching user:", error);
       }
