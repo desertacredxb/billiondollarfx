@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
+import Button from "./Button";
 
 interface User {
   totalCommission: number;
@@ -51,6 +52,41 @@ function IBPage({ user }: IBPageProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [ibCommission, setIbCommission] = useState(0); // IB's own total commission
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [message, setMessage] = useState("");
+  const handleOpenWithdraw = () => setShowWithdrawModal(true);
+
+  const handleWithdraw = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/withdrawalIBamount`,
+        {
+          email: user.email,
+          accountno: selectedAccount,
+          amount: Number(withdrawAmount),
+        }
+      );
+
+      if (res.data.success) {
+        setMessage(
+          `✅ Withdrawal successful (Order: ${res.data.orderid}). New Balance: $${res.data.newCommission}`
+        );
+        setIbCommission(res.data.newCommission); // update balance instantly
+        setShowWithdrawModal(false);
+      } else {
+        setMessage(`❌ ${res.data.message}`);
+      }
+    } catch (err) {
+      console.error("Withdraw error:", err);
+      setMessage("⚠️ Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const COMMISSION_RATES: { [key: string]: number } = {
     EURUSD: 2,
@@ -104,7 +140,7 @@ function IBPage({ user }: IBPageProps) {
         ? new Date(lastWithdrawalDate).toISOString().split("T")[0]
         : new Date(createdAt).toISOString().split("T")[0];
       const edate = new Date().toISOString().split("T")[0];
-      console.log(edate);
+      // console.log(edate);
 
       for (const acc of accounts) {
         try {
@@ -128,7 +164,7 @@ function IBPage({ user }: IBPageProps) {
           totalWithdrawal += withdrawals
             .filter((w) => w.status === "SUCCESS" || w.status === "Completed")
             .reduce((sum, w) => sum + Number(w.amount) * INR_TO_USD, 0);
-          console.log(totalWithdrawal);
+          // console.log(totalWithdrawal);
           // deals
           const dealsRes = await axios.post(
             `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
@@ -254,6 +290,13 @@ function IBPage({ user }: IBPageProps) {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+        // console.log(res.data.accounts);
+        setAccounts(res.data.accounts || []);
+        // console.log(res.data.accounts);
+        // ✅ set first account as default if exists
+        if (res.data.accounts.length > 0) {
+          setSelectedAccount(res.data.accounts[0].accountNo.toString());
+        }
 
         const lastWithdrawalDate = res.data?.lastWithdrawalDate;
         const createdAt = res.data?.createdAt; // ✅ safely fetch createdAt from backend response
@@ -332,13 +375,22 @@ function IBPage({ user }: IBPageProps) {
 
       {/* Connections Panel */}
       <div className="w-full max-w-6xl mx-auto bg-[#111a2e] rounded-2xl shadow-lg p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
           <h2 className="text-xl sm:text-2xl font-semibold">
             👥 My Connections
           </h2>
-          <span className="text-yellow-400 font-semibold text-md">
-            Total Commission: ${ibCommission.toFixed(2)}
-          </span>
+
+          <div className="bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center gap-3 shadow-md">
+            <span className="text-lg font-semibold">
+              💰 Total Commission: ${ibCommission.toFixed(2)}
+            </span>
+            <button
+              onClick={handleOpenWithdraw}
+              className="bg-yellow-400 text-black px-3 py-1 rounded-md font-medium hover:bg-yellow-300 transition"
+            >
+              Withdraw
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -499,6 +551,55 @@ function IBPage({ user }: IBPageProps) {
           )}
         </div>
       </div>
+
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-[#111a2e] p-6 rounded-lg w-96">
+            <h2 className="text-xl font-semibold mb-4">Withdraw Commission</h2>
+
+            {/* ✅ Info message */}
+            <p className="text-sm text-yellow-400 mb-4">
+              ⚠️ Minimum withdrawal amount is $75
+            </p>
+
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="w-full p-2 mb-4 rounded bg-[#1b2744] text-white"
+            >
+              <option value="">Select Account</option>
+              {accounts.map((acc, i) => (
+                <option key={i} value={acc.accountNo}>
+                  {acc.accountNo}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              placeholder="Enter amount"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              className="w-full p-2 mb-4 rounded bg-[#1b2744] text-white"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="px-4 py-2 bg-gray-600 rounded-full"
+              >
+                Cancel
+              </button>
+              <Button
+                onClick={handleWithdraw}
+                className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                text={loading ? "Withdrawing..." : "Withdraw"}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
