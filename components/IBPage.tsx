@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
 import Button from "./Button";
+import { Plus } from "lucide-react";
 
 interface User {
   totalCommission: number;
@@ -62,10 +63,18 @@ function IBPage({ user }: IBPageProps) {
   const handleWithdraw = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+      const userString = localStorage.getItem("user");
+
+      if (!token || !userString) return;
+
+      const user = JSON.parse(userString);
+      const email = user.email;
+
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/withdrawalIBamount`,
         {
-          email: user.email,
+          email,
           accountno: selectedAccount,
           amount: Number(withdrawAmount),
         }
@@ -388,7 +397,7 @@ function IBPage({ user }: IBPageProps) {
               onClick={handleOpenWithdraw}
               className="bg-yellow-400 text-black px-3 py-1 rounded-md font-medium hover:bg-yellow-300 transition"
             >
-              Withdraw
+              <Plus />
             </button>
           </div>
         </div>
@@ -556,7 +565,7 @@ function IBPage({ user }: IBPageProps) {
       {showWithdrawModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-[#111a2e] p-6 rounded-lg w-96">
-            <h2 className="text-xl font-semibold mb-4">Withdraw Commission</h2>
+            <h2 className="text-xl font-semibold mb-4">Add To Your Account</h2>
 
             {/* ✅ Info message */}
             <p className="text-sm text-yellow-400 mb-4">
@@ -594,7 +603,7 @@ function IBPage({ user }: IBPageProps) {
               <Button
                 onClick={handleWithdraw}
                 className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-                text={loading ? "Withdrawing..." : "Withdraw"}
+                text={loading ? "Adding..." : "Add"}
               />
             </div>
           </div>
