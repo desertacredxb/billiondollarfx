@@ -92,7 +92,7 @@ function IBPage({ user }: IBPageProps) {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
       const accounts = userRes.data?.accounts || [];
-
+      const lastWithdrawalDate = userRes.data?.lastWithdrawalDate;
       let totalDeposit = 0;
       let totalWithdrawal = 0;
       let totalLots = 0;
@@ -100,8 +100,11 @@ function IBPage({ user }: IBPageProps) {
 
       const symbolLots: { [key: string]: number } = {}; // lots per symbol
 
-      const sdate = new Date(createdAt).toISOString().split("T")[0];
+      const sdate = lastWithdrawalDate
+        ? new Date(lastWithdrawalDate).toISOString().split("T")[0]
+        : new Date(createdAt).toISOString().split("T")[0];
       const edate = new Date().toISOString().split("T")[0];
+      console.log(edate);
 
       for (const acc of accounts) {
         try {
