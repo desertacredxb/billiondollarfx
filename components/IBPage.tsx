@@ -234,14 +234,28 @@ function IBPage({ user }: IBPageProps) {
   }, [user?.email]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userString = localStorage.getItem("user");
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const userString = localStorage.getItem("user");
 
-    if (!token || !userString) return;
+        if (!token || !userString) return;
 
-    const user = JSON.parse(userString);
-    console.log(user);
-    setIbCommission(user.commission);
+        const user = JSON.parse(userString);
+        const email = user.email;
+
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+        );
+
+        setIbCommission(res.data.commission);
+        // console.log("commission:", res.data.commission);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    fetchUser();
   }, []);
 
   const copyToClipboard = () => {
