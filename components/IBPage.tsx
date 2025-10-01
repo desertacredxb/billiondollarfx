@@ -50,6 +50,7 @@ function IBPage({ user }: IBPageProps) {
   const [searchName, setSearchName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [ibCommission, setIbCommission] = useState(0); // IB's own total commission
 
   const COMMISSION_RATES: { [key: string]: number } = {
     EURUSD: 2,
@@ -232,6 +233,17 @@ function IBPage({ user }: IBPageProps) {
     if (user?.email) fetchReferralAndConnections();
   }, [user?.email]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userString = localStorage.getItem("user");
+
+    if (!token || !userString) return;
+
+    const user = JSON.parse(userString);
+    console.log(user);
+    setIbCommission(user.commission);
+  }, []);
+
   const copyToClipboard = () => {
     if (referralCode) {
       navigator.clipboard.writeText(
@@ -280,9 +292,14 @@ function IBPage({ user }: IBPageProps) {
 
       {/* Connections Panel */}
       <div className="w-full max-w-6xl mx-auto bg-[#111a2e] rounded-2xl shadow-lg p-4 sm:p-6">
-        <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">
-          👥 My Connections
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl sm:text-2xl font-semibold">
+            👥 My Connections
+          </h2>
+          <span className="text-yellow-400 font-semibold text-md">
+            Total Commission: ${ibCommission.toFixed(2)}
+          </span>
+        </div>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6">
@@ -364,7 +381,7 @@ function IBPage({ user }: IBPageProps) {
                     <td className="py-3 px-4">
                       ${c.totalDeposit?.toFixed(2) ?? "0.00"}
                     </td>
-                    <td className="py-3 px-4">{c.totalLots ?? 0}</td>
+                    <td className="py-3 px-4">{c.totalLots.toFixed(2) ?? 0}</td>
                     <td className="py-3 px-4">
                       ${c.totalCommission?.toFixed(2) ?? "0.00"}
                     </td>
@@ -420,10 +437,12 @@ function IBPage({ user }: IBPageProps) {
                   {c.totalDeposit?.toFixed(2) ?? "0.00"}
                 </p>
                 <p>
-                  <span className="text-gray-400">Total Lots:</span> —
+                  <span className="text-gray-400">Total Lots:</span>
+                  {c.totalLots.toFixed(2) ?? 0}
                 </p>
                 <p>
-                  <span className="text-gray-400">Commission:</span> —
+                  <span className="text-gray-400">Commission:</span> $
+                  {c.totalCommission?.toFixed(2) ?? "0.00"}
                 </p>
                 <p>
                   <span className="text-gray-400">Account Number(s):</span>{" "}
