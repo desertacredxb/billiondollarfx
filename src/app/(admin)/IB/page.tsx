@@ -16,6 +16,7 @@ interface IBRequest {
   clientShare: number;
   status: "pending" | "approved" | "rejected";
   referralCode?: string;
+  commission?: number;
 }
 
 export default function IBRequestsPage() {
@@ -122,6 +123,7 @@ export default function IBRequestsPage() {
             <thead className="bg-[#1f2937] text-gray-300 uppercase text-xs">
               <tr>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Commission</th>
                 <th className="px-4 py-3">Existing Clients</th>
                 <th className="px-4 py-3">Offer Education</th>
                 <th className="px-4 py-3">Expected Clients</th>
@@ -137,6 +139,9 @@ export default function IBRequestsPage() {
                   className="border-b border-gray-700 hover:bg-[#111827]"
                 >
                   <td className="px-4 py-3">{ib.email}</td>
+                  <td className="px-4 py-3">
+                    {ib.commission?.toFixed(2) ?? "—"}
+                  </td>
                   <td className="px-4 py-3">{ib.existingClientBase}</td>
                   <td className="px-4 py-3">{ib.offerEducation}</td>
                   <td className="px-4 py-3">{ib.expectedClientsNext3Months}</td>
@@ -172,6 +177,9 @@ export default function IBRequestsPage() {
               >
                 <p className="text-sm">
                   <b>Email:</b> {ib.email}
+                </p>
+                <p className="text-sm">
+                  <b>Commission:</b> {ib.commission?.toFixed(2) ?? "—"}
                 </p>
                 <p className="text-sm">
                   <b>Status:</b>{" "}
@@ -237,6 +245,10 @@ export default function IBRequestsPage() {
                   >
                     {selectedRequest.status}
                   </span>
+                </p>
+                <p>
+                  <b>User Commission:</b>{" "}
+                  {selectedRequest.commission?.toFixed(2) ?? "—"}%
                 </p>
               </div>
               <div className="space-y-5">
