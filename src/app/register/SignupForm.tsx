@@ -325,6 +325,10 @@ export default function SignUpPage() {
               value={formData.phone}
               onChange={handleChange}
               required
+              maxLength={10}
+              minLength={10}
+              pattern="[0-9]{10}"
+              title="Please enter a valid 10-digit phone number"
             />
 
             <select
