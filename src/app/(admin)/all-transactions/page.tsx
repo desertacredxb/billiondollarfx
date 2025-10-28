@@ -79,7 +79,12 @@ export default function AdminTransactionPage() {
     date: new Date(row.createdAt).toLocaleString(),
     amount: Number(row.amount),
     account: String(row.accountNo),
-    name: row && row.name ? String(row.name) : "-",
+    name:
+      "userName" in row && row.userName
+        ? String((row as any).userName)
+        : row && row.name
+        ? String(row.name)
+        : "-",
     status:
       type === "deposit"
         ? row.status === "SUCCESS"
@@ -95,7 +100,7 @@ export default function AdminTransactionPage() {
     txnId:
       type === "withdrawal"
         ? (row as WithdrawalResponse).response?.orderid || "-"
-        : (row as DepositResponse).orderid || "-", // Safe and typed
+        : (row as DepositResponse).orderid || "-",
   });
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
