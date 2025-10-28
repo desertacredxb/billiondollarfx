@@ -76,15 +76,14 @@ export default function AdminTransactionPage() {
     row: DepositResponse | WithdrawalResponse,
     type: "deposit" | "withdrawal"
   ): Transaction => {
-    // Type guard for userName
-    const hasUserName = (
-      r: DepositResponse | WithdrawalResponse
-    ): r is DepositResponse & { userName: string } =>
-      "userName" in r && typeof (r as any).userName === "string";
+    // Check if the object has a userName property safely
+    const hasUserName =
+      Object.prototype.hasOwnProperty.call(row, "userName") &&
+      typeof (row as unknown as Record<string, unknown>).userName === "string";
 
-    const name = hasUserName(row)
-      ? row.userName
-      : "name" in row && typeof row.name === "string"
+    const name = hasUserName
+      ? (row as unknown as Record<"userName", string>).userName
+      : typeof row.name === "string"
       ? row.name
       : "-";
 
