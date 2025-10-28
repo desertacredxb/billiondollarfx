@@ -75,33 +75,42 @@ export default function AdminTransactionPage() {
   const formatRow = (
     row: DepositResponse | WithdrawalResponse,
     type: "deposit" | "withdrawal"
-  ): Transaction => ({
-    date: new Date(row.createdAt).toLocaleString(),
-    amount: Number(row.amount),
-    account: String(row.accountNo),
-    name:
-      "userName" in row && row.userName
-        ? String((row as any).userName)
-        : row && row.name
-        ? String(row.name)
-        : "-",
-    status:
-      type === "deposit"
-        ? row.status === "SUCCESS"
+  ): Transaction => {
+    // Type guard for userName
+    const hasUserName = (
+      r: DepositResponse | WithdrawalResponse
+    ): r is DepositResponse & { userName: string } =>
+      "userName" in r && typeof (r as any).userName === "string";
+
+    const name = hasUserName(row)
+      ? row.userName
+      : "name" in row && typeof row.name === "string"
+      ? row.name
+      : "-";
+
+    return {
+      date: new Date(row.createdAt).toLocaleString(),
+      amount: Number(row.amount),
+      account: String(row.accountNo),
+      name,
+      status:
+        type === "deposit"
+          ? row.status === "SUCCESS"
+            ? "Completed"
+            : row.status === "FAILED"
+            ? "Failed"
+            : "Pending"
+          : (row as WithdrawalResponse).status === "Completed"
           ? "Completed"
-          : row.status === "FAILED"
-          ? "Failed"
-          : "Pending"
-        : (row as WithdrawalResponse).status === "Completed"
-        ? "Completed"
-        : (row as WithdrawalResponse).status === "Rejected"
-        ? "Rejected"
-        : "Pending",
-    txnId:
-      type === "withdrawal"
-        ? (row as WithdrawalResponse).response?.orderid || "-"
-        : (row as DepositResponse).orderid || "-",
-  });
+          : (row as WithdrawalResponse).status === "Rejected"
+          ? "Rejected"
+          : "Pending",
+      txnId:
+        type === "withdrawal"
+          ? (row as WithdrawalResponse).response?.orderid || "-"
+          : (row as DepositResponse).orderid || "-",
+    };
+  };
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
     const start = (page - 1) * limit;
