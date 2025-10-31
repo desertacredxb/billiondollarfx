@@ -148,6 +148,36 @@ export default function UsersPage() {
     }
   };
 
+  const handleRejectKyc = async (email: string) => {
+    if (
+      !confirm(
+        "⚠️ Are you sure you want to reject this user's KYC? The user will be notified via email."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // Call backend API to reject KYC
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/reject/${email}`
+      );
+
+      // Update user list locally (optional — set KYC to unverified)
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.email === email ? { ...u, isKycVerified: false } : u
+        )
+      );
+
+      alert("🚫 User KYC rejected successfully");
+      setSelectedUser(null);
+    } catch (err) {
+      console.error("Failed to reject user KYC:", err);
+      alert("❌ Failed to reject user KYC");
+    }
+  };
+
   return (
     <div className="min-h-screen text-white">
       <div className="mb-6 flex justify-between items-center">
@@ -432,6 +462,10 @@ export default function UsersPage() {
                 />
               )}
 
+              <Button
+                onClick={() => handleRejectKyc(selectedUser.email)}
+                text="Reject KYC"
+              />
               <Button
                 onClick={() => handleDeleteUser(selectedUser.email)}
                 text="Delete User"
