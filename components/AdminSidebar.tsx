@@ -27,6 +27,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const [bankApprovalCount, setBankApprovalCount] = useState<number>(0);
   const [ibCount, setIbCount] = useState<number>(0);
   const [kycCount, setKycCount] = useState<number>(0);
+  const [ticketCount, setTicketCount] = useState<number>(0);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -37,7 +38,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         );
         setPayoutCount(payoutRes.data?.data?.length || 0);
 
-        // ✅ Fetch Bank Approvals (only pending ones)
+        // ✅ Fetch Bank Approvals
         const bankRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
@@ -45,8 +46,9 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           (u: { pendingBankDetails?: Record<string, unknown> }) =>
             u.pendingBankDetails && Object.keys(u.pendingBankDetails).length > 0
         );
+        setBankApprovalCount(pendingBankUpdates.length || 0);
 
-        // ✅ Fetch IB Requests (only pending status)
+        // ✅ Fetch IB Requests
         const ibRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/ib`
         );
@@ -55,8 +57,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         );
         setIbCount(pendingIbRequests.length || 0);
 
-        // --- KYC Pending
-
+        // ✅ Fetch KYC Pending
         const userRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
@@ -64,6 +65,15 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           (u: { isKycVerified: boolean }) => u.isKycVerified === false
         );
         setKycCount(pendingKyc.length || 0);
+
+        // ✅ Fetch Open Tickets
+        const ticketRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/admin`
+        );
+        const openTickets = ticketRes.data.filter(
+          (t: { status: string }) => t.status === "Open"
+        );
+        setTicketCount(openTickets.length || 0);
       } catch (err) {
         console.error("Failed to fetch counts:", err);
       }
@@ -125,7 +135,9 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             label="Support Ticket"
             icon={MessageSquare}
             pathname={pathname}
+            count={ticketCount} // ✅ add this line
           />
+
           <NavLink
             href="/IB"
             label="IB"
