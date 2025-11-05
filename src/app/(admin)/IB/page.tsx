@@ -30,6 +30,41 @@ export default function IBRequestsPage() {
   );
   const [searchTerm, setSearchTerm] = useState(""); // 🔹 new state
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10; // number of records per page
+
+  const filteredRequests = requests.filter((ib) =>
+    ib.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const currentTotal = filteredRequests.length;
+  const totalPages = Math.ceil(currentTotal / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentData = filteredRequests.slice(startIndex, endIndex);
+
+  const handleNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
+  const handlePrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
+  const handleFirst = () => setCurrentPage(1);
+  const handleLast = () => setCurrentPage(totalPages);
+  const jumpTo = (page: number) => setCurrentPage(page);
+
+  // Dynamic pagination buttons like: 1 ... 4 5 6 ... 10
+  const pageButtons = (() => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage > 3) pages.push(1, "...");
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push("...", totalPages);
+    }
+    return pages;
+  })();
+
   const fetchRequests = async () => {
     try {
       setLoading(true);
@@ -86,10 +121,10 @@ export default function IBRequestsPage() {
     }
   };
 
-  // 🔹 Filter requests by search term
-  const filteredRequests = requests.filter((ib) =>
-    ib.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // // 🔹 Filter requests by search term
+  // const filteredRequests = requests.filter((ib) =>
+  //   ib.email.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
 
   return (
     <div className="min-h-screen text-white p-6">
@@ -114,7 +149,7 @@ export default function IBRequestsPage() {
 
       {loading ? (
         <p className="text-gray-400">Loading requests...</p>
-      ) : filteredRequests.length === 0 ? (
+      ) : currentData.length === 0 ? (
         <p className="text-gray-400 text-center py-10">No IB requests found.</p>
       ) : (
         <div className="rounded-lg border border-[#1f2937] overflow-hidden">
@@ -133,7 +168,7 @@ export default function IBRequestsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredRequests.map((ib) => (
+              {currentData.map((ib) => (
                 <tr
                   key={ib._id}
                   className="border-b border-gray-700 hover:bg-[#111827]"
@@ -203,6 +238,77 @@ export default function IBRequestsPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pagination Section */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="text-sm text-gray-400">
+            {currentTotal > 0 ? (
+              <>
+                Showing{" "}
+                <span className="text-white">
+                  {startIndex + 1}-{Math.min(endIndex, currentTotal)}
+                </span>{" "}
+                of <span className="text-white">{currentTotal}</span>
+              </>
+            ) : (
+              "No records"
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleFirst}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+              « First
+            </button>
+            <button
+              onClick={handlePrev}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+              ‹ Prev
+            </button>
+
+            {pageButtons.map((btn, i) =>
+              typeof btn === "number" ? (
+                <button
+                  key={i}
+                  onClick={() => jumpTo(btn)}
+                  className={`px-3 py-1 rounded ${
+                    btn === currentPage
+                      ? "bg-[var(--primary)] text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  {btn}
+                </button>
+              ) : (
+                <span key={i} className="px-2 select-none text-gray-400">
+                  {btn}
+                </span>
+              )
+            )}
+
+            <button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+              Next ›
+            </button>
+            <button
+              onClick={handleLast}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+              Last »
+            </button>
           </div>
         </div>
       )}
