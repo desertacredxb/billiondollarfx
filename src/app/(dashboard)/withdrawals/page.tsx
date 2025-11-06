@@ -54,7 +54,7 @@ function Withdrawal() {
       );
 
       if (res.data) setUserData(res.data);
-      console.log(res.data);
+      // console.log(res.data);
       setForm((prev) => ({
         ...prev,
         name: res.data.accountHolderName || "",

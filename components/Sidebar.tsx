@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+
 import {
   ChevronDown,
   ChevronUp,
@@ -136,13 +139,120 @@ export default function Sidebar({
             pathname={pathname}
             onClose={onClose}
           />
-          <NavLink
+          <Link
             href="/withdrawals"
-            label="Withdrawals"
-            icon={ArrowRightLeft}
-            pathname={pathname}
-            onClose={onClose}
-          />
+            onClick={async (e) => {
+              e.preventDefault(); // Stop instant navigation
+
+              try {
+                console.log("🟢 Withdraw NavLink clicked!");
+
+                const token = localStorage.getItem("token");
+                const userString = localStorage.getItem("user");
+
+                if (!token || !userString) {
+                  await Swal.fire({
+                    icon: "warning",
+                    title: "Login Required",
+                    text: "Please log in to continue.",
+                    confirmButtonColor: "#d33",
+                  });
+                  router.push("/login");
+                  return;
+                }
+
+                const user = JSON.parse(userString);
+                const email = user.email;
+
+                // 🌀 Show loader while fetching
+                Swal.fire({
+                  title: "Checking your account...",
+                  text: "Please wait a moment while we verify your trading balance.",
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                    Swal.showLoading();
+                  },
+                });
+
+                // ✅ Fetch user data
+                const res = await axios.get(
+                  `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+                );
+
+                const userData = res.data;
+                if (!userData?.accounts?.length) {
+                  Swal.close();
+                  await Swal.fire({
+                    icon: "error",
+                    title: "No Account Found",
+                    text: "No trading account is linked to your profile.",
+                    confirmButtonColor: "#d33",
+                  });
+                  return;
+                }
+
+                const accountNo = userData.accounts[0].accountNo;
+                console.log("User AccountNo:", accountNo);
+
+                // ✅ Check MoneyPlant balance
+                const balanceRes = await axios.post(
+                  `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
+                  { accountno: accountNo.toString() },
+                  { headers: { "Content-Type": "application/json" } }
+                );
+
+                const result = balanceRes.data;
+                const response =
+                  result.data?.response || result.data?.data?.response;
+                const margin = parseFloat(
+                  result?.data?.Margin || result?.data?.data?.Margin || "0"
+                );
+
+                Swal.close(); // ✅ Close loader after response
+
+                // ⚠️ Margin check
+                if (response === "success" && margin > 0) {
+                  await Swal.fire({
+                    icon: "warning",
+                    title: "Open Trades Detected",
+                    text: `You currently have open trades. Please close them before withdrawing.`,
+                    confirmButtonColor: "#d33",
+                  });
+                  return;
+                }
+
+                // ✅ Success
+                await Swal.fire({
+                  icon: "success",
+                  title: "All Clear",
+                  text: "No open trades found. Redirecting to Withdrawals...",
+                  showConfirmButton: false,
+                  timer: 1500,
+                });
+
+                router.push("/withdrawals");
+                if (onClose) onClose();
+              } catch (error) {
+                console.error("Error checking withdrawal access:", error);
+                Swal.close();
+                await Swal.fire({
+                  icon: "error",
+                  title: "Something went wrong",
+                  text: "Please try again later.",
+                  confirmButtonColor: "#d33",
+                });
+              }
+            }}
+            className={clsx(
+              "flex items-center gap-2 px-4 py-2 rounded hover:text-[var(--primary)] transition-all text-sm w-full text-left cursor-pointer",
+              pathname === "/withdrawals" &&
+                "text-[var(--primary)] font-semibold"
+            )}
+          >
+            <ArrowRightLeft size={16} />
+            Withdrawals
+          </Link>
+
           {/* <NavLink
             href="/transfers"
             label="Transfers"
