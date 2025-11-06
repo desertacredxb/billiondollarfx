@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Button from "../../../../components/Button";
 
 interface User {
+  referredByName?: string;
   _id: string;
   fullName: string;
   gender: string;
@@ -21,6 +22,7 @@ interface User {
   accountType?: string;
   isKycVerified?: boolean;
   profileImage?: string;
+  referralCode?: string; // 🔥 added
 
   //Bank
   accountHolderName: string;
@@ -60,21 +62,47 @@ export default function UsersPage() {
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
 
-    // 🔐 Redirect to login if no token
     if (!token || token !== "admin-token") {
       router.push("/login");
       return;
     }
 
-    axios
-      .get(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`)
-      .then((res) => {
-        setUsers(res.data);
-      })
-      .catch((err) => {
+    const fetchUsersWithReferrers = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
+        );
+        const usersData = res.data;
+        // console.log(usersData);
+
+        // 🔥 Fetch referred user names in parallel
+        const usersWithRef = await Promise.all(
+          usersData.map(async (user: User) => {
+            if (!user.referralCode) return user;
+
+            try {
+              const refRes = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/userByRef/${user.referralCode}`
+              );
+              // console.log(refRes.data.user?.fullName);
+              const referredBy = refRes.data.user?.fullName || "N/A";
+              return { ...user, referredByName: referredBy };
+            } catch (err) {
+              console.error("Error fetching referredBy for", user.email);
+              return { ...user, referredByName: "N/A" };
+            }
+          })
+        );
+
+        setUsers(usersWithRef);
+      } catch (err) {
         console.error("Failed to fetch users:", err);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsersWithReferrers();
   }, []);
 
   // ✅ Apply filter on users
@@ -237,7 +265,8 @@ export default function UsersPage() {
                 <th className="px-4 py-3">Full Name</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Phone</th>
-                <th className="px-4 py-3">Nationality</th>
+                {/* <th className="px-4 py-3">Nationality</th> */}
+                <th className="px-4 py-3">Referred By</th>
                 <th className="px-4 py-3">KYC</th>
                 <th className="px-4 py-3">Action</th>
               </tr>
@@ -258,7 +287,15 @@ export default function UsersPage() {
                     <td className="px-4 py-3">{user.fullName}</td>
                     <td className="px-4 py-3">{user.email}</td>
                     <td className="px-4 py-3">{user.phone}</td>
-                    <td className="px-4 py-3">{user.nationality || "N/A"}</td>
+                    {/* <td className="px-4 py-3">{user.nationality || "N/A"}</td> */}
+                    <td className="px-4 py-3">
+                      {user.referredByName
+                        ? `${user.referredByName}${
+                            user.referralCode ? ` (${user.referralCode})` : ""
+                          }`
+                        : "—"}
+                    </td>
+
                     <td className="px-4 py-3">
                       {user.isKycVerified ? (
                         <span className="text-green-400 font-medium">

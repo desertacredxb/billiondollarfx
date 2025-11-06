@@ -30,6 +30,9 @@ export default function IBRequestsPage() {
   );
   const [searchTerm, setSearchTerm] = useState(""); // 🔹 new state
 
+  const [clientConnections, setClientConnections] = useState<any[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10; // number of records per page
@@ -126,6 +129,142 @@ export default function IBRequestsPage() {
   //   ib.email.toLowerCase().includes(searchTerm.toLowerCase())
   // );
 
+  const fetchClientsByReferral = async (referralCode: string) => {
+    try {
+      setLoadingClients(true);
+      setClientConnections([]);
+
+      const usersRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
+      );
+      const users = await usersRes.json();
+
+      const referredUsers = users.filter(
+        (u: any) => u.referralCode === referralCode
+      );
+
+      const INR_TO_USD = 1 / 88.76; // ≈ 0.01126 USD per INR
+
+      const enriched = await Promise.all(
+        referredUsers.map(async (u: any) => {
+          let totalDeposit = 0;
+          let totalWithdrawal = 0;
+          let totalLots = 0;
+          let totalCommission = 0;
+          const symbolLots: { [key: string]: number } = {};
+
+          try {
+            const accRes = await fetch(
+              `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${u.email}`
+            );
+            const userData = await accRes.json();
+            const accounts = userData?.accounts || [];
+
+            for (const acc of accounts) {
+              // Deposits
+              const depRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
+              );
+              const deposits = await depRes.json();
+              totalDeposit +=
+                deposits?.deposits
+                  ?.filter((d: any) => d.status === "SUCCESS")
+                  ?.reduce(
+                    (sum: number, d: any) =>
+                      sum + Number(d.amount || 0) * INR_TO_USD,
+                    0
+                  ) || 0;
+
+              // Withdrawals
+              const wdRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
+              );
+              const withdrawals = await wdRes.json();
+              totalWithdrawal +=
+                withdrawals?.withdrawals
+                  ?.filter(
+                    (w: any) =>
+                      w.status === "SUCCESS" || w.status === "Completed"
+                  )
+                  ?.reduce(
+                    (sum: number, w: any) =>
+                      sum + Number(w.amount || 0) * INR_TO_USD,
+                    0
+                  ) || 0;
+
+              // Deals / Lots / Commission
+              const today = new Date();
+              const startOfMonth = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                1
+              )
+                .toISOString()
+                .split("T")[0];
+              const endDate = today.toISOString().split("T")[0];
+
+              const dealsRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    accountno: acc.accountNo,
+                    sdate: startOfMonth,
+                    edate: endDate,
+                  }),
+                }
+              );
+              const dealsData = await dealsRes.json();
+              const deals = dealsData?.data || [];
+              // console.log(deals);
+
+              for (const deal of deals) {
+                const symbol = deal.Symbol;
+                const lots = Number(deal.Qty || 0);
+
+                totalLots += lots;
+                if (!symbolLots[symbol]) symbolLots[symbol] = 0;
+                symbolLots[symbol] += lots;
+
+                totalCommission += Number(deal.Commission || 0);
+              }
+            }
+
+            return {
+              name: u.fullName || "—",
+              email: u.email,
+              accounts: accounts.map((a: any) => a.accountNo),
+              totalDeposit,
+              totalWithdrawal,
+              totalLots,
+              totalCommission,
+              symbolLots,
+            };
+          } catch (err) {
+            console.error(`Error for ${u.email}:`, err);
+            return {
+              name: u.name,
+              email: u.email,
+              accounts: [],
+              totalDeposit: 0,
+              totalWithdrawal: 0,
+              totalLots: 0,
+              totalCommission: 0,
+              symbolLots: {},
+            };
+          }
+        })
+      );
+
+      setClientConnections(enriched);
+    } catch (err) {
+      console.error("Error fetching client connections:", err);
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
   return (
     <div className="min-h-screen text-white p-6">
       <div className="mb-6">
@@ -194,7 +333,14 @@ export default function IBRequestsPage() {
                   <td className="px-4 py-3">{ib.referralCode || "—"}</td>
                   <td className="px-4 py-3">
                     <Button
-                      onClick={() => setSelectedRequest(ib)}
+                      onClick={async () => {
+                        setSelectedRequest(ib);
+                        if (ib.referralCode) {
+                          await fetchClientsByReferral(ib.referralCode);
+                        } else {
+                          setClientConnections([]);
+                        }
+                      }}
                       text="View"
                     />
                   </td>
@@ -230,12 +376,19 @@ export default function IBRequestsPage() {
                     {ib.status}
                   </span>
                 </p>
-                <button
-                  onClick={() => setSelectedRequest(ib)}
-                  className="mt-3 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
-                >
-                  View Details
-                </button>
+                <div className="mt-5">
+                  <Button
+                    onClick={async () => {
+                      setSelectedRequest(ib);
+                      if (ib.referralCode) {
+                        await fetchClientsByReferral(ib.referralCode);
+                      } else {
+                        setClientConnections([]);
+                      }
+                    }}
+                    text="View"
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -316,7 +469,7 @@ export default function IBRequestsPage() {
       {/* ✅ Details Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-[#1f2937] rounded-lg p-6 w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto space-y-3 relative">
+          <div className="bg-[#1f2937] rounded-lg p-6 w-11/12 md:w-3/4 max-h-[90vh] overflow-y-auto space-y-3 relative">
             <button
               onClick={() => setSelectedRequest(null)}
               className="absolute top-3 right-3 text-gray-400 hover:text-white"
@@ -326,57 +479,136 @@ export default function IBRequestsPage() {
 
             <h2 className="text-2xl font-bold mb-4">{selectedRequest.email}</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
-              <div className="space-y-6">
-                <p>
-                  <b>Existing Clients:</b> {selectedRequest.existingClientBase}
-                </p>
-                <p>
-                  <b>Offer Education:</b> {selectedRequest.offerEducation}
-                </p>
-                <p>
-                  <b>Expected Clients (3 Months):</b>{" "}
-                  {selectedRequest.expectedClientsNext3Months}
-                </p>
-                <p>
-                  <b>Status:</b>{" "}
-                  <span
-                    className={`font-semibold ${
-                      selectedRequest.status === "approved"
-                        ? "text-green-400"
-                        : selectedRequest.status === "rejected"
-                        ? "text-red-400"
-                        : "text-yellow-400"
-                    }`}
-                  >
-                    {selectedRequest.status}
-                  </span>
-                </p>
-                <p>
-                  <b>User Commission:</b>{" "}
-                  {selectedRequest.commission?.toFixed(2) ?? "—"}%
-                </p>
-              </div>
-              <div className="space-y-5">
-                <p>
-                  <b>Direct Commission:</b>{" "}
-                  {selectedRequest.expectedCommissionDirect}
-                </p>
-                <p>
-                  <b>Sub IB Commission:</b>{" "}
-                  {selectedRequest.expectedCommissionSubIB}
-                </p>
-                <p>
-                  <b>Your Share:</b> {selectedRequest.yourShare}%
-                </p>
-                <p>
-                  <b>Client Share:</b> {selectedRequest.clientShare}%
-                </p>
-                <p>
-                  <b>Referral Code:</b> {selectedRequest.referralCode || "—"}
-                </p>
-              </div>
-            </div>
+            <p>
+              <b>Referral Code:</b> {selectedRequest.referralCode || "—"}
+            </p>
+            <p>
+              <b>Commission:</b> {selectedRequest.commission?.toFixed(2) || "—"}
+            </p>
+
+            <hr className="my-6 border-gray-700" />
+            <h3 className="text-xl font-semibold text-[var(--primary)] mb-4">
+              Clients & Trading Stats
+            </h3>
+
+            {loadingClients ? (
+              <p className="text-gray-400">Loading client data...</p>
+            ) : clientConnections.length === 0 ? (
+              <p className="text-gray-400">No clients connected to this IB.</p>
+            ) : (
+              <>
+                {/* ✅ Total Clients Count */}
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-gray-300 text-sm">
+                    Total Clients:{" "}
+                    <span className="font-semibold text-white">
+                      {clientConnections.length}
+                    </span>
+                  </h3>
+                </div>
+
+                {/* ✅ Mobile View (Cards) */}
+                <div className="space-y-4 block md:hidden">
+                  {clientConnections.map((c, i) => (
+                    <div
+                      key={i}
+                      className="bg-[#111827] border border-gray-700 rounded-lg p-4 space-y-2 hover:bg-[#0d1117] transition"
+                    >
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-lg font-semibold text-white">
+                          {c.name}
+                        </h4>
+                        <p className="text-xs text-gray-400">{c.email}</p>
+                      </div>
+
+                      <div className="text-sm text-gray-300 space-y-1 mt-2">
+                        <p>
+                          <span className="text-gray-400">Accounts:</span>{" "}
+                          {c.accounts.join(", ") || "—"}
+                        </p>
+                        <p>
+                          <span className="text-gray-400">Deposit:</span> $
+                          {c.totalDeposit.toFixed(2)}
+                        </p>
+                        <p>
+                          <span className="text-gray-400">Withdrawal:</span> $
+                          {c.totalWithdrawal.toFixed(2)}
+                        </p>
+                        <p>
+                          <span className="text-gray-400">Symbols Traded:</span>{" "}
+                          {c.symbolLots
+                            ? Object.entries(c.symbolLots)
+                                .filter(([_, lots]) => Number(lots) > 0)
+                                .map(([sym]) => sym)
+                                .join(", ")
+                            : "—"}
+                        </p>
+                        <p>
+                          <span className="text-gray-400">Lots:</span>{" "}
+                          {c.totalLots.toFixed(2)}
+                        </p>
+                        <p>
+                          <span className="text-gray-400">Commission:</span> $
+                          {c.totalCommission.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ✅ Desktop View (Table) */}
+                <div className="overflow-x-auto hidden md:block">
+                  <table className="w-full text-sm text-left border border-gray-700 rounded-lg">
+                    <thead className="bg-[#111827] text-gray-300 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">Client Name</th>
+                        <th className="px-4 py-3">Email</th>
+                        <th className="px-4 py-3">Accounts</th>
+                        <th className="px-4 py-3">Deposit ($)</th>
+                        <th className="px-4 py-3">Withdrawal ($)</th>
+                        <th className="px-4 py-3">Symbols Traded</th>
+                        <th className="px-4 py-3">Lots</th>
+                        <th className="px-4 py-3">Commission ($)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clientConnections.map((c, i) => (
+                        <tr
+                          key={i}
+                          className="border-b border-gray-700 hover:bg-[#0d1117]"
+                        >
+                          <td className="px-4 py-2">{c.name}</td>
+                          <td className="px-4 py-2">{c.email}</td>
+                          <td className="px-4 py-2">
+                            {c.accounts.join(", ") || "—"}
+                          </td>
+                          <td className="px-4 py-2">
+                            ${c.totalDeposit.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2">
+                            ${c.totalWithdrawal.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2">
+                            {c.symbolLots
+                              ? Object.entries(c.symbolLots)
+                                  .filter(([_, lots]) => Number(lots) > 0)
+                                  .map(([sym]) => sym)
+                                  .join(", ")
+                              : "—"}
+                          </td>
+                          <td className="px-4 py-2">
+                            {c.totalLots.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2">
+                            ${c.totalCommission.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end gap-3 mt-6">
               {selectedRequest.status !== "approved" && (
