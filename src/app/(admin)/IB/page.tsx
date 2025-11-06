@@ -19,6 +19,45 @@ interface IBRequest {
   commission?: number;
 }
 
+interface ClientConnection {
+  name: string;
+  email: string;
+  accounts: string[];
+  totalDeposit: number;
+  totalWithdrawal: number;
+  totalLots: number;
+  totalCommission: number;
+  symbolLots: Record<string, number>;
+}
+
+interface User {
+  fullName: string;
+  email: string;
+  referralCode?: string;
+  accounts?: Account[];
+}
+
+interface Account {
+  accountNo: string;
+  balance?: number;
+}
+
+interface Deposit {
+  status: string;
+  amount: number;
+}
+
+interface Withdrawal {
+  status: string;
+  amount: number;
+}
+
+interface Deal {
+  Symbol: string;
+  Qty: number;
+  Commission: number;
+}
+
 export default function IBRequestsPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<IBRequest[]>([]);
@@ -30,7 +69,9 @@ export default function IBRequestsPage() {
   );
   const [searchTerm, setSearchTerm] = useState(""); // 🔹 new state
 
-  const [clientConnections, setClientConnections] = useState<any[]>([]);
+  const [clientConnections, setClientConnections] = useState<
+    ClientConnection[]
+  >([]);
   const [loadingClients, setLoadingClients] = useState(false);
 
   // Pagination
@@ -137,16 +178,17 @@ export default function IBRequestsPage() {
       const usersRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
       );
-      const users = await usersRes.json();
+
+      const users: User[] = await usersRes.json();
 
       const referredUsers = users.filter(
-        (u: any) => u.referralCode === referralCode
+        (u: User) => u.referralCode === referralCode
       );
 
       const INR_TO_USD = 1 / 88.76; // ≈ 0.01126 USD per INR
 
       const enriched = await Promise.all(
-        referredUsers.map(async (u: any) => {
+        referredUsers.map(async (u: User) => {
           let totalDeposit = 0;
           let totalWithdrawal = 0;
           let totalLots = 0;
@@ -160,7 +202,7 @@ export default function IBRequestsPage() {
             const userData = await accRes.json();
             const accounts = userData?.accounts || [];
 
-            for (const acc of accounts) {
+            for (const acc of accounts as Account[]) {
               // Deposits
               const depRes = await fetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
@@ -168,9 +210,9 @@ export default function IBRequestsPage() {
               const deposits = await depRes.json();
               totalDeposit +=
                 deposits?.deposits
-                  ?.filter((d: any) => d.status === "SUCCESS")
+                  ?.filter((d: Deposit) => d.status === "SUCCESS")
                   ?.reduce(
-                    (sum: number, d: any) =>
+                    (sum: number, d: Deposit) =>
                       sum + Number(d.amount || 0) * INR_TO_USD,
                     0
                   ) || 0;
@@ -183,11 +225,11 @@ export default function IBRequestsPage() {
               totalWithdrawal +=
                 withdrawals?.withdrawals
                   ?.filter(
-                    (w: any) =>
+                    (w: Withdrawal) =>
                       w.status === "SUCCESS" || w.status === "Completed"
                   )
                   ?.reduce(
-                    (sum: number, w: any) =>
+                    (sum: number, w: Withdrawal) =>
                       sum + Number(w.amount || 0) * INR_TO_USD,
                     0
                   ) || 0;
@@ -234,7 +276,7 @@ export default function IBRequestsPage() {
             return {
               name: u.fullName || "—",
               email: u.email,
-              accounts: accounts.map((a: any) => a.accountNo),
+              accounts: (accounts as Account[]).map((a) => a.accountNo),
               totalDeposit,
               totalWithdrawal,
               totalLots,
@@ -244,7 +286,7 @@ export default function IBRequestsPage() {
           } catch (err) {
             console.error(`Error for ${u.email}:`, err);
             return {
-              name: u.name,
+              name: u.fullName,
               email: u.email,
               accounts: [],
               totalDeposit: 0,
