@@ -399,12 +399,16 @@ export default function UsersPage() {
 
               {/* Right: Bank Info */}
               <div className="space-y-2 text-sm text-gray-300 w-1/2">
-                <p>
-                  <b>Account Holder:</b> {selectedUser.accountHolderName}
-                </p>
-                <p>
-                  <b>Account Number:</b> {selectedUser.accountNumber}
-                </p>
+                {selectedUser.accountHolderName && (
+                  <p>
+                    <b>Account Holder:</b> {selectedUser.accountHolderName}
+                  </p>
+                )}
+                {selectedUser.accountNumber && (
+                  <p>
+                    <b>Account Number:</b> {selectedUser.accountNumber}
+                  </p>
+                )}
                 {selectedUser.ifscCode && (
                   <p>
                     <b>IFSC:</b> {selectedUser.ifscCode}
@@ -415,12 +419,28 @@ export default function UsersPage() {
                     <b>IBAN:</b> {selectedUser.iban}
                   </p>
                 )}
-                <p>
-                  <b>Bank Name:</b> {selectedUser.bankName}
-                </p>
-                <p>
-                  <b>Bank Address:</b> {selectedUser.bankAddress}
-                </p>
+                {selectedUser.bankName && (
+                  <p>
+                    <b>Bank Name:</b> {selectedUser.bankName}
+                  </p>
+                )}
+                {selectedUser.bankAddress && (
+                  <p>
+                    <b>Bank Address:</b> {selectedUser.bankAddress}
+                  </p>
+                )}
+                {selectedUser.referredByName && (
+                  <p>
+                    <b>Referred By:</b>{" "}
+                    {selectedUser.referredByName
+                      ? `${selectedUser.referredByName}${
+                          selectedUser.referralCode
+                            ? ` (${selectedUser.referralCode})`
+                            : ""
+                        }`
+                      : "—"}
+                  </p>
+                )}
               </div>
             </div>
 
