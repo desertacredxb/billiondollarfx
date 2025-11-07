@@ -41,7 +41,7 @@ export default function IdentityVerification() {
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
         );
-        console.log(response.data.hasSubmittedDocuments);
+        // console.log(response.data.hasSubmittedDocuments);
         setHasSubmittedDocuments(response.data.hasSubmittedDocuments);
         setIsKycVerified(response.data.isKycVerified);
       } catch (err) {

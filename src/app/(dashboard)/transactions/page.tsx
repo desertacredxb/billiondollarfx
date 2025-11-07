@@ -141,7 +141,7 @@ export default function TransactionPage() {
       setLoading(true);
       const url = `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${accNo}?page=${page}&limit=${limit}`;
       const res = await axios.get(url);
-      console.log(res);
+      // console.log(res);
 
       // If API returns paginated structure
       if (

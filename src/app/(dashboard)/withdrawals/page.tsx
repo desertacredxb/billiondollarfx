@@ -179,7 +179,7 @@ function Withdrawal() {
         }
       );
 
-      console.log(res.data);
+      // console.log(res.data);
 
       if (res.data?.success) {
         toast.success("✅ Withdrawal request submitted!");

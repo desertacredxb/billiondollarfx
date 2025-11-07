@@ -327,7 +327,7 @@ function IBPage({ user }: IBPageProps) {
           }
         );
 
-        console.log("Commission updated:", updateRes.data);
+        // console.log("Commission updated:", updateRes.data);
 
         setIbCommission(res.data.commission);
       } catch (error) {

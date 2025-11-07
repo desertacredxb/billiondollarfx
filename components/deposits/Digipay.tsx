@@ -89,7 +89,7 @@ function Digipay() {
           amount,
         }
       );
-      console.log(res.data);
+      // console.log(res.data);
 
       if (res.data?.payment_url) {
         window.location.href = res.data.payment_url;

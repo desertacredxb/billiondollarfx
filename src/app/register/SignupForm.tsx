@@ -168,7 +168,7 @@ export default function SignUpPage() {
   // ✅ Auto-fill referralCode from ?ref=XYZ
   useEffect(() => {
     const refCode = searchParams?.get("ref");
-    console.log("Referral Code from URL:", refCode);
+    // console.log("Referral Code from URL:", refCode);
     if (refCode) {
       setFormData((prev) => ({ ...prev, referralCode: refCode }));
     }
@@ -206,7 +206,7 @@ export default function SignUpPage() {
 
     try {
       setLoading(true);
-      console.log(formData);
+      // console.log(formData);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/register`,
         {
@@ -217,7 +217,7 @@ export default function SignUpPage() {
       );
 
       const data = await res.json();
-      console.log(data);
+      // console.log(data);
       if (!res.ok) return alert(data.message || "Something went wrong.");
 
       alert("OTP sent to email.");

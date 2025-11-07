@@ -34,7 +34,7 @@ export default function ProfileForm() {
           .then((res) => {
             const user = res.data;
 
-            console.log(user);
+            // console.log(user);
             if (user) {
               setFormData({
                 fullName: user.fullName || "",

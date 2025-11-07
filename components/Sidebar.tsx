@@ -145,7 +145,7 @@ export default function Sidebar({
               e.preventDefault(); // Stop instant navigation
 
               try {
-                console.log("🟢 Withdraw NavLink clicked!");
+                // console.log("🟢 Withdraw NavLink clicked!");
 
                 const token = localStorage.getItem("token");
                 const userString = localStorage.getItem("user");
@@ -192,7 +192,7 @@ export default function Sidebar({
                 }
 
                 const accountNo = userData.accounts[0].accountNo;
-                console.log("User AccountNo:", accountNo);
+                // console.log("User AccountNo:", accountNo);
 
                 // ✅ Check MoneyPlant balance
                 const balanceRes = await axios.post(

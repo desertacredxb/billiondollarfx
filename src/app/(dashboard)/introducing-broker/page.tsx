@@ -29,7 +29,7 @@ function IntroducingBroker() {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
       setUser(res.data);
-      console.log("IB approved:", res.data.isApprovedIB);
+      // console.log("IB approved:", res.data.isApprovedIB);
     } catch (err) {
       console.error("❌ Error fetching user:", err);
     } finally {

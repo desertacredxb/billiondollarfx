@@ -63,7 +63,7 @@ export default function LoginPage() {
       );
 
       const data = await res.json();
-      console.log(data.user);
+      // console.log(data.user);
 
       if (!res.ok) {
         setLoading(false); // ⬅️ Stop loading on error
