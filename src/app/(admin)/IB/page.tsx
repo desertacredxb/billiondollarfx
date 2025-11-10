@@ -589,10 +589,10 @@ export default function IBRequestsPage() {
                           <span className="text-gray-400">Lots:</span>{" "}
                           {c.totalLots.toFixed(2)}
                         </p>
-                        <p>
+                        {/* <p>
                           <span className="text-gray-400">Commission:</span> $
                           {c.totalCommission.toFixed(2)}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                   ))}
@@ -610,7 +610,7 @@ export default function IBRequestsPage() {
                         <th className="px-4 py-3">Withdrawal ($)</th>
                         <th className="px-4 py-3">Symbols Traded</th>
                         <th className="px-4 py-3">Lots</th>
-                        <th className="px-4 py-3">Commission ($)</th>
+                        {/* <th className="px-4 py-3">Commission ($)</th> */}
                       </tr>
                     </thead>
                     <tbody>
@@ -641,9 +641,9 @@ export default function IBRequestsPage() {
                           <td className="px-4 py-2">
                             {c.totalLots.toFixed(2)}
                           </td>
-                          <td className="px-4 py-2">
+                          {/* <td className="px-4 py-2">
                             ${c.totalCommission.toFixed(2)}
-                          </td>
+                          </td> */}
                         </tr>
                       ))}
                     </tbody>
