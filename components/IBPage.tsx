@@ -126,7 +126,7 @@ function IBPage({ user }: IBPageProps) {
     NZDCAD: 4.5,
     NZDCHF: 4.5,
     CHFJPY: 4.5,
-    XAUUSD: 4,
+    XAUUSD: 12,
     XAGUSD: 45,
   };
 

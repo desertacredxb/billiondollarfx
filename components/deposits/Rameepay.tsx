@@ -89,7 +89,7 @@ function RameePay() {
           amount,
         }
       );
-      // console.log(res.data);
+      console.log(res.data);
 
       if (res.data?.decrypted?.url) {
         window.location.href = res.data.decrypted.url;
