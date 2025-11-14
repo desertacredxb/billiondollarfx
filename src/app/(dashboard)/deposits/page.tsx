@@ -1,6 +1,6 @@
 "use client";
 
-import Digipay from "../../../../components/deposits/Digipay";
+// import Digipay from "../../../../components/deposits/Digipay";
 import RameePay from "../../../../components/deposits/Rameepay";
 
 function Deposit() {
@@ -20,7 +20,7 @@ function Deposit() {
         <h1 className="text-2xl font-bold mb-8">Payment Methods</h1>
         <div className="flex flex-wrap justify-center gap-6">
           <RameePay />
-          <Digipay />
+          {/* <Digipay /> */}
         </div>
       </div>
     </div>
