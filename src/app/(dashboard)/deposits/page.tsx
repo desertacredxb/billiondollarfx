@@ -1,6 +1,7 @@
 "use client";
 
-// import Digipay from "../../../../components/deposits/Digipay";
+import CryptoPay from "../../../../components/deposits/Crypto";
+import Digipay from "../../../../components/deposits/Digipay";
 import RameePay from "../../../../components/deposits/Rameepay";
 
 function Deposit() {
@@ -8,7 +9,7 @@ function Deposit() {
     <div className="flex flex-col gap-4">
       <div className="w-full rounded-md overflow-hidden shadow-md">
         <video
-          src="/BILLION$ FX WEBSITE DEPOSITS.mp4" // 👈 place your video in public/banner/
+          src="/BILLION$ FX WEBSITE DEPOSITS.mp4"
           className="w-full object-cover rounded-md"
           autoPlay
           muted
@@ -20,7 +21,8 @@ function Deposit() {
         <h1 className="text-2xl font-bold mb-8">Payment Methods</h1>
         <div className="flex flex-wrap gap-6">
           <RameePay />
-          {/* <Digipay /> */}
+          <Digipay />
+          {/* <CryptoPay /> */}
         </div>
       </div>
     </div>
