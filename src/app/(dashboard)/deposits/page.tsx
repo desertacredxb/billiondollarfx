@@ -22,7 +22,7 @@ function Deposit() {
         <div className="flex flex-wrap gap-6">
           <RameePay />
           <Digipay />
-          {/* <CryptoPay /> */}
+          <CryptoPay />
         </div>
       </div>
     </div>

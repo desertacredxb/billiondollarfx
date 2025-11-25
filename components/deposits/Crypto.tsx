@@ -114,7 +114,7 @@ function CryptoPay() {
           <h2 className="text-xl font-semibold">Crypto</h2>
         </div>
         <p className="text-gray-300 text-sm">
-          Secure and fast deposit using RaamiPay. Click below to proceed.
+          Secure and fast deposit using Crypto. Click below to proceed.
         </p>
 
         {/* ✅ Use Button instead of <button> */}
