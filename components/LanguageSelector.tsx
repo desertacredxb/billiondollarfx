@@ -69,6 +69,7 @@ const LanguageSelector = () => {
       <option value="es">Spanish</option>
       <option value="it">Italian</option>
       <option value="pt">Portuguese</option>
+      <option value="tl">Filipino (Philippines)</option>
       <option value="ru">Russian</option>
       <option value="ko">Korean</option>
       <option value="tr">Turkish</option>
