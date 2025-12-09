@@ -24,6 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta
+          name="google-site-verification"
+          content="8lTSuR5UYvf6hPgYpADzJxRnZCQ2eWRFJpSJ4KAcNC4"
+        />
         <link rel="icon" href="/favicon.ico" />
         <style>{`
           body > .skiptranslate {
