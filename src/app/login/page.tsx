@@ -32,22 +32,32 @@ export default function LoginPage() {
 
   const handleSignIn = async () => {
     setError("");
-    setLoading(true); // ⬅️ Add loading start
+    setLoading(true);
 
     if (!email || !password) {
-      setLoading(false); // ⬅️ Stop loading if validation fails
+      setLoading(false);
       return setError("Please fill in all fields.");
     }
 
+    // Admin test account (local dev convenience)
     if (email === "admin@gmail.com" && password === "admin@2025") {
-      localStorage.setItem("adminToken", "admin-token"); // fake token
+      const adminToken = "admin-token"; // fake token
+      localStorage.setItem("adminToken", adminToken);
       localStorage.setItem(
         "admin",
         JSON.stringify({ email: "admin@gmail.com", role: "admin" })
       );
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      router.push("/adminDashboard");
+
+      if (typeof window !== "undefined") {
+        // set a non-httpOnly cookie (quick test; change to httpOnly on server for production)
+        document.cookie = `token=${adminToken}; Path=/; SameSite=Lax;${
+          location.protocol === "https:" ? " Secure;" : ""
+        }`;
+      }
+
+      router.replace("/adminDashboard");
       setLoading(false);
       return;
     }
@@ -63,20 +73,29 @@ export default function LoginPage() {
       );
 
       const data = await res.json();
-      // console.log(data.user);
 
       if (!res.ok) {
-        setLoading(false); // ⬅️ Stop loading on error
+        setLoading(false);
         return setError(data.message || "Login failed.");
       }
 
+      // Save token + user to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/dashboard");
+
+      // Also set a cookie so server/middleware can read authentication on next request.
+      if (typeof window !== "undefined") {
+        document.cookie = `token=${data.token}; Path=/; SameSite=Lax;${
+          location.protocol === "https:" ? " Secure;" : ""
+        }`;
+      }
+
+      router.replace("/dashboard");
     } catch (err) {
+      console.error("Login error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
-      setLoading(false); // ⬅️ Always stop loading
+      setLoading(false);
     }
   };
 
