@@ -36,6 +36,41 @@ export default function DepositsPage() {
   const [userData, setUserData] = useState<User | null>(null);
 
   useEffect(() => {
+    const verifySession = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
+      try {
+        // 🔥 hit ANY protected API
+        await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${
+            JSON.parse(localStorage.getItem("user") || "{}")?.email
+          }`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // ✅ If success → user valid
+        setIsLoggedIn(true);
+      } catch (err) {
+        // ❌ Token invalid / expired
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.replace("/login");
+      }
+    };
+
+    verifySession();
+  }, []);
+
+  useEffect(() => {
     if (isLoggedIn && userData && !userData.isKycVerified) {
       // show first popup after 5s
       const timeout = setTimeout(() => setShowKycPopup(true), 5000);
@@ -53,18 +88,27 @@ export default function DepositsPage() {
   }, [isLoggedIn, userData?.isKycVerified]);
 
   const fetchUserData = async () => {
-    const token = localStorage.getItem("token");
     const userString = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
 
-    if (!token || !userString) return;
+    if (!userString) {
+      router.replace("/login");
+      return;
+    }
 
     const user = JSON.parse(userString);
     const email = user.email;
 
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
+
       const userData = res.data;
       setUserData(userData);
       if (
@@ -82,9 +126,9 @@ export default function DepositsPage() {
 
       setIsLoggedIn(true);
     } catch (err) {
-      console.error("Error fetching user data:", err);
-      setAccounts([]);
-      setIsLoggedIn(false);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      router.replace("/login");
     }
   };
   const fetchAccountSummary = async (accountNo: number) => {

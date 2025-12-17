@@ -24,10 +24,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      router.push("/dashboard");
-    }
+    const checkExistingSession = async () => {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+
+      if (!token || !user) return;
+
+      try {
+        // 🔥 Verify token with server
+        await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${
+            JSON.parse(user).email
+          }`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // ✅ Token valid → auto login
+        router.replace("/dashboard");
+      } catch (err) {
+        // ❌ Token invalid → clean silently
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    };
+
+    checkExistingSession();
   }, []);
 
   const handleSignIn = async () => {

@@ -59,7 +59,7 @@ export default function Sidebar({
     localStorage.removeItem("user");
 
     // Redirect to login page
-    router.push("/login");
+    router.replace("/login");
   };
 
   return (
