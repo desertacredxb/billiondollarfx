@@ -14,6 +14,8 @@ const KycAlertModal: React.FC<KycAlertModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  return(null)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
       <div className="bg-[#1f2937] rounded-xl p-6 w-11/12 md:w-96 text-center text-white shadow-lg">

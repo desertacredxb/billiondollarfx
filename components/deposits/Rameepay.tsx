@@ -43,6 +43,7 @@ function RameePay() {
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
       );
+      console.log("data", res.data)
       if (res.data) setUserData(res.data);
 
       if (res.data?.accounts?.length > 0) {
@@ -89,7 +90,7 @@ function RameePay() {
           amount,
         },
       );
-      console.log(res.data);
+      // console.log(res.data);
 
       if (res.data?.decrypted?.url) {
         window.location.href = res.data.decrypted.url;

@@ -96,8 +96,7 @@ const countries = [
   "Netherlands",
   "New Zealand",
   "Nigeria",
-  "North",
-  "Korea",
+  "North Korea",
   "Norway",
   "Oman",
   "Pakistan",
@@ -165,10 +164,8 @@ export default function SignUpPage() {
   const [step, setStep] = useState<"form" | "otp">("form");
   const [loading, setLoading] = useState(false);
 
-  // ✅ Auto-fill referralCode from ?ref=XYZ
   useEffect(() => {
     const refCode = searchParams?.get("ref");
-    // console.log("Referral Code from URL:", refCode);
     if (refCode) {
       setFormData((prev) => ({ ...prev, referralCode: refCode }));
     }
@@ -177,11 +174,10 @@ export default function SignUpPage() {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
 
-    // Handle checkbox safely
     if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({
@@ -204,20 +200,30 @@ export default function SignUpPage() {
     if (formData.password !== formData.confirmPassword)
       return alert("Passwords do not match.");
 
+    // Validate MetaTrader password rules: length 8-16 with character type complexity [cite: 38, 40]
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*_\-\+\=\,\.\?])/;
+    if (formData.password.length < 8 || formData.password.length > 16) {
+      return alert("Password must be between 8 and 16 characters long.");
+    }
+    if (!passwordRegex.test(formData.password)) {
+      return alert(
+        "Password must include lowercase, uppercase letters, numbers, and special characters.",
+      );
+    }
+
     try {
       setLoading(true);
-      // console.log(formData);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       const data = await res.json();
-      // console.log(data);
       if (!res.ok) return alert(data.message || "Something went wrong.");
 
       alert("OTP sent to email.");
@@ -235,19 +241,22 @@ export default function SignUpPage() {
 
     try {
       setLoading(true);
+      // Calls your updated backend endpoint passing email and otp string tokens
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: formData.email, otp }),
-        }
+        },
       );
 
       const data = await res.json();
       if (!res.ok) return alert(data.message || "OTP verification failed.");
 
-      alert("Registration complete. You can now login.");
+      alert(
+        `Registration complete! Your MT5 Account Login ID is: ${data.mt5Login}`,
+      );
       router.push("/login");
     } catch (error) {
       console.error(error);
@@ -330,7 +339,6 @@ export default function SignUpPage() {
               pattern="[0-9]{10}"
               title="Please enter a valid 10-digit phone number"
             />
-
             <select
               name="nationality"
               className="input"
@@ -388,7 +396,7 @@ export default function SignUpPage() {
               className="input md:col-span-2"
               value={formData.referralCode}
               onChange={handleChange}
-              readOnly={!!formData.referralCode} // ✅ lock if auto-filled
+              readOnly={!!formData.referralCode}
             />
             <div className="md:col-span-2 flex items-start text-sm text-gray-300">
               <input
@@ -416,7 +424,7 @@ export default function SignUpPage() {
             </div>
             <button
               type="submit"
-              className="md:col-span-2 bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 rounded-full"
+              className="md:col-span-2 bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 rounded-full cursor-pointer"
             >
               {loading ? "Processing..." : "SIGN UP"}
             </button>
@@ -445,7 +453,7 @@ export default function SignUpPage() {
             <div className="flex justify-center">
               <button
                 type="submit"
-                className="bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 px-4 rounded-full w-fit"
+                className="bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 px-4 rounded-full w-fit cursor-pointer"
               >
                 {loading ? "Verifying..." : "VERIFY OTP"}
               </button>
