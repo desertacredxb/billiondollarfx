@@ -25,6 +25,7 @@ function Withdrawal() {
   const [DWBalance, setDWBalance] = useState<string>("0.00");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [manualWithdrawal, setManualWithdrawal] = useState(false);
   const [form, setForm] = useState({
     accountNo: "",
     amount: "",
@@ -34,9 +35,21 @@ function Withdrawal() {
     mobile: "",
     note: "",
   });
-  const [userData, setUserData] = useState<User | null>(null);
+  const [manualform, setManualForm] = useState({
+    accountNo: "",
+    bankName: "",
+    amount: "",
+    account: "",
+    ifsc: "",
+    name: "",
+    mobile: "",
+    note: "",
+  });
+  const [userData, setUserData] = useState<User | null | any>(null);
   const [showKycPopup, setShowKycPopup] = useState(false);
   const [maxWithdrawInInr, setMaxWithdrawInInr] = useState<number>(0);
+
+  // console.log("userData:", userData);
 
   // ✅ Fetch all accounts
   const fetchAccounts = async () => {
@@ -138,6 +151,12 @@ function Withdrawal() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleManualChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setManualForm({ ...manualform, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const withdrawalAmount = Number(form.amount);
@@ -211,6 +230,22 @@ function Withdrawal() {
     }
   };
 
+  const handleManualWithdrawal = () => {
+    setManualForm((prev) => ({
+      ...prev,
+      accountNo: "",
+      bankName: "",
+      ifsc: "",
+      name: "",
+      mobile: userData?.phone || "",
+    }));
+    setManualWithdrawal(true);
+  }
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="w-full rounded-md overflow-hidden shadow-md">
@@ -229,7 +264,7 @@ function Withdrawal() {
 
         {/* Accounts List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {accounts.length > 0 ? (
+          {accounts.length > 0 && (
             accounts.map((acc) => (
               <div
                 key={acc._id}
@@ -249,173 +284,343 @@ function Withdrawal() {
                 <Button
                   text="Withdraw"
                   onClick={() => {
-                    if (userData?.isKycVerified === false) {
-                      setShowKycPopup(true);
-                    } else {
-                      setForm((prev) => ({
-                        ...prev,
-                        accountNo: acc.accountNo.toString(),
-                      }));
-                      setShowModal(true);
-                    }
+                    // if (userData?.isKycVerified === false) {
+                    //   setShowKycPopup(true);
+                    // } else {
+                    //   setForm((prev) => ({
+                    //     ...prev,
+                    //     accountNo: acc.accountNo.toString(),
+                    //   }));
+                    //   setShowModal(true);
+                    // }
+                    setForm((prev) => ({
+                      ...prev,
+                      accountNo: acc.accountNo.toString(),
+                    }));
+                    setShowModal(true);
                   }}
                   className="w-fit"
                 />
               </div>
             ))
-          ) : (
-            <p className="text-gray-400">No accounts found.</p>
           )}
+          <div className="border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6">
+            <div>
+              <p className="text-gray-200 mb-4">
+                Submit a withdrawal request manually. <p className="text-gray-400 mb-4">
+                  <p className="text-gray-400 mb-4">
+
+                  </p>
+                </p>
+              </p>
+            </div>
+
+            <Button
+              text="Manual Withdrawal"
+              onClick={handleManualWithdrawal}
+            />
+          </div>
         </div>
 
         {/* Modal Popup */}
         {showModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-            <div className="bg-[#1f2937] p-6 rounded-xl w-full max-w-md relative max-h-[70vh] overflow-auto no-scrollbar">
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-3 right-3 text-gray-400 hover:text-white"
-              >
-                <X size={20} />
-              </button>
+          <>
+            <div className="fixed inset-0 flex items-center justify-center bg-black/20 bg-opacity-60 z-50">
+              <div className="bg-[#1f2937] p-6 rounded-xl w-full max-w-md relative max-h-[70vh] overflow-auto no-scrollbar">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="absolute top-3 right-3 text-gray-400 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
 
-              <h2 className="text-xl font-bold mb-4">Withdraw Funds</h2>
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                {/* Account Number */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Select Account
-                  </label>
-                  <select
-                    name="accountNo"
-                    value={form.accountNo}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600"
-                  >
-                    {accounts.length > 0 ? (
-                      accounts.map((acc) => (
-                        <option key={acc._id} value={acc.accountNo}>
-                          MT{acc.accountNo} ({acc.currency})
-                        </option>
-                      ))
-                    ) : (
-                      <option value="">No accounts available</option>
-                    )}
-                  </select>
-                </div>
-
-                {/* Bank Account */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Bank Account
-                  </label>
-                  <input
-                    type="text"
-                    name="account"
-                    value={form.account}
-                    onChange={handleChange}
-                    required
-                    disabled
-                    className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                  />
-                </div>
-
-                {/* IFSC */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    IFSC
-                  </label>
-                  <input
-                    type="text"
-                    name="ifsc"
-                    value={form.ifsc}
-                    onChange={handleChange}
-                    required
-                    disabled
-                    className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                  />
-                </div>
-
-                {/* Name */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Account Holder Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                    disabled
-                    className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                  />
-                </div>
-
-                {/* Mobile */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Mobile
-                  </label>
-                  <input
-                    type="text"
-                    name="mobile"
-                    value={form.mobile}
-                    onChange={handleChange}
-                    required
-                    disabled
-                    className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                  />
-                </div>
-
-                {/* Amount */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Amount
-                  </label>
-                  <input
-                    type="number"
-                    name="amount"
-                    value={form.amount}
-                    onChange={handleChange}
-                    // min="1000"
-                    // max={Math.min(maxWithdrawInInr, 100000)}
-                    // required
-                    className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                  />
-                  <div className="flex justify-between">
-                    <p className="text-xs text-gray-400 mt-2">
-                      Min Amout: ₹1000
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Max Amout: ₹100000
-                    </p>
+                <h2 className="text-xl font-bold mb-4">Withdraw Funds</h2>
+                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                  {/* Account Number */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Select Account
+                    </label>
+                    <select
+                      name="accountNo"
+                      value={form.accountNo}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600"
+                    >
+                      {accounts.length > 0 ? (
+                        accounts.map((acc) => (
+                          <option key={acc._id} value={acc.accountNo}>
+                            MT{acc.accountNo} ({acc.currency})
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">No accounts available</option>
+                      )}
+                    </select>
                   </div>
-                </div>
 
-                {/* Note */}
-                <div>
-                  <label className="block text-sm text-gray-300 mb-1">
-                    Note
-                  </label>
-                  <input
-                    type="text"
-                    name="note"
-                    value={form.note}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                  {/* Bank Account */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Bank Account
+                    </label>
+                    <input
+                      type="text"
+                      name="account"
+                      value={form.account}
+                      onChange={handleChange}
+                      required
+                      disabled={form.accountNo !== "MANUAL"}
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                    />
+                  </div>
+
+                  {/* IFSC */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      IFSC
+                    </label>
+                    <input
+                      type="text"
+                      name="ifsc"
+                      value={form.ifsc}
+                      onChange={handleChange}
+                      required
+                      disabled
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                    />
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Account Holder Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                      disabled={form.accountNo !== "MANUAL"}
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                    />
+                  </div>
+
+                  {/* Mobile */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Mobile
+                    </label>
+                    <input
+                      type="text"
+                      name="mobile"
+                      value={form.mobile}
+                      onChange={handleChange}
+                      required
+                      disabled={form.accountNo !== "MANUAL"}
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                    />
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Amount
+                    </label>
+                    <input
+                      type="number"
+                      name="amount"
+                      value={form.amount}
+                      onChange={handleChange}
+                      // min="1000"
+                      // max={Math.min(maxWithdrawInInr, 100000)}
+                      // required
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                    />
+                    <div className="flex justify-between">
+                      <p className="text-xs text-gray-400 mt-2">
+                        Min Amout: ₹1000
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Max Amout: ₹100000
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Note */}
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Note
+                    </label>
+                    <input
+                      type="text"
+                      name="note"
+                      value={form.note}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+                    />
+                  </div>
+
+                  <Button
+                    text={loading ? "Processing..." : "Confirm Withdrawal"}
+                    disabled={loading}
                   />
+                </form>
+              </div>
+            </div>
+          </>
+        )}
+        {
+          manualWithdrawal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
+              <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl transition-all">
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setManualWithdrawal(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-800 p-1.5 rounded-lg transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X size={18} />
+                </button>
+
+                {/* Header */}
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-white tracking-wide">Withdraw Funds</h2>
+                  <p className="text-xs text-gray-400 mt-1">Provide account credentials and specifying your amount below.</p>
                 </div>
 
-                <Button
-                  text={loading ? "Processing..." : "Confirm Withdrawal"}
-                  disabled={loading}
-                />
-              </form>
+                <form onSubmit={handleManualSubmit} className="space-y-4" noValidate>
+                  {/* Account Number Dropdown */}
+
+                  {/* Two-Column Layout: Bank Account & IFSC */}
+                  <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                         Account No
+                      </label>
+                      <input
+                        type="text"
+                        name="accountNo"
+                        value={manualform.accountNo}
+                        onChange={handleManualChange}
+                        required
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        IFSC
+                      </label>
+                      <input
+                        type="text"
+                        name="ifsc"
+                        value={manualform.ifsc}
+                        onChange={handleManualChange}
+                        required
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        name="bankName"
+                        value={manualform.bankName}
+                        onChange={handleManualChange}
+                        required
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Two-Column Layout: Account Holder Name & Mobile */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Account Holder Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={manualform.name}
+                        onChange={handleManualChange}
+                        required
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Mobile Number
+                      </label>
+                      <input
+                        type="text"
+                        name="mobile"
+                        value={manualform.mobile}
+                        onChange={handleManualChange}
+                        required
+                        disabled={form.accountNo !== "MANUAL"}
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Amount Input */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Amount
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="amount"
+                        value={manualform.amount}
+                        onChange={handleManualChange}
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center mt-1.5 px-1">
+                      <span className="text-[11px] font-medium text-gray-500">Min: <span className="text-gray-400">₹1,000</span></span>
+                      <span className="text-[11px] font-medium text-gray-500">Max: <span className="text-gray-400">₹1,000,000</span></span>
+                    </div>
+                  </div>
+
+                  {/* Note Input */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Note (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="note"
+                      value={manualform.note}
+                      onChange={handleManualChange}
+                      className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm"
+                      placeholder="e.g., Personal savings withdrawal"
+                    />
+                  </div>
+
+                  {/* Action Button Section */}
+                  <div className="pt-2">
+                    <Button
+                      text={loading ? "Processing..." : "Confirm Withdrawal"}
+                      disabled={loading}
+                      className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-800 text-white font-medium rounded-xl transition-all shadow-lg shadow-cyan-600/10 active:scale-[0.98]"
+                    />
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
       </div>
 
       <Toaster

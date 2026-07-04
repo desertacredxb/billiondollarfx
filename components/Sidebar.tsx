@@ -180,16 +180,16 @@ export default function Sidebar({
                 );
 
                 const userData = res.data;
-                if (!userData?.accounts?.length) {
-                  Swal.close();
-                  await Swal.fire({
-                    icon: "error",
-                    title: "No Account Found",
-                    text: "No trading account is linked to your profile.",
-                    confirmButtonColor: "#d33",
-                  });
-                  return;
-                }
+                // if (!userData?.accounts?.length) {
+                //   Swal.close();
+                //   await Swal.fire({
+                //     icon: "error",
+                //     title: "No Account Found",
+                //     text: "No trading account is linked to your profile.",
+                //     confirmButtonColor: "#d33",
+                //   });
+                //   return;
+                // }
 
                 const accountNo = userData.accounts[0].accountNo;
                 // console.log("User AccountNo:", accountNo);
@@ -242,6 +242,8 @@ export default function Sidebar({
                   confirmButtonColor: "#d33",
                 });
               }
+                              router.push("/withdrawals");
+
             }}
             className={clsx(
               "flex items-center gap-2 px-4 py-2 rounded hover:text-[var(--primary)] transition-all text-sm w-full text-left cursor-pointer",

@@ -65,7 +65,7 @@ export default function RegisterModal({
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/register`,
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/register`,
         {
           method: "POST",
           headers: {
