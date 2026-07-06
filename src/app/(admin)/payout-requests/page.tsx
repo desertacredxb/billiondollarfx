@@ -18,6 +18,9 @@ interface Withdrawal {
   note?: string;
   status: "Pending" | "Completed" | "Rejected";
   createdAt: string;
+  bankName?: string; // Optional property for bank name
+  isManual?: boolean; // Optional property to indicate if it's a manual withdrawal
+  upiId?: string; // Optional property for UPI ID
 }
 
 interface AccountSummary {
@@ -192,13 +195,12 @@ export default function AdminWithdrawals() {
                   <td className="px-4 py-3">{w.name}</td>
                   <td className="px-4 py-3">₹{w.amount}</td>
                   <td
-                    className={`px-4 py-3 font-semibold ${
-                      w.status === "Completed"
+                    className={`px-4 py-3 font-semibold ${w.status === "Completed"
                         ? "text-green-400"
                         : w.status === "Rejected"
-                        ? "text-red-400"
-                        : "text-yellow-400"
-                    }`}
+                          ? "text-red-400"
+                          : "text-yellow-400"
+                      }`}
                   >
                     {w.status}
                   </td>
@@ -238,13 +240,12 @@ export default function AdminWithdrawals() {
                 <p className="text-sm">
                   <b>Status:</b>{" "}
                   <span
-                    className={`font-semibold ${
-                      w.status === "Completed"
+                    className={`font-semibold ${w.status === "Completed"
                         ? "text-green-400"
                         : w.status === "Rejected"
-                        ? "text-red-400"
-                        : "text-yellow-400"
-                    }`}
+                          ? "text-red-400"
+                          : "text-yellow-400"
+                      }`}
                   >
                     {w.status}
                   </span>
@@ -283,43 +284,63 @@ export default function AdminWithdrawals() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
               <div className="space-y-3">
-                <p>
-                  <b>Account:</b> {selectedWithdrawal.account}
-                </p>
-                <p>
-                  <b>IFSC:</b> {selectedWithdrawal.ifsc}
-                </p>
-                <p>
-                  <b>Name:</b> {selectedWithdrawal.name}
-                </p>
-                <p>
-                  <b>Mobile:</b> {selectedWithdrawal.mobile}
-                </p>
-                <p>
-                  <b>Note:</b> {selectedWithdrawal.note || "—"}
-                </p>
-              </div>
+  <p>
+    <b>Withdrawal Type:</b>{" "}
+    {selectedWithdrawal.isManual
+      ? selectedWithdrawal.upiId
+        ? "Manual UPI Submission"
+        : "Manual Bank Details Submission"
+      : "Linked Withdrawal Account"}
+  </p>
+  <p>
+    <b>Name:</b> {selectedWithdrawal.name}
+  </p>
+  <p>
+    <b>Mobile:</b> {selectedWithdrawal.mobile}
+  </p>
+  {selectedWithdrawal.upiId ? (
+    <p>
+      <b>UPI ID:</b> {selectedWithdrawal.upiId}
+    </p>
+  ) : (
+    selectedWithdrawal.bankName && (
+      <>
+        <p>
+          <b>Bank Name:</b> {selectedWithdrawal.bankName}
+        </p>
+        <p>
+          <b>Account No:</b> {selectedWithdrawal.accountNo}
+        </p>
+        <p>
+          <b>IFSC:</b> {selectedWithdrawal.ifsc}
+        </p>
+      </>
+    )
+  )}
+  <p>
+    <b>Note:</b> {selectedWithdrawal.note || "—"}
+  </p>
+</div>
+
               <div className="space-y-3">
                 <p>
                   <b>Amount:</b> ₹{selectedWithdrawal.amount}
                 </p>
-                <p>
-                  <b>Account No:</b> {selectedWithdrawal.accountNo}
-                </p>
+
                 <p>
                   <b>Status:</b>{" "}
                   <span
-                    className={`font-semibold ${
-                      selectedWithdrawal.status === "Completed"
+                    className={`font-semibold ${selectedWithdrawal.status === "Completed"
                         ? "text-green-400"
                         : selectedWithdrawal.status === "Rejected"
-                        ? "text-red-400"
-                        : "text-yellow-400"
-                    }`}
+                          ? "text-red-400"
+                          : "text-yellow-400"
+                      }`}
                   >
                     {selectedWithdrawal.status}
                   </span>
                 </p>
+
                 <p>
                   <b>Created:</b>{" "}
                   {new Date(selectedWithdrawal.createdAt).toLocaleString()}

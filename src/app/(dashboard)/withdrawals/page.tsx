@@ -44,6 +44,8 @@ function Withdrawal() {
     name: "",
     mobile: "",
     note: "",
+    paymentMethod: "bank", // "bank" | "upi"
+    upiId: "",
   });
   const [userData, setUserData] = useState<User | null | any>(null);
   const [showKycPopup, setShowKycPopup] = useState(false);
@@ -238,13 +240,78 @@ function Withdrawal() {
       ifsc: "",
       name: "",
       mobile: userData?.phone || "",
+      paymentMethod: "bank",
+      upiId: "",
     }));
     setManualWithdrawal(true);
   }
 
   const handleManualSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+
+  if (
+    manualform.paymentMethod === "bank" &&
+    (!manualform.ifsc || !manualform.bankName)
+  ) {
+    toast.error("Please enter IFSC and Bank Name.");
+    return;
   }
+
+  if (manualform.paymentMethod === "upi" && !manualform.upiId) {
+    toast.error("Please enter a valid UPI ID.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const payload = {
+      accountNo: manualform.accountNo,
+      name: manualform.name,
+      mobile: manualform.mobile,
+      amount: manualform.amount,
+      note: manualform.note,
+      paymentMethod: manualform.paymentMethod,
+      ...(manualform.paymentMethod === "bank"
+        ? {
+            ifsc: manualform.ifsc,
+            bankName: manualform.bankName,
+          }
+        : {
+            upiId: manualform.upiId,
+          }),
+    };
+
+    // console.log("Manual Withdrawal Payload:", payload);
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request_v2`,
+      payload
+    );
+
+    if (res.data?.success) {
+      toast.success("✅ Manual withdrawal request submitted!");
+      setManualWithdrawal(false);
+    } else {
+      toast.error(res.data?.message || "Withdrawal failed. Try again.");
+    }
+  } catch (err: unknown) {
+    let errorMsg = "Withdrawal failed. Try again.";
+
+    if (axios.isAxiosError(err)) {
+      errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        errorMsg;
+    } else if (err instanceof Error) {
+      errorMsg = err.message;
+    }
+
+    toast.error(errorMsg);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col gap-4">
@@ -495,22 +562,57 @@ function Withdrawal() {
                 <form onSubmit={handleManualSubmit} className="space-y-4" noValidate>
                   {/* Account Number Dropdown */}
 
-                  {/* Two-Column Layout: Bank Account & IFSC */}
+                  {/* Payment Method Toggle */}
                   <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                         Account No
-                      </label>
-                      <input
-                        type="text"
-                        name="accountNo"
-                        value={manualform.accountNo}
-                        onChange={handleManualChange}
-                        required
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Withdraw Via
+                    </label>
+                    <div className="flex gap-2 bg-gray-800 border border-gray-700 rounded-xl p-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setManualForm((prev) => ({ ...prev, paymentMethod: "bank" }))
+                        }
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${manualform.paymentMethod === "bank"
+                            ? "bg-cyan-600 text-white"
+                            : "text-gray-400 hover:text-white"
+                          }`}
+                      >
+                        Bank Transfer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setManualForm((prev) => ({ ...prev, paymentMethod: "upi" }))
+                        }
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${manualform.paymentMethod === "upi"
+                            ? "bg-cyan-600 text-white"
+                            : "text-gray-400 hover:text-white"
+                          }`}
+                      >
+                        UPI
+                      </button>
                     </div>
+                  </div>
+
+                  {manualform.paymentMethod === "bank" ? (
+                   <>
+                   
+                   <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Account No
+                    </label>
+                    <input
+                      type="text"
+                      name="accountNo"
+                      value={manualform.accountNo}
+                      onChange={handleManualChange}
+                      required
+                      className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    />
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    
+
 
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -538,9 +640,24 @@ function Withdrawal() {
                         className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                       />
                     </div>
-                  </div>
+                  </div></>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        UPI ID
+                      </label>
+                      <input
+                        type="text"
+                        name="upiId"
+                        value={manualform.upiId}
+                        onChange={handleManualChange}
+                        required
+                        placeholder="yourname@upi"
+                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  )}
 
-                  {/* Two-Column Layout: Account Holder Name & Mobile */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -571,6 +688,12 @@ function Withdrawal() {
                       />
                     </div>
                   </div>
+
+                  {/* Two-Column Layout: Bank Account & IFSC */}
+                  
+
+                  {/* Two-Column Layout: Account Holder Name & Mobile */}
+                  
 
                   {/* Amount Input */}
                   <div>
