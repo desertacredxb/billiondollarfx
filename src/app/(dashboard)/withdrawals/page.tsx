@@ -542,7 +542,7 @@ function Withdrawal() {
         {
           manualWithdrawal && (
             <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
-              <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl transition-all">
+              <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-lg relative max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl transition-all">
 
                 {/* Close Button */}
                 <button
@@ -554,7 +554,7 @@ function Withdrawal() {
                 </button>
 
                 {/* Header */}
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-xl font-bold text-white tracking-wide">Withdraw Funds</h2>
                   <p className="text-xs text-gray-400 mt-1">Provide account credentials and specifying your amount below.</p>
                 </div>
