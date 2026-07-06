@@ -191,7 +191,7 @@ export default function AdminWithdrawals() {
                   className="border-b border-gray-700 hover:bg-[#111827]"
                 >
                   <td className="px-4 py-3">{w.orderid}</td>
-                  <td className="px-4 py-3">{w.account}</td>
+                  <td className="px-4 py-3">{w.account || w.accountNo || w.upiId}</td>
                   <td className="px-4 py-3">{w.name}</td>
                   <td className="px-4 py-3">₹{w.amount}</td>
                   <td
