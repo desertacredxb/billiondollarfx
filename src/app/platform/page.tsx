@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 export default function MT5Page() {
   const router = useRouter();
   const handleClick = () => {
-    router.push("/register");
+    // router.push("/register");
+    router.push("https://crm.billiondollarfx.com/#/client/signup");
   };
   return (
     <div>

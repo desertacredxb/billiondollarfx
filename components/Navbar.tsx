@@ -179,13 +179,15 @@ const Navbar = () => {
             Introducing Broker
           </Link>
           <Link
-            href="/login"
+            // href="/login"
+            href="https://crm.billiondollarfx.com/#/login"
             className="hover:bg-[var(--primary)] hover:text-white px-4 py-2 rounded-full border border-[var(--primary)] transition text-[var(--primary)]"
           >
             Login
           </Link>
           <Link
-            href="/register"
+            // href="/register"
+            href="https://crm.billiondollarfx.com/#/client/signup"
             className="group relative inline-block px-4 py-2 border border-[var(--primary)] text-[var(--primary)] rounded-full overflow-hidden"
           >
             <span className="absolute inset-0 bg-[var(--primary)] translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-in-out z-0"></span>
@@ -277,13 +279,15 @@ const Navbar = () => {
           <div className="flex gap-5">
             <button
               className="text-[var(--primary)] border border-[var(--primary)] px-3 py-1 rounded-full text-sm hover:bg-[var(--primary)] hover:text-black transition"
-              onClick={() => (window.location.href = "/login")}
+              // onClick={() => (window.location.href = "/login")}
+              onClick={() => (window.location.href = "https://crm.billiondollarfx.com/#/login")}
             >
               Login
             </button>
             <button
               className="text-[var(--primary)] border border-[var(--primary)] px-3 py-1 rounded-full text-sm hover:bg-[var(--primary)] hover:text-black transition"
-              onClick={() => (window.location.href = "/register")}
+              // onClick={() => (window.location.href = "/register")}
+              onClick={() => (window.location.href = "https://crm.billiondollarfx.com/#/client/signup")}
             >
               Register
             </button>

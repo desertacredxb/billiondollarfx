@@ -80,8 +80,11 @@ export default function BenefitsSection() {
           <p className="text-gray-400 mt-4 max-w-md">
             Curated for traders who demand clarity, speed, and real results.
           </p>
-          <Link href="/register">
-            <button className="mt-6 relative overflow-hidden px-5 py-2 border border-[var(--primary)] text-[var(--primary)] rounded-full group">
+          <Link 
+          // href="/register"
+          href="https://crm.billiondollarfx.com/#/client/signup"
+          >
+            <button className="mt-6 relative overflow-hidden px-5 py-2 border border-[var(--primary)] text-[var(--primary)] rounded-full group cursor-pointer">
               <span className="relative z-10 transition-colors duration-300 group-hover:text-white">
                 Start Trading →
               </span>
