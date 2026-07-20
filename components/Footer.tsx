@@ -99,7 +99,7 @@ export default function Footer() {
           <h3 className="font-bold text-white mb-2">Contact Info</h3>
           <ul className="text-gray-400 space-y-2">
             <li className="flex items-center gap-2">
-              <FaWhatsapp className="text-green-400" /> whatsapp
+              <FaWhatsapp className="text-green-400" /> +447593611999
             </li>
             <li className="flex items-center gap-2">
               <FaEnvelope className="text-blue-400" /> info@billiondollarfx.com

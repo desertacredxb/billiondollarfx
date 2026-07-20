@@ -19,7 +19,7 @@ export default function InsightsSection() {
 
       {/* WhatsApp Button  */}
       <a
-        href="https://wa.me/919876543210"
+        href="https://wa.me/447593611999"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 bg-[#1DA851] hover:bg-[#52956a] text-white px-6 py-2.5 rounded-full text-base font-medium shadow-md border border-[#1DA851] transition"

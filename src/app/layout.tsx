@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AOSWrapper from "../../components/AOSWrapper";
 import Script from "next/script";
+import WhatsAppButton from "../../components/WhatsappButton";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -66,7 +67,12 @@ export default function RootLayout({
       </head>
 
       <body className={montserrat.className}>
-        <AOSWrapper>{children}</AOSWrapper>
+        <AOSWrapper>{children}
+
+         
+        </AOSWrapper>
+
+         <WhatsAppButton />
 
         {/* Meta Pixel Noscript */}
         <noscript>
@@ -79,7 +85,7 @@ export default function RootLayout({
         </noscript>
 
         {/* Zoho SalesIQ Script */}
-        <Script id="zoho-init" strategy="afterInteractive">
+        {/* <Script id="zoho-init" strategy="afterInteractive">
           {`
             window.$zoho=window.$zoho || {};
             $zoho.salesiq=$zoho.salesiq||{ready:function(){}};
@@ -91,7 +97,7 @@ export default function RootLayout({
           src="https://salesiq.zohopublic.com/widget?wc=siq386b399ecc65c2474fa386c88a997404"
           strategy="afterInteractive"
           defer
-        />
+        /> */}
       </body>
     </html>
   );
