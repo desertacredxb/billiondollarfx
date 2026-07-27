@@ -371,7 +371,7 @@ function Withdrawal() {
               </div>
             ))
           )}
-          <div className="border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6">
+          {/* <div className="border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6">
             <div>
               <p className="text-gray-200 mb-4">
                 Submit a withdrawal request manually. <p className="text-gray-400 mb-4">
@@ -386,7 +386,7 @@ function Withdrawal() {
               text="Manual Withdrawal"
               onClick={handleManualWithdrawal}
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Modal Popup */}
