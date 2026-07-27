@@ -110,6 +110,7 @@ export default function DepositsPage() {
       );
 
       const userData = res.data;
+      console.log("userData", userData)
       setUserData(userData);
       if (
         userData &&

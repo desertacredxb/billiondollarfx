@@ -11,8 +11,8 @@ import { useEffect, useState } from "react";
 export default function Hero() {
   const router = useRouter();
   const handleClick = () => {
-    // router.push("/register");
-    router.push("https://crm.billiondollarfx.com/#/client/signup");
+    router.push("/register");
+    // router.push("https://crm.billiondollarfx.com/#/client/signup");
   };
 
   // 👇 Messages to rotate

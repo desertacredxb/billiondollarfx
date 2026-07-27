@@ -7,6 +7,8 @@ import Logo from "../../../assets/bdfx.gif";
 import Button from "../../../components/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { countriesData } from "@/data/IsoCode";
+import { Eye, EyeOff } from "lucide-react";
 
 const countries = [
   "Afghanistan",
@@ -143,6 +145,7 @@ const countries = [
   "Zimbabwe",
 ];
 
+
 export default function SignUpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -163,6 +166,10 @@ export default function SignUpPage() {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"form" | "otp">("form");
   const [loading, setLoading] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const refCode = searchParams?.get("ref");
@@ -347,9 +354,9 @@ export default function SignUpPage() {
               required
             >
               <option value="">Select Country*</option>
-              {countries.map((country) => (
-                <option key={country} value={country}>
-                  {country}
+              {countriesData.map((data:any) => (
+                <option key={data.country} value={data.country}>
+                  {data.country}
                 </option>
               ))}
             </select>
@@ -371,24 +378,46 @@ export default function SignUpPage() {
               onChange={handleChange}
               required
             />
-            <input
-              name="password"
-              type="password"
-              placeholder="Password*"
-              className="input"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-            <input
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirm Password*"
-              className="input"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-            />
+            <div className="relative">
+              <input
+                name="password"
+                type={passwordFocused || showPassword ? "text" : "password"}
+                placeholder="Password*"
+                className="input w-full pr-10"
+                value={formData.password}
+                onChange={handleChange}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                {passwordFocused || showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                name="confirmPassword"
+                type={confirmPasswordFocused || showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password*"
+                className="input w-full pr-10"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                onFocus={() => setConfirmPasswordFocused(true)}
+                onBlur={() => setConfirmPasswordFocused(false)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                {confirmPasswordFocused || showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <input
               name="referralCode"
               type="text"

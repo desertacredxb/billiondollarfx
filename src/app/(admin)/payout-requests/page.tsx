@@ -60,6 +60,7 @@ export default function AdminWithdrawals() {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`
       );
       setWithdrawals(res.data.data);
+      console.log("Fetched Withdrawals:", res.data.data);
     } catch (err: unknown) {
       toast.error("Failed to load withdrawals");
     } finally {
