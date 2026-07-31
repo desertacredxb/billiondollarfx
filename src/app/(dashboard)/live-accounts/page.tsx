@@ -167,7 +167,7 @@ export default function LiveAccounts() {
                       : "bg-[#0d1b2a] "
                   }`}
                 >
-                  MT{acc.accountNo}
+                  {acc.accountNo}
                 </div>
               ))}
               {accounts.length === 0 && (
