@@ -3,6 +3,8 @@
 import CryptoPay from "../../../../components/deposits/Crypto";
 import Digipay from "../../../../components/deposits/Digipay";
 import RameePay from "../../../../components/deposits/Rameepay";
+import TruePay9 from "../../../../components/deposits/TruePay9";
+import TrustPay24 from "../../../../components/deposits/TrustPay24";
 
 function Deposit() {
   return (
@@ -23,6 +25,8 @@ function Deposit() {
           <RameePay />
           <Digipay />
           <CryptoPay />
+          {/* <TruePay9 /> */}
+          <TrustPay24/>
         </div>
       </div>
     </div>

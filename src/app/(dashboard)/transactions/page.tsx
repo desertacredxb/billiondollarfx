@@ -357,7 +357,7 @@ export default function TransactionPage() {
               >
                 {accounts.map((acc) => (
                   <option key={acc._id} value={acc.accountNo}>
-                    MT{acc.accountNo} ({acc.currency})
+                    {acc.accountNo} ({acc.currency})
                   </option>
                 ))}
               </select>

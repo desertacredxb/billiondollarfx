@@ -95,12 +95,12 @@ function ProfileImage() {
 
       <p className="mt-2 text-sm text-gray-400">Click to change photo</p>
 
-      {isKycVerified && (
+      {/* {isKycVerified && (
         <div className="mt-3 flex items-center gap-2 px-3 py-1 bg-green-600/20 text-green-400 rounded-full text-xs font-medium">
           <ShieldCheck className="w-4 h-4" />
           <span>KYC Verified</span>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

@@ -341,7 +341,7 @@ function Withdrawal() {
                   <Wallet size={30} className="text-[var(--primary-color)]" />
                   <div className="flex flex-col">
                     <h2>$({balance})</h2>
-                    <h2 className="text-lg font-semibold">MT{acc.accountNo}</h2>
+                    <h2 className="text-lg font-semibold">{acc.accountNo}</h2>
                   </div>
                 </div>
                 <p className="text-gray-300 text-sm">
@@ -418,7 +418,7 @@ function Withdrawal() {
                       {accounts.length > 0 ? (
                         accounts.map((acc) => (
                           <option key={acc._id} value={acc.accountNo}>
-                            MT{acc.accountNo} ({acc.currency})
+                            {acc.accountNo} ({acc.currency})
                           </option>
                         ))
                       ) : (

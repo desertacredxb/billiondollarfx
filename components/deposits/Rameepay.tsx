@@ -160,7 +160,7 @@ function RameePay() {
                   {accounts.length > 0 ? (
                     accounts.map((acc) => (
                       <option key={acc._id} value={acc.accountNo}>
-                        MT{acc.accountNo} ({acc.currency})
+                        {acc.accountNo} ({acc.currency})
                       </option>
                     ))
                   ) : (
