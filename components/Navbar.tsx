@@ -279,15 +279,15 @@ const Navbar = () => {
           <div className="flex gap-5">
             <button
               className="text-[var(--primary)] border border-[var(--primary)] px-3 py-1 rounded-full text-sm hover:bg-[var(--primary)] hover:text-black transition"
-              // onClick={() => (window.location.href = "/login")}
-              onClick={() => (window.location.href = "https://crm.billiondollarfx.com/#/login")}
+              onClick={() => (window.location.href = "/login")}
+              // onClick={() => (window.location.href = "https://crm.billiondollarfx.com/#/login")}
             >
               Login
             </button>
             <button
               className="text-[var(--primary)] border border-[var(--primary)] px-3 py-1 rounded-full text-sm hover:bg-[var(--primary)] hover:text-black transition"
-              // onClick={() => (window.location.href = "/register")}
-              onClick={() => (window.location.href = "https://crm.billiondollarfx.com/#/client/signup")}
+              onClick={() => (window.location.href = "/register")}
+              // onClick={() => (window.location.href = "https://crm.billiondollarfx.com/#/client/signup")}
             >
               Register
             </button>
