@@ -23,7 +23,7 @@ function Deposit() {
         <h1 className="text-2xl font-bold mb-8">Payment Methods</h1>
         <div className="flex flex-wrap gap-6">
           <RameePay />
-          <Digipay />
+          {/* <Digipay /> */}
           <CryptoPay />
           {/* <TruePay9 /> */}
           <TrustPay24/>
