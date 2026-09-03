@@ -262,7 +262,7 @@ export default function SignUpPage() {
       if (!res.ok) return alert(data.message || "OTP verification failed.");
 
       alert(
-        `Registration complete! Your MT5 Account Login ID is: ${data.mt5Login}`,
+        `Registration successful! Please log in to continue.`,
       );
       router.push("/login");
     } catch (error) {
