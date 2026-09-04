@@ -27,6 +27,9 @@ interface AccountSummary {
   MarginFree: string;
   Equity: string;
   DWBalance: string;
+  group?: string;
+  rights?: string;
+  registration?: string;
 }
 
 export default function LiveAccounts() {
@@ -73,32 +76,43 @@ export default function LiveAccounts() {
     }
   };
 
-  const fetchAccountSummary = async (accountNo: number) => {
-    try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
-        { accountno: accountNo.toString() },
-        { headers: { "Content-Type": "application/json" } }
-      );
+const fetchAccountSummary = async (accountNo: number | string) => {
 
-      if (res.data?.data?.response === "success") {
-        const data = res.data.data;
-        setSummary({
-          balance: data.balance || "0",
-          Credit: data.Credit || "0",
-          Floating: data.Floating || "0",
-          Margin: data.Margin || "0",
-          MarginFree: data.MarginFree || "0",
-          Equity: data.Equity || "0",
-          DWBalance: data.DWBalance || "0",
-        });
-      } else {
-        setSummary(null);
+  console.log("workign")
+  try {
+    const res = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/user`,
+      {
+        params: {
+          login: accountNo.toString(),
+        },
       }
-    } catch (error) {
-      console.error("Error fetching account summary:", error);
+    );
+
+    if (res.data?.success && res.data?.data) {
+      const data = res.data.data;
+
+      setSummary({
+        balance: data.Balance ?? data.balance ?? "0",
+        Credit: data.Credit ?? "0",
+        Floating: data.Floating ?? "0",
+        Margin: data.Margin ?? "0",
+        MarginFree: data.MarginFree ?? "0",
+        Equity: data.Equity ?? "0",
+        DWBalance: data.DWBalance ?? "0",
+        // Optional MT5 meta fields
+        group: data.Group || "",
+        rights: data.Rights || "",
+        registration: data.Registration || "",
+      });
+    } else {
+      setSummary(null);
     }
-  };
+  } catch (error: any) {
+    console.error("Error fetching account summary:", error?.response?.data || error.message);
+    setSummary(null);
+  }
+};
 
   useEffect(() => {
     fetchUserData();
@@ -186,7 +200,7 @@ export default function LiveAccounts() {
             <>
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">
-                  Account MT{selectedAccount.accountNo}
+                  Account No : {selectedAccount.accountNo}
                 </h2>
                 <span className="bg-[var(--primary)]/20 text-[var(--primary)] px-4 py-1 rounded-full text-sm">
                   {selectedAccount.currency}

@@ -89,3 +89,8 @@ select option {
   color: white !important;
   background-color: black !important;
 }
+
+
+button{
+  cursor: pointer;
+}
