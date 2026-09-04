@@ -1,5 +1,6 @@
 "use client";
 
+import Cregis from "../../../../components/deposits/Cregis";
 import CryptoPay from "../../../../components/deposits/Crypto";
 import Digipay from "../../../../components/deposits/Digipay";
 import RameePay from "../../../../components/deposits/Rameepay";
@@ -27,6 +28,7 @@ function Deposit() {
           <CryptoPay />
           {/* <TruePay9 /> */}
           <TrustPay24/>
+          <Cregis/>
         </div>
       </div>
     </div>
