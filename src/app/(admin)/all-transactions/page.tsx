@@ -7,6 +7,7 @@ type Transaction = {
   date: string;
   amount: number;
   account: string;
+  accountNo?: string;
   status: "Pending" | "Completed" | "Failed" | "Rejected";
   txnId?: string;
   name?: string | "";
@@ -26,6 +27,9 @@ interface DepositResponse {
   accountNo: string | number;
   status: "SUCCESS" | "FAILED" | "PENDING" | string;
   name: string | "";
+  provider: string;
+  providerOrderId?:string;
+  comment?:string;
 }
 
 interface WithdrawalResponse {
