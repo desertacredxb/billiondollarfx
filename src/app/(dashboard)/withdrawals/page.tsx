@@ -161,8 +161,12 @@ export default function Withdrawal() {
     const amt = parseFloat(form.amount) * rate;
 
 
-    if (amt < 100) {
+    if (form.currency === "USD" && amt < 100) {
       toast.error("Minimum withdrawal amount is $100.");
+      return;
+    }
+    if (form.currency === "INR" && amt < 1000) {
+      toast.error("Minimum withdrawal amount is ₹1000.");
       return;
     }
 
