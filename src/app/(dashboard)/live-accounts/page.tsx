@@ -22,11 +22,10 @@ interface Account {
 interface AccountSummary {
   balance: string;
   Credit: string;
-  Floating: string;
-  Margin: string;
-  MarginFree: string;
-  Equity: string;
-  DWBalance: string;
+  // Floating: string;
+  // Margin: string;
+  // MarginFree: string;
+  // Equity: string;
   group?: string;
   rights?: string;
   registration?: string;
@@ -95,16 +94,20 @@ const fetchAccountSummary = async (accountNo: number | string) => {
       setSummary({
         balance: data.Balance ?? data.balance ?? "0",
         Credit: data.Credit ?? "0",
-        Floating: data.Floating ?? "0",
-        Margin: data.Margin ?? "0",
-        MarginFree: data.MarginFree ?? "0",
-        Equity: data.Equity ?? "0",
-        DWBalance: data.DWBalance ?? "0",
         // Optional MT5 meta fields
         group: data.Group || "",
         rights: data.Rights || "",
         registration: data.Registration || "",
       });
+
+      console.log({
+        balance: data.Balance ?? data.balance ?? "0",
+        Credit: data.Credit ?? "0",
+        // Optional MT5 meta fields
+        // group: data.Group || "",
+        rights: data.Rights || "",
+        registration: data.Registration || "",
+      })
     } else {
       setSummary(null);
     }
@@ -209,45 +212,15 @@ const fetchAccountSummary = async (accountNo: number | string) => {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
                 <div>
-                  <p className="text-gray-400">💼 Balance</p>
+                  <p className="text-gray-400">Balance</p>
                   <p className="bg-[#17263e] px-3 py-2 rounded-md">
                     ${summary.balance}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400">🏦 Credit</p>
+                  <p className="text-gray-400">Credit</p>
                   <p className="bg-[#17263e] px-3 py-2 rounded-md">
                     ${summary.Credit}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400">📉 Floating</p>
-                  <p className="bg-[#17263e] px-3 py-2 rounded-md">
-                    ${summary.Floating}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400">📊 Margin</p>
-                  <p className="bg-[#17263e] px-3 py-2 rounded-md">
-                    ${summary.Margin}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400">💰 Free Margin</p>
-                  <p className="bg-[#17263e] px-3 py-2 rounded-md">
-                    ${summary.MarginFree}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400">📈 Equity</p>
-                  <p className="bg-[#17263e] px-3 py-2 rounded-md">
-                    ${summary.Equity}
-                  </p>
-                </div>
-                <div className="col-span-2 md:col-span-3">
-                  <p className="text-gray-400">💵 DW Balance</p>
-                  <p className="bg-[#17263e] px-3 py-2 rounded-md">
-                    ${summary.DWBalance}
                   </p>
                 </div>
               </div>

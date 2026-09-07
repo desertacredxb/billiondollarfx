@@ -74,8 +74,8 @@ function CryptoPay() {
     const amount = Number(form.amount);
 
     // ✅ Validate minimum 1000
-    if (amount < 1000) {
-      alert("The minimum deposit amount should be ₹1000.");
+    if (amount < 10) {
+      alert("The minimum deposit amount is $10 USD.");
       return;
     }
 
@@ -111,10 +111,10 @@ function CryptoPay() {
       <div className="max-w-md border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6 flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <CreditCard size={40} className="text-[var(--primary-color)]" />
-          <h2 className="text-xl font-semibold">Crypto</h2>
+          <h2 className="text-xl font-semibold">Crypto Gateway (Option 1 )</h2>
         </div>
         <p className="text-gray-300 text-sm">
-          Secure and fast deposit using Crypto. Click below to proceed.
+          Secure and fast deposit for Crypto. Click below to proceed.
         </p>
 
         {/* ✅ Use Button instead of <button> */}
@@ -172,12 +172,11 @@ function CryptoPay() {
               {/* Amount */}
               <div>
                 <label className="block text-sm text-gray-300 mb-1">
-                  Amount
+                  Amount (USDT)
                 </label>
                 <div className="relative">
-                  {/* ₹ Symbol */}
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    ₹
+                    $
                   </span>
                   <input
                     type="number"
@@ -185,14 +184,13 @@ function CryptoPay() {
                     value={form.amount}
                     onChange={handleChange}
                     required
-                    min={1000} // ✅ minimum value enforced
-                    placeholder="1000"
+                    min={10} // E.g., $10 USDT minimum
+                    placeholder="100"
                     className="w-full pl-7 pr-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                 </div>
-                {/* Note under input */}
                 <p className="text-xs text-gray-400 mt-1">
-                  Minimum deposit amount is ₹1000.
+                  Minimum deposit amount is $10 USDT.
                 </p>
               </div>
 

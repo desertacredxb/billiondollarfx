@@ -3,765 +3,461 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
-import KycAlertModal from "../../../../components/KycAlertModal";
 import toast, { Toaster } from "react-hot-toast";
 
 interface Account {
   _id: string;
   accountNo: number;
   currency: string;
+  accountType?: string;
 }
 
-interface User {
-  email: string;
-  isKycVerified: boolean;
-  accounts: Account[];
-}
-
-function Withdrawal() {
+export default function Withdrawal() {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accountNo, setAccountNo] = useState("");
   const [balance, setBalance] = useState<number>(0);
-  const [DWBalance, setDWBalance] = useState<string>("0.00");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [manualWithdrawal, setManualWithdrawal] = useState(false);
+
+  // 🔹 Form state with default values
   const [form, setForm] = useState({
     accountNo: "",
+    currency: "CRYPTO" as "INR" | "USD" | "CRYPTO",
     amount: "",
+    note: "",
+    // INR Details (Prefilled from User Object)
     account: "",
     ifsc: "",
-    name: "",
-    mobile: "",
-    note: "",
-  });
-  const [manualform, setManualForm] = useState({
-    accountNo: "",
-    bankName: "",
-    amount: "",
-    account: "",
-    ifsc: "",
-    name: "",
-    mobile: "",
-    note: "",
-    paymentMethod: "bank", // "bank" | "upi"
     upiId: "",
+    accountHolderName: "",
+    // USD Details (Prefilled)
+    bankName: "",
+    swiftCode: "",
+    // Crypto Details
+    cryptoSymbol: "USDT",
+    walletAddress: "",
+    network: "TRC20",
+    memo: "",
   });
-  const [userData, setUserData] = useState<User | null | any>(null);
-  const [showKycPopup, setShowKycPopup] = useState(false);
-  const [maxWithdrawInInr, setMaxWithdrawInInr] = useState<number>(0);
 
-  // console.log("userData:", userData);
-
-  // ✅ Fetch all accounts
-  const fetchAccounts = async () => {
+  const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem("token");
       const userString = localStorage.getItem("user");
-
-      if (!token || !userString) return;
-
-      const user = JSON.parse(userString);
-      const email = user.email;
+      if (!userString) return;
+      const storedUser = JSON.parse(userString);
 
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${storedUser.email}`
       );
 
-      if (res.data) setUserData(res.data);
-      // console.log(res.data);
+      const userData = res.data;
+
+      // 1. Process Trading Accounts
+      if (Array.isArray(userData?.accounts) && userData.accounts.length > 0) {
+        setAccounts(userData.accounts);
+        const defaultAcc = userData.accounts[0].accountNo.toString();
+
+        setForm((prev) => ({
+          ...prev,
+          accountNo: defaultAcc,
+        }));
+
+        fetchAccountSummary(userData.accounts[0].accountNo);
+      }
+
+      // 2. Prefill Bank Details matching your EXACT JSON payload keys
       setForm((prev) => ({
         ...prev,
-        name: res.data.accountHolderName || "",
-        account: res.data.accountNumber || "",
-        ifsc: res.data.ifscCode || "",
-        mobile: res.data.phone || "",
-        note: "withdrawal request", // default note
+        // INR Bank Details
+        account: userData?.accountNumber || "",
+        ifsc: userData?.ifscCode || "",
+        accountHolderName: userData?.accountHolderName || "",
+        upiId: userData?.upiId || "",
+        // USD Bank Details
+        bankName: userData?.bankName || "",
+        swiftCode: userData?.iban || "",
       }));
 
-      if (res.data?.accounts?.length > 0) {
-        setAccounts(res.data.accounts);
-        const firstAccountNo = res.data.accounts[0].accountNo;
-        // console.log("first:", firstAccountNo);
-        setAccountNo(firstAccountNo);
-        // console.log("accountno:", accountNo);
-        fetchAccountSummary(firstAccountNo);
-      }
     } catch (err) {
-      console.error("Error fetching accounts:", err);
+      console.error("Error fetching user data:", err);
     }
   };
 
-  const fetchAccountSummary = async (accountNo: number) => {
-    try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
-        { accountno: accountNo.toString() },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      const result = res.data;
-      if (result.data?.response === "success") {
-        const accountData = result.data;
-        setBalance(parseFloat(accountData.balance));
-        setDWBalance(accountData.DWBalance);
-      } else {
-        console.warn("Account summary fetch failed:", result.data?.message);
-      }
-    } catch (error) {
-      console.error("Failed to fetch account summary:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  async function fetchRate() {
+  const fetchAccountSummary = async (accNo: number | string) => {
     try {
       const res = await axios.get(
-        "https://api.frankfurter.app/latest?amount=1&from=INR&to=USD"
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/user`,
+        {
+          params: { login: accNo.toString() },
+        }
       );
-      return res.data.rates.USD; // 1 INR = ? USD
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error("Error fetching INR→USD rate:", err.message);
-      } else {
-        console.error("Unknown error fetching INR→USD rate:", err);
-      }
-      return 0.012; // fallback rate if API fails
-    }
-  }
 
-  const updateMaxWithdrawInInr = async () => {
-    const inrToUsd = await fetchRate(); // 1 INR = ? USD
-    if (inrToUsd > 0) {
-      const usdToInr = 1 / inrToUsd; // ✅ invert
-      setMaxWithdrawInInr(balance * usdToInr);
+      if (res.data?.success && res.data?.data) {
+        const data = res.data.data;
+        const currentBalance = data.Balance ?? data.balance ?? "0";
+        setBalance(parseFloat(currentBalance));
+      }
+    } catch (error) {
+      console.error("Error fetching MT5 balance:", error);
     }
   };
 
   useEffect(() => {
-    if (balance > 0) {
-      updateMaxWithdrawInInr();
-    }
-  }, [balance]);
+    fetchUserData();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleManualChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setManualForm({ ...manualform, [e.target.name]: e.target.value });
+  const fetchRate = async () => {
+    try {
+      const res = await axios.get("https://api.frankfurter.app/latest?amount=1&from=INR&to=USD");
+      const rate = Number(res.data.rates.USD);
+      return rate;
+    } catch (err) {
+      console.error("Error fetching INR → USD rate:", err); // Fallback rate 
+      return 0.01058;
+    }
+  }
+
+  const handleAccountSelect = (accNo: string) => {
+    setForm((prev) => ({ ...prev, accountNo: accNo }));
+    fetchAccountSummary(accNo);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const withdrawalAmount = Number(form.amount);
+    const amountNum = Number(form.amount);
 
-    // 🚨 Validation
-    if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-      toast.error("Please enter a valid amount.");
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error("Please enter a valid withdrawal amount.");
       return;
     }
 
-    if (withdrawalAmount < 1000) {
-      toast.error("Minimum withdrawal amount is ₹1000");
+    if (amountNum > balance) {
+      toast.error("Withdrawal amount exceeds current account balance.");
       return;
     }
 
-    if (withdrawalAmount > 100000) {
-      toast.error("You can withdraw a maximum of ₹100,000 at once.");
+    // Dynamic Validations
+    if (form.currency === "CRYPTO" && !form.walletAddress) {
+      toast.error("Wallet Address is required for Crypto payout.");
+      return;
+    }
+    if (form.currency === "INR" && !form.account && !form.upiId) {
+      toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
+      return;
+    }
+    if (form.currency === "USD" && (!form.account || !form.bankName)) {
+      toast.error("Account Number and Bank Name are required for USD wire.");
       return;
     }
 
-    if (withdrawalAmount > maxWithdrawInInr) {
-      toast.error("Insufficient balance. Please check your account.");
+
+    const rate = await fetchRate();
+    const amt = parseFloat(form.amount) * rate;
+
+
+    if (amt < 100) {
+      toast.error("Minimum withdrawal amount is $100.");
       return;
     }
 
     try {
       setLoading(true);
-
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
-        {
-          account: form.account,
-          ifsc: form.ifsc,
-          name: form.name,
-          mobile: form.mobile,
-          note: form.note,
-          amount: form.amount,
-          accountNo: form.accountNo,
-        }
+        form
       );
 
-      // console.log(res.data);
-
       if (res.data?.success) {
-        toast.success("✅ Withdrawal request submitted!");
-        fetchAccountSummary(Number(form.accountNo)); // refresh balance
+        toast.success(res.data.message || "Withdrawal request submitted!");
+        setShowModal(false);
+        fetchAccountSummary(form.accountNo);
       } else {
-        // Show backend-provided message if available
-        const errorMsg = res.data?.message || "Withdrawal failed. Try again.";
-        toast.error(errorMsg);
+        toast.error(res.data?.message || "Withdrawal failed.");
       }
-    } catch (err: unknown) {
-      let errorMsg = "Withdrawal failed. Try again.";
-
-      if (axios.isAxiosError(err)) {
-        errorMsg =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          err.message ||
-          errorMsg;
-        console.error("Withdrawal Axios error:", err.response?.data);
-      } else if (err instanceof Error) {
-        errorMsg = err.message;
-        console.error("Withdrawal Error:", err);
-      }
-
-      toast.error(errorMsg);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Submission error occurred.");
     } finally {
       setLoading(false);
-      setShowModal(false);
     }
   };
 
-  const handleManualWithdrawal = () => {
-    setManualForm((prev) => ({
-      ...prev,
-      accountNo: "",
-      bankName: "",
-      ifsc: "",
-      name: "",
-      mobile: userData?.phone || "",
-      paymentMethod: "bank",
-      upiId: "",
-    }));
-    setManualWithdrawal(true);
-  }
-
-  const handleManualSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (
-    manualform.paymentMethod === "bank" &&
-    (!manualform.ifsc || !manualform.bankName)
-  ) {
-    toast.error("Please enter IFSC and Bank Name.");
-    return;
-  }
-
-  if (manualform.paymentMethod === "upi" && !manualform.upiId) {
-    toast.error("Please enter a valid UPI ID.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const payload = {
-      accountNo: manualform.accountNo,
-      name: manualform.name,
-      mobile: manualform.mobile,
-      amount: manualform.amount,
-      note: manualform.note,
-      paymentMethod: manualform.paymentMethod,
-      ...(manualform.paymentMethod === "bank"
-        ? {
-            ifsc: manualform.ifsc,
-            bankName: manualform.bankName,
-          }
-        : {
-            upiId: manualform.upiId,
-          }),
-    };
-
-    // console.log("Manual Withdrawal Payload:", payload);
-    const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request_v2`,
-      payload
-    );
-
-    if (res.data?.success) {
-      toast.success("✅ Manual withdrawal request submitted!");
-      setManualWithdrawal(false);
-    } else {
-      toast.error(res.data?.message || "Withdrawal failed. Try again.");
-    }
-  } catch (err: unknown) {
-    let errorMsg = "Withdrawal failed. Try again.";
-
-    if (axios.isAxiosError(err)) {
-      errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        errorMsg;
-    } else if (err instanceof Error) {
-      errorMsg = err.message;
-    }
-
-    toast.error(errorMsg);
-  } finally {
-    setLoading(false);
-  }
-};
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="w-full rounded-md overflow-hidden shadow-md">
-        <video
-          src="/BILLION$ FX WEBSITE WITHDRAWALS.mp4"
-          className="w-full object-cover rounded-md"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-      </div>
+      <div className="bg-gradient-to-br from-[#0a0f1d] to-[#0f172a] p-6 text-white rounded-xl min-h-[85vh]">
+        <h1 className="text-2xl font-bold mb-6">Withdrawal Portal</h1>
 
-      <div className="h-screen md:h-[80vh] bg-gradient-to-br from-[#0a0f1d] to-[#0f172a] px-6 md:px-12 py-10 text-white">
-        <h1 className="text-2xl font-bold mb-8">Withdrawal</h1>
-
-        {/* Accounts List */}
+        {/* Account Display Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {accounts.length > 0 && (
-            accounts.map((acc) => (
-              <div
-                key={acc._id}
-                className="border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6 flex flex-col space-y-4"
-              >
-                <div className="flex justify-between items-center">
-                  <Wallet size={30} className="text-[var(--primary-color)]" />
-                  <div className="flex flex-col">
-                    <h2>$({balance})</h2>
-                    <h2 className="text-lg font-semibold">{acc.accountNo}</h2>
-                  </div>
+          {accounts.map((acc) => (
+            <div
+              key={acc._id}
+              className="border border-gray-700 bg-[#111827] rounded-2xl p-6 flex flex-col space-y-4 shadow-lg"
+            >
+              <div className="flex justify-between items-center">
+                <Wallet size={30} className="text-cyan-400" />
+                <div>
+                  <h2 className="text-xl font-bold">${balance}</h2>
+                  <p className="text-sm text-gray-400">Acc #: {acc.accountNo}</p>
                 </div>
-                <p className="text-gray-300 text-sm">
-                  Withdraw funds securely from this account.
-                </p>
-
-                <Button
-                  text="Withdraw"
-                  onClick={() => {
-                    // if (userData?.isKycVerified === false) {
-                    //   setShowKycPopup(true);
-                    // } else {
-                    //   setForm((prev) => ({
-                    //     ...prev,
-                    //     accountNo: acc.accountNo.toString(),
-                    //   }));
-                    //   setShowModal(true);
-                    // }
-                    setForm((prev) => ({
-                      ...prev,
-                      accountNo: acc.accountNo.toString(),
-                    }));
-                    setShowModal(true);
-                  }}
-                  className="w-fit"
-                />
               </div>
-            ))
-          )}
-          {/* <div className="border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6">
-            <div>
-              <p className="text-gray-200 mb-4">
-                Submit a withdrawal request manually. <p className="text-gray-400 mb-4">
-                  <p className="text-gray-400 mb-4">
-
-                  </p>
-                </p>
-              </p>
+              <Button
+                text="Request Withdrawal"
+                onClick={() => {
+                  handleAccountSelect(acc.accountNo.toString());
+                  setShowModal(true);
+                }}
+              />
             </div>
-
-            <Button
-              text="Manual Withdrawal"
-              onClick={handleManualWithdrawal}
-            />
-          </div> */}
+          ))}
         </div>
 
-        {/* Modal Popup */}
+        {/* Withdrawal Modal */}
         {showModal && (
-          <>
-            <div className="fixed inset-0 flex items-center justify-center bg-black/20 bg-opacity-60 z-50">
-              <div className="bg-[#1f2937] p-6 rounded-xl w-full max-w-md relative max-h-[70vh] overflow-auto no-scrollbar">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="absolute top-3 right-3 text-gray-400 hover:text-white"
+          <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 p-4">
+            <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <h2 className="text-xl font-bold mb-4">Request Withdrawal</h2>
+
+              {/* 🔹 TRADER ACCOUNT SELECTOR INSIDE MODAL */}
+              <div className="bg-[#121a2a] border border-gray-700 p-4 rounded-xl mb-6">
+                <label className="block text-xs font-semibold text-gray-400 uppercase mb-2">
+                  Select Source MT5 Account
+                </label>
+                <select
+                  value={form.accountNo}
+                  onChange={(e) => handleAccountSelect(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold mb-2"
                 >
-                  <X size={20} />
-                </button>
-
-                <h2 className="text-xl font-bold mb-4">Withdraw Funds</h2>
-                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                  {/* Account Number */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Select Account
-                    </label>
-                    <select
-                      name="accountNo"
-                      value={form.accountNo}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600"
-                    >
-                      {accounts.length > 0 ? (
-                        accounts.map((acc) => (
-                          <option key={acc._id} value={acc.accountNo}>
-                            {acc.accountNo} ({acc.currency})
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No accounts available</option>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* Bank Account */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Bank Account
-                    </label>
-                    <input
-                      type="text"
-                      name="account"
-                      value={form.account}
-                      onChange={handleChange}
-                      required
-                      disabled={form.accountNo !== "MANUAL"}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                    />
-                  </div>
-
-                  {/* IFSC */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      IFSC
-                    </label>
-                    <input
-                      type="text"
-                      name="ifsc"
-                      value={form.ifsc}
-                      onChange={handleChange}
-                      required
-                      disabled
-                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                    />
-                  </div>
-
-                  {/* Name */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Account Holder Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      required
-                      disabled={form.accountNo !== "MANUAL"}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                    />
-                  </div>
-
-                  {/* Mobile */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Mobile
-                    </label>
-                    <input
-                      type="text"
-                      name="mobile"
-                      value={form.mobile}
-                      onChange={handleChange}
-                      required
-                      disabled={form.accountNo !== "MANUAL"}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                    />
-                  </div>
-
-                  {/* Amount */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      name="amount"
-                      value={form.amount}
-                      onChange={handleChange}
-                      // min="1000"
-                      // max={Math.min(maxWithdrawInInr, 100000)}
-                      // required
-                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                    />
-                    <div className="flex justify-between">
-                      <p className="text-xs text-gray-400 mt-2">
-                        Min Amout: ₹1000
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">
-                        Max Amout: ₹100000
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Note */}
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-1">
-                      Note
-                    </label>
-                    <input
-                      type="text"
-                      name="note"
-                      value={form.note}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-                    />
-                  </div>
-
-                  <Button
-                    text={loading ? "Processing..." : "Confirm Withdrawal"}
-                    disabled={loading}
-                  />
-                </form>
+                  {accounts.map((acc) => (
+                    <option key={acc._id} value={acc.accountNo}>
+                      MT5 Account: {acc.accountNo} ({acc.currency})
+                    </option>
+                  ))}
+                </select>
+                <div className="flex justify-between items-center text-xs text-gray-400 px-1">
+                  <span>Available Balance:</span>
+                  <span className="text-cyan-400 font-bold text-sm">${balance}</span>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-        {
-          manualWithdrawal && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
-              <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-lg relative max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl transition-all">
 
-                {/* Close Button */}
-                <button
-                  onClick={() => setManualWithdrawal(false)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-800 p-1.5 rounded-lg transition-colors"
-                  aria-label="Close modal"
-                >
-                  <X size={18} />
-                </button>
-
-                {/* Header */}
-                <div className="mb-4">
-                  <h2 className="text-xl font-bold text-white tracking-wide">Withdraw Funds</h2>
-                  <p className="text-xs text-gray-400 mt-1">Provide account credentials and specifying your amount below.</p>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* 1. Currency Option Selection */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                    Select Withdrawal Method
+                  </label>
+                  <select
+                    name="currency"
+                    value={form.currency}
+                    onChange={handleChange}
+                    className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm"
+                  >
+                    <option value="CRYPTO">Crypto</option>
+                    <option value="INR">INR (Bank Transfer / UPI)</option>
+                    <option value="USD">USD (International Wire)</option>
+                  </select>
                 </div>
 
-                <form onSubmit={handleManualSubmit} className="space-y-4" noValidate>
-                  {/* Account Number Dropdown */}
-
-                  {/* Payment Method Toggle */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Withdraw Via
-                    </label>
-                    <div className="flex gap-2 bg-gray-800 border border-gray-700 rounded-xl p-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setManualForm((prev) => ({ ...prev, paymentMethod: "bank" }))
-                        }
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${manualform.paymentMethod === "bank"
-                            ? "bg-cyan-600 text-white"
-                            : "text-gray-400 hover:text-white"
-                          }`}
-                      >
-                        Bank Transfer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setManualForm((prev) => ({ ...prev, paymentMethod: "upi" }))
-                        }
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${manualform.paymentMethod === "upi"
-                            ? "bg-cyan-600 text-white"
-                            : "text-gray-400 hover:text-white"
-                          }`}
-                      >
-                        UPI
-                      </button>
+                {/* 2A. CRYPTO FIELDS */}
+                {form.currency === "CRYPTO" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                          Asset
+                        </label>
+                        <select
+                          name="cryptoSymbol"
+                          value={form.cryptoSymbol}
+                          onChange={handleChange}
+                          className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                        >
+                          <option value="USDT">USDT</option>
+                          <option value="BTC">BTC</option>
+                          <option value="ETH">ETH</option>
+                          <option value="SOL">SOL</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                          Network
+                        </label>
+                        <select
+                          name="network"
+                          value={form.network}
+                          onChange={handleChange}
+                          className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                        >
+                          <option value="TRC20">TRC20 (Tron)</option>
+                          <option value="BEP20">BEP20 (BSC)</option>
+                          <option value="ERC20">ERC20 (Ethereum)</option>
+                          <option value="Polygon">Polygon</option>
+                          <option value="Solana">Solana</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
-
-                  {manualform.paymentMethod === "bank" ? (
-                   <>
-                   
-                   <div>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Account No
-                    </label>
-                    <input
-                      type="text"
-                      name="accountNo"
-                      value={manualform.accountNo}
-                      onChange={handleManualChange}
-                      required
-                      className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                        IFSC
-                      </label>
+                      <label className="block text-xs text-gray-400 mb-1">Destination Wallet Address</label>
                       <input
                         type="text"
-                        name="ifsc"
-                        value={manualform.ifsc}
-                        onChange={handleManualChange}
-                        required
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                        name="walletAddress"
+                        placeholder="Enter Wallet Address"
+                        value={form.walletAddress}
+                        onChange={handleChange}
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
                       />
                     </div>
+                    <input
+                      type="text"
+                      name="memo"
+                      placeholder="Exchange Memo / Tag (Optional)"
+                      value={form.memo}
+                      onChange={handleChange}
+                      className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                    />
+                  </>
+                )}
+
+                {/* 2B. INR FIELDS (Prefilled) */}
+                {form.currency === "INR" && (
+                  <>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                        Bank Name
-                      </label>
+                      <label className="block text-xs text-gray-400 mb-1">Account Holder Name</label>
+                      <input
+                        type="text"
+                        name="accountHolderName"
+                        value={form.accountHolderName}
+                        onChange={handleChange}
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm text-gray-300 mb-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Bank Account Number</label>
+                        <input
+                          type="text"
+                          name="account"
+                          placeholder="Bank Account Number"
+                          value={form.account}
+                          onChange={handleChange}
+                          className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm mb-3"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">IFSC Code</label>
+                        <input
+                          type="text"
+                          name="ifsc"
+                          placeholder="IFSC Code"
+                          value={form.ifsc}
+                          onChange={handleChange}
+                          className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="relative flex py-1 items-center">
+                      <div className="flex-grow border-t border-gray-700"></div>
+                      <span className="flex-shrink mx-2 text-xs text-gray-400">OR UPI ID</span>
+                      <div className="flex-grow border-t border-gray-700"></div>
+                    </div>
+                    <input
+                      type="text"
+                      name="upiId"
+                      placeholder="UPI ID (Optional, e.g. name@upi)"
+                      value={form.upiId}
+                      onChange={handleChange}
+                      className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                    />
+                  </>
+                )}
+
+                {/* 2C. USD FIELDS (Prefilled) */}
+                {form.currency === "USD" && (
+                  <>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Bank Name</label>
                       <input
                         type="text"
                         name="bankName"
-                        value={manualform.bankName}
-                        onChange={handleManualChange}
-                        required
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                        placeholder="Bank Name"
+                        value={form.bankName}
+                        onChange={handleChange}
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm mb-3"
                       />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">Account Number / IBAN</label>
+                          <input
+                            type="text"
+                            name="account"
+                            placeholder="Account Number / IBAN"
+                            value={form.account}
+                            onChange={handleChange}
+                            className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm mb-3"
+                          />
+
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">SWIFT / BIC Code</label>
+                          <input
+                            type="text"
+                            name="swiftCode"
+                            placeholder="SWIFT / BIC Code"
+                            value={form.swiftCode}
+                            onChange={handleChange}
+                            className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div></>
-                  ) : (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                        UPI ID
-                      </label>
-                      <input
-                        type="text"
-                        name="upiId"
-                        value={manualform.upiId}
-                        onChange={handleManualChange}
-                        required
-                        placeholder="yourname@upi"
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                  )}
+                  </>
+                )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                        Account Holder Name
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={manualform.name}
-                        onChange={handleManualChange}
-                        required
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                    </div>
+                {/* Common Inputs */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                    Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    name="amount"
+                    placeholder="Enter Withdrawal Amount"
+                    value={form.amount}
+                    onChange={handleChange}
+                    className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                  />
+                </div>
+                <input
+                  type="text"
+                  name="note"
+                  placeholder="Note / Instruction (Optional)"
+                  value={form.note}
+                  onChange={handleChange}
+                  className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                />
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                        Mobile Number
-                      </label>
-                      <input
-                        type="text"
-                        name="mobile"
-                        value={manualform.mobile}
-                        onChange={handleManualChange}
-                        required
-                        disabled={form.accountNo !== "MANUAL"}
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Two-Column Layout: Bank Account & IFSC */}
-                  
-
-                  {/* Two-Column Layout: Account Holder Name & Mobile */}
-                  
-
-                  {/* Amount Input */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Amount
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        name="amount"
-                        value={manualform.amount}
-                        onChange={handleManualChange}
-                        className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center mt-1.5 px-1">
-                      <span className="text-[11px] font-medium text-gray-500">Min: <span className="text-gray-400">₹1,000</span></span>
-                      <span className="text-[11px] font-medium text-gray-500">Max: <span className="text-gray-400">₹1,000,000</span></span>
-                    </div>
-                  </div>
-
-                  {/* Note Input */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Note (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      name="note"
-                      value={manualform.note}
-                      onChange={handleManualChange}
-                      className="w-full px-3 py-2.5 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm"
-                      placeholder="e.g., Personal savings withdrawal"
-                    />
-                  </div>
-
-                  {/* Action Button Section */}
-                  <div className="pt-2">
-                    <Button
-                      text={loading ? "Processing..." : "Confirm Withdrawal"}
-                      disabled={loading}
-                      className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-800 text-white font-medium rounded-xl transition-all shadow-lg shadow-cyan-600/10 active:scale-[0.98]"
-                    />
-                  </div>
-                </form>
-              </div>
+                <Button
+                  text={loading ? "Submitting..." : "Submit Withdrawal"}
+                  disabled={loading}
+                />
+              </form>
             </div>
-          )
-        }
+          </div>
+        )}
       </div>
-
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "#333",
-            color: "#fff",
-          },
-        }}
-      />
-
-      <KycAlertModal
-        isOpen={showKycPopup}
-        onClose={() => setShowKycPopup(false)}
-      />
+      <Toaster />
     </div>
   );
 }
-
-export default Withdrawal;

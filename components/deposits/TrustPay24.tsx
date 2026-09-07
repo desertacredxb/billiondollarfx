@@ -139,7 +139,7 @@ export default function TrustPay24() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 self-stretch">
       <div className="max-w-md border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6 flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <CreditCard
@@ -148,12 +148,12 @@ export default function TrustPay24() {
           />
 
           <h2 className="text-xl font-semibold">
-            TrustPay24
+            INR Gateway
           </h2>
         </div>
 
         <p className="text-gray-300 text-sm">
-          Secure and fast deposit using TrustPay24. Click below to
+          Secure and fast deposit for INR transaction. Click below to
           proceed.
         </p>
 

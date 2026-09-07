@@ -165,14 +165,14 @@ export default function Sidebar({
                 const email = user.email;
 
                 // 🌀 Show loader while fetching
-                Swal.fire({
-                  title: "Checking your account...",
-                  text: "Please wait a moment while we verify your trading balance.",
-                  allowOutsideClick: false,
-                  didOpen: () => {
-                    Swal.showLoading();
-                  },
-                });
+                // Swal.fire({
+                //   title: "Checking your account...",
+                //   text: "Please wait a moment while we verify your trading balance.",
+                //   allowOutsideClick: false,
+                //   didOpen: () => {
+                //     Swal.showLoading();
+                //   },
+                // });
 
                 // ✅ Fetch user data
                 const res = await axios.get(
@@ -191,44 +191,44 @@ export default function Sidebar({
                 //   return;
                 // }
 
-                const accountNo = userData.accounts[0].accountNo;
-                // console.log("User AccountNo:", accountNo);
+                // const accountNo = userData.accounts[0].accountNo;
+                // // console.log("User AccountNo:", accountNo);
 
-                // ✅ Check MoneyPlant balance
-                const balanceRes = await axios.post(
-                  `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
-                  { accountno: accountNo.toString() },
-                  { headers: { "Content-Type": "application/json" } }
-                );
+                // // ✅ Check MoneyPlant balance
+                // const balanceRes = await axios.post(
+                //   `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
+                //   { accountno: accountNo.toString() },
+                //   { headers: { "Content-Type": "application/json" } }
+                // );
 
-                const result = balanceRes.data;
-                const response =
-                  result.data?.response || result.data?.data?.response;
-                const margin = parseFloat(
-                  result?.data?.Margin || result?.data?.data?.Margin || "0"
-                );
+                // const result = balanceRes.data;
+                // const response =
+                //   result.data?.response || result.data?.data?.response;
+                // const margin = parseFloat(
+                //   result?.data?.Margin || result?.data?.data?.Margin || "0"
+                // );
 
-                Swal.close(); // ✅ Close loader after response
+                // Swal.close(); // ✅ Close loader after response
 
-                // ⚠️ Margin check
-                if (response === "success" && margin > 0) {
-                  await Swal.fire({
-                    icon: "warning",
-                    title: "Open Trades Detected",
-                    text: `You currently have open trades. Please close them before withdrawing.`,
-                    confirmButtonColor: "#d33",
-                  });
-                  return;
-                }
+                // // ⚠️ Margin check
+                // if (response === "success" && margin > 0) {
+                //   await Swal.fire({
+                //     icon: "warning",
+                //     title: "Open Trades Detected",
+                //     text: `You currently have open trades. Please close them before withdrawing.`,
+                //     confirmButtonColor: "#d33",
+                //   });
+                //   return;
+                // }
 
-                // ✅ Success
-                await Swal.fire({
-                  icon: "success",
-                  title: "All Clear",
-                  text: "No open trades found. Redirecting to Withdrawals...",
-                  showConfirmButton: false,
-                  timer: 1500,
-                });
+                // // ✅ Success
+                // await Swal.fire({
+                //   icon: "success",
+                //   title: "All Clear",
+                //   text: "No open trades found. Redirecting to Withdrawals...",
+                //   showConfirmButton: false,
+                //   timer: 1500,
+                // });
 
                 router.push("/withdrawals");
                 if (onClose) onClose();

@@ -1,53 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import Button from "../../../../components/Button";
-import { AxiosError } from "axios";
+import WithdrawalApprovalModal from "./WithdrawalApprovalModal";
 
-interface Withdrawal {
+export interface Withdrawal {
   _id: string;
   orderid: string;
-  account: string;
-  ifsc: string;
-  name: string;
-  mobile: string;
-  amount: number;
   accountNo: string;
-  note?: string;
+  currency: "INR" | "USD" | "CRYPTO";
+  amount: number;
+  amountUSD?: string;
   status: "Pending" | "Completed" | "Rejected";
   createdAt: string;
-  bankName?: string; // Optional property for bank name
-  isManual?: boolean; // Optional property to indicate if it's a manual withdrawal
-  upiId?: string; // Optional property for UPI ID
-}
-
-interface AccountSummary {
-  response: string;
-  message: string;
-  accountno: string;
-  balance: string;
-  Credit: string;
-  Floating: string;
-  Margin: string;
-  MarginFree: string;
-  Equity: string;
-  DWBalance: string;
+  note?: string;
+  // INR Fields
+  account?: string;
+  ifsc?: string;
+  upiId?: string;
+  name?: string;
+  mobile?: string;
+  // USD Fields
+  bankName?: string;
+  swiftCode?: string;
+  // Crypto Fields
+  cryptoSymbol?: string;
+  walletAddress?: string;
+  network?: string;
+  memo?: string;
+  isManual?: boolean;
 }
 
 export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isApprove, setIsApprove] = useState(false);
-  const [isReject, setIsReject] = useState(false);
-
-  const [selectedWithdrawal, setSelectedWithdrawal] =
-    useState<Withdrawal | null>(null);
-
-  // 👉 state for balance
-  const [balanceData, setBalanceData] = useState<AccountSummary | null>(null);
-  const [loadingBalance, setLoadingBalance] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
 
   useEffect(() => {
     fetchWithdrawals();
@@ -60,69 +49,14 @@ export default function AdminWithdrawals() {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`
       );
       setWithdrawals(res.data.data);
-      console.log("Fetched Withdrawals:", res.data.data);
-    } catch (err: unknown) {
+    } catch {
       toast.error("Failed to load withdrawals");
     } finally {
       setLoading(false);
     }
   };
 
-  // 👉 fetch balance when opening modal
-  const fetchBalance = async (accountNo: string) => {
-    setLoadingBalance(true);
-    setBalanceData(null);
-    // console.log(accountNo);
-    try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
-        { accountno: accountNo }
-      );
-      // console.log(res);
-      setBalanceData(res.data.data);
-    } catch {
-      toast.error("Failed to fetch account balance");
-    } finally {
-      setLoadingBalance(false);
-    }
-  };
-
-  const handleApprove = async (id: string) => {
-    setIsApprove(true);
-    try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/approve/${id}`
-      );
-
-      if (res.data?.success) {
-        toast.success("Withdrawal Approved");
-        fetchWithdrawals();
-      } else {
-        toast.error(res.data?.message || "Approval failed");
-      }
-    } catch (err: unknown) {
-      let errorMsg = "Approval failed";
-
-      if (err instanceof AxiosError) {
-        errorMsg =
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          err.message ||
-          errorMsg;
-        console.error("Approval Axios error:", err.response?.data);
-      } else if (err instanceof Error) {
-        errorMsg = err.message;
-        console.error("Approval Error:", err);
-      }
-
-      toast.error(errorMsg);
-    } finally {
-      setIsApprove(false);
-    }
-  };
-
   const handleReject = async (id: string) => {
-    setIsReject(true);
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reject/${id}`
@@ -130,29 +64,24 @@ export default function AdminWithdrawals() {
 
       if (res.data?.success) {
         toast.success(res.data.message || "Withdrawal rejected & refunded");
+        setSelectedWithdrawal(null);
         fetchWithdrawals();
       } else {
         toast.error(res.data?.message || "Rejection failed");
       }
     } catch (err: unknown) {
       let errorMsg = "Rejection failed";
-
       if (err instanceof AxiosError) {
-        errorMsg =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          err.message ||
-          errorMsg;
-        console.error("Reject Axios error:", err.response?.data);
-      } else if (err instanceof Error) {
-        errorMsg = err.message;
-        console.error("Reject Error:", err);
+        errorMsg = err.response?.data?.message || err.message || errorMsg;
       }
-
       toast.error(errorMsg);
-    } finally {
-      setIsReject(false);
     }
+  };
+
+  const formatAmount = (w: Withdrawal) => {
+    if (w.currency === "CRYPTO") return `${w.amount} ${w.cryptoSymbol || "USDT"}`;
+    if (w.currency === "INR") return `₹${w.amount}`;
+    return `$${w.amount}`;
   };
 
   if (loading) return <p className="text-gray-400 p-6">Loading...</p>;
@@ -162,24 +91,23 @@ export default function AdminWithdrawals() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Withdrawal Requests</h1>
         <p className="text-gray-400 mt-1 text-sm">
-          Manage and review user withdrawal requests
+          Manage and review user withdrawal requests across INR, USD, and Crypto methods.
         </p>
         <hr className="mt-4 border-gray-700" />
       </div>
 
       {withdrawals.length === 0 ? (
-        <p className="text-gray-400 text-center py-10">
-          No withdrawal requests found.
-        </p>
+        <p className="text-gray-400 text-center py-10">No withdrawal requests found.</p>
       ) : (
         <div className="rounded-lg border border-[#1f2937] overflow-hidden">
-          {/* ✅ Desktop Table */}
           <table className="hidden md:table w-full text-sm text-left">
             <thead className="bg-[#1f2937] text-gray-300 uppercase text-xs">
               <tr>
                 <th className="px-4 py-3">Order ID</th>
-                <th className="px-4 py-3">Account</th>
                 <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">MT5 Account</th>
+                <th className="px-4 py-3">Method</th>
+                <th className="px-4 py-3">Payout Destination</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Action</th>
@@ -187,14 +115,26 @@ export default function AdminWithdrawals() {
             </thead>
             <tbody>
               {withdrawals.map((w) => (
-                <tr
-                  key={w._id}
-                  className="border-b border-gray-700 hover:bg-[#111827]"
-                >
-                  <td className="px-4 py-3">{w.orderid}</td>
-                  <td className="px-4 py-3">{w.account || w.accountNo || w.upiId}</td>
-                  <td className="px-4 py-3">{w.name}</td>
-                  <td className="px-4 py-3">₹{w.amount}</td>
+                <tr key={w._id} className="border-b border-gray-700 hover:bg-[#111827]">
+                  <td className="px-4 py-3 font-mono">{w.orderid}</td>
+                  <td className="px-4 py-3 font-mono max-w-[150px]">{w.name}</td>
+                  <td className="px-4 py-3">{w.accountNo}</td>
+                  <td className="px-4 py-3 font-semibold">
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${w.currency === "CRYPTO"
+                          ? "bg-purple-900 text-purple-300"
+                          : w.currency === "INR"
+                            ? "bg-blue-900 text-blue-300"
+                            : "bg-green-900 text-green-300"
+                        }`}
+                    >
+                      {w.currency || "INR"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 max-w-xs truncate">
+                    {w.currency === "CRYPTO" ? w.walletAddress : w.upiId || w.account || "N/A"}
+                  </td>
+                  <td className="px-4 py-3 font-medium">{formatAmount(w)}</td>
                   <td
                     className={`px-4 py-3 font-semibold ${w.status === "Completed"
                         ? "text-green-400"
@@ -206,201 +146,22 @@ export default function AdminWithdrawals() {
                     {w.status}
                   </td>
                   <td className="px-4 py-3">
-                    <Button
-                      onClick={() => {
-                        setSelectedWithdrawal(w);
-                        fetchBalance(w.accountNo);
-                      }}
-                      text="View"
-                    />
+                    <Button onClick={() => setSelectedWithdrawal(w)} text="View & Process" />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-
-          {/* ✅ Mobile Cards */}
-          <div className="md:hidden space-y-4">
-            {withdrawals.map((w) => (
-              <div
-                key={w._id}
-                className="p-4 border border-gray-700 rounded-lg bg-[#111827]"
-              >
-                <p className="text-sm">
-                  <b>Order ID:</b> {w.orderid}
-                </p>
-                <p className="text-sm">
-                  <b>Account:</b> {w.account}
-                </p>
-                <p className="text-sm">
-                  <b>Name:</b> {w.name}
-                </p>
-                <p className="text-sm">
-                  <b>Amount:</b> ₹{w.amount}
-                </p>
-                <p className="text-sm">
-                  <b>Status:</b>{" "}
-                  <span
-                    className={`font-semibold ${w.status === "Completed"
-                        ? "text-green-400"
-                        : w.status === "Rejected"
-                          ? "text-red-400"
-                          : "text-yellow-400"
-                      }`}
-                  >
-                    {w.status}
-                  </span>
-                </p>
-                <Button
-                  onClick={() => {
-                    setSelectedWithdrawal(w);
-                    fetchBalance(w.accountNo);
-                  }}
-                  text="View Details"
-                />
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
-      {/* ✅ Modal */}
       {selectedWithdrawal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-[#1f2937] rounded-lg p-6 w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto space-y-3 relative">
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setSelectedWithdrawal(null);
-                setBalanceData(null);
-              }}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-bold mb-4">
-              Withdrawal {selectedWithdrawal.orderid}
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
-              <div className="space-y-3">
-  <p>
-    <b>Withdrawal Type:</b>{" "}
-    {selectedWithdrawal.isManual
-      ? selectedWithdrawal.upiId
-        ? "Manual UPI Submission"
-        : "Manual Bank Details Submission"
-      : "Linked Withdrawal Account"}
-  </p>
-  <p>
-    <b>Name:</b> {selectedWithdrawal.name}
-  </p>
-  <p>
-    <b>Mobile:</b> {selectedWithdrawal.mobile}
-  </p>
-  {selectedWithdrawal.upiId ? (
-    <p>
-      <b>UPI ID:</b> {selectedWithdrawal.upiId}
-    </p>
-  ) : (
-    selectedWithdrawal.bankName && (
-      <>
-        <p>
-          <b>Bank Name:</b> {selectedWithdrawal.bankName}
-        </p>
-        <p>
-          <b>Account No:</b> {selectedWithdrawal.accountNo}
-        </p>
-        <p>
-          <b>IFSC:</b> {selectedWithdrawal.ifsc}
-        </p>
-      </>
-    )
-  )}
-  <p>
-    <b>Note:</b> {selectedWithdrawal.note || "—"}
-  </p>
-</div>
-
-              <div className="space-y-3">
-                <p>
-                  <b>Amount:</b> ₹{selectedWithdrawal.amount}
-                </p>
-
-                <p>
-                  <b>Status:</b>{" "}
-                  <span
-                    className={`font-semibold ${selectedWithdrawal.status === "Completed"
-                        ? "text-green-400"
-                        : selectedWithdrawal.status === "Rejected"
-                          ? "text-red-400"
-                          : "text-yellow-400"
-                      }`}
-                  >
-                    {selectedWithdrawal.status}
-                  </span>
-                </p>
-
-                <p>
-                  <b>Created:</b>{" "}
-                  {new Date(selectedWithdrawal.createdAt).toLocaleString()}
-                </p>
-              </div>
-            </div>
-
-            {/* ✅ Balance Info */}
-            <div className="mt-6 border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-lg mb-2">
-                Client Remaining Balance
-              </h3>
-              {loadingBalance ? (
-                <p className="text-gray-400">Fetching balance...</p>
-              ) : balanceData ? (
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <p>
-                    <b>Total Balance:</b> ${balanceData.balance}
-                  </p>
-                  <p>
-                    <b>Equity:</b> ${balanceData.Equity}
-                  </p>
-                  <p>
-                    <b>Margin Free:</b> ${balanceData.MarginFree}
-                  </p>
-                  <p>
-                    <b>DW Balance:</b> ${balanceData.DWBalance}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-gray-400">No balance info available.</p>
-              )}
-            </div>
-
-            {/* ✅ Actions */}
-            <div className="flex justify-end gap-3 mt-6">
-              {selectedWithdrawal.status !== "Completed" && (
-                <Button
-                  onClick={async () => {
-                    await handleApprove(selectedWithdrawal._id);
-                    setSelectedWithdrawal(null);
-                  }}
-                  text={isApprove ? "Approving..." : "Approve"}
-                  disabled={isApprove}
-                />
-              )}
-              {selectedWithdrawal.status !== "Rejected" && (
-                <Button
-                  onClick={async () => {
-                    await handleReject(selectedWithdrawal._id);
-                    setSelectedWithdrawal(null);
-                  }}
-                  text={isReject ? "Rejecting..." : "Reject"}
-                  disabled={isReject}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        <WithdrawalApprovalModal
+          selectedWithdrawal={selectedWithdrawal}
+          onClose={() => setSelectedWithdrawal(null)}
+          onSuccess={fetchWithdrawals}
+          onReject={() => handleReject(selectedWithdrawal._id)}
+        />
       )}
     </div>
   );
