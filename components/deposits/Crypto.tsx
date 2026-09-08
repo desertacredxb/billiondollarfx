@@ -73,7 +73,6 @@ function CryptoPay() {
 
     const amount = Number(form.amount);
 
-    // ✅ Validate minimum 1000
     if (amount < 10) {
       alert("The minimum deposit amount is $10 USD.");
       return;
@@ -87,18 +86,23 @@ function CryptoPay() {
         {
           accountNo: form.accountNo,
           amount,
-        },
+        }
       );
-      console.log(res.data);
 
-      if (res.data?.decrypted?.url) {
-        window.location.href = res.data.decrypted.url;
+      // ✅ Check for redirect URL directly
+      const paymentUrl = res.data?.url || res.data?.decrypted?.url;
+
+      if (res.data?.success && paymentUrl) {
+        toast.success("Redirecting to gateway...");
+        window.location.href = paymentUrl;
       } else {
-        toast.error("Error getting Payout URL");
+        toast.error(res.data?.message || "Error getting Payment URL");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Deposit failed. Try again.");
+      const errorMessage =
+        err.response?.data?.message || "Deposit failed. Try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       setShowModal(false);
