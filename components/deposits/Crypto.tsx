@@ -5,6 +5,7 @@ import { CreditCard, X } from "lucide-react";
 import Button from "../../components/Button"; // ✅ import your Button
 import KycAlertModal from "../../components/KycAlertModal";
 import toast, { Toaster } from "react-hot-toast";
+import { MIN_DEPOSIT_USD } from "../../constants/deposit";
 
 interface Account {
   _id: string;
@@ -73,9 +74,9 @@ function CryptoPay() {
 
     const amount = Number(form.amount);
 
-    // ✅ Validate minimum 1000
-    if (amount < 10) {
-      alert("The minimum deposit amount is $10 USD.");
+    // ✅ Validate minimum deposit
+    if (amount < MIN_DEPOSIT_USD) {
+      alert(`The minimum deposit amount is $${MIN_DEPOSIT_USD} USD.`);
       return;
     }
 
@@ -184,13 +185,13 @@ function CryptoPay() {
                     value={form.amount}
                     onChange={handleChange}
                     required
-                    min={10} // E.g., $10 USDT minimum
+                    min={MIN_DEPOSIT_USD} // E.g., $10 USDT minimum
                     placeholder="100"
                     className="w-full pl-7 pr-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Minimum deposit amount is $10 USDT.
+                  Minimum deposit amount is ${MIN_DEPOSIT_USD} USDT.
                 </p>
               </div>
 

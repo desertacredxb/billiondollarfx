@@ -5,6 +5,7 @@ import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Button from "../Button";
+import { MIN_DEPOSIT_USD } from "../../constants/deposit";
 
 interface Account {
   _id: string;
@@ -93,9 +94,9 @@ export default function Cregis() {
 
     const amount = Number(form.amount);
 
-    // Minimum $10 USD check
-    if (!Number.isFinite(amount) || amount < 10) {
-      toast.error("The minimum deposit amount is $10 USD.");
+    // Minimum deposit check
+    if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_USD) {
+      toast.error(`The minimum deposit amount is $${MIN_DEPOSIT_USD} USD.`);
       return;
     }
 
@@ -222,14 +223,14 @@ export default function Cregis() {
                       }))
                     }
                     required
-                    min={10}
+                    min={MIN_DEPOSIT_USD}
                     step="0.01"
                     placeholder="100"
                     className="w-full pl-7 pr-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Minimum deposit amount is $10 USD.
+                  Minimum deposit amount is ${MIN_DEPOSIT_USD} USD.
                 </p>
                 {enteredAmount > 0 && (
                   <p className="text-xs text-gray-400 mt-1">
