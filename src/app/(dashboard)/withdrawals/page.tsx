@@ -30,6 +30,7 @@ export default function Withdrawal() {
     ifsc: "",
     upiId: "",
     accountHolderName: "",
+    mobile: "",
     // USD Details (Prefilled)
     bankName: "",
     swiftCode: "",
@@ -73,6 +74,7 @@ export default function Withdrawal() {
         ifsc: userData?.ifscCode || "",
         accountHolderName: userData?.accountHolderName || "",
         upiId: userData?.upiId || "",
+        mobile: userData?.mobile || userData?.phone || "",
         // USD Bank Details
         bankName: userData?.bankName || "",
         swiftCode: userData?.iban || "",
@@ -158,6 +160,10 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
   if (form.currency === "INR" && !form.account && !form.upiId) {
     toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
+    return;
+  }
+  if (form.currency === "INR" && !form.mobile) {
+    toast.error("Mobile number is required for INR withdrawals.");
     return;
   }
   if (form.currency === "USD" && (!form.account || !form.bankName)) {
@@ -349,6 +355,18 @@ const handleSubmit = async (e: React.FormEvent) => {
                         name="accountHolderName"
                         value={form.accountHolderName}
                         onChange={handleChange}
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm text-gray-300 mb-3"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Mobile Number</label>
+                      <input
+                        type="tel"
+                        name="mobile"
+                        placeholder="10-digit mobile number"
+                        value={form.mobile}
+                        onChange={handleChange}
+                        required
                         className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm text-gray-300 mb-3"
                       />
                     </div>
