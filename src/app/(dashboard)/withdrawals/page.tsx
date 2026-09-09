@@ -4,7 +4,7 @@ import axios from "axios";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
 import toast, { Toaster } from "react-hot-toast";
-import { MIN_WITHDRAWAL_USD, MIN_WITHDRAWAL_INR } from "../../../../constants/withdrawal";
+import { MIN_WITHDRAWAL_USD, MIN_WITHDRAWAL_INR, RAMEEPAY_MIN_INR, RAMEEPAY_MAX_INR } from "../../../../constants/withdrawal";
 
 interface Account {
   _id: string;
@@ -162,8 +162,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
     return;
   }
-  if (form.currency === "INR" && !form.mobile) {
-    toast.error("Mobile number is required for INR withdrawals.");
+  if (form.currency === "INR" && form.mobile.replace(/\D/g, "").length !== 10) {
+    toast.error("A valid 10-digit mobile number is required for INR withdrawals.");
     return;
   }
   if (form.currency === "USD" && (!form.account || !form.bankName)) {
@@ -178,6 +178,10 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
   if (form.currency === "INR" && amountNum < MIN_WITHDRAWAL_INR) {
     toast.error(`Minimum withdrawal amount is ₹${MIN_WITHDRAWAL_INR}.`);
+    return;
+  }
+  if (form.currency === "INR" && (amountNum < RAMEEPAY_MIN_INR || amountNum > RAMEEPAY_MAX_INR)) {
+    toast.error(`INR withdrawals must be between ₹${RAMEEPAY_MIN_INR} and ₹${RAMEEPAY_MAX_INR}.`);
     return;
   }
 
@@ -367,6 +371,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                         value={form.mobile}
                         onChange={handleChange}
                         required
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                        title="Enter a 10-digit mobile number"
                         className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm text-gray-300 mb-3"
                       />
                     </div>
