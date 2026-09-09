@@ -4,6 +4,7 @@ import axios from "axios";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
 import toast, { Toaster } from "react-hot-toast";
+import { MIN_WITHDRAWAL_USD, MIN_WITHDRAWAL_INR } from "../../../../constants/withdrawal";
 
 interface Account {
   _id: string;
@@ -165,55 +166,35 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
 
   // Minimum checks based on input currency
-  if (form.currency === "USD" && amountNum < 100) {
-    toast.error("Minimum withdrawal amount is $100.");
+  if (form.currency === "USD" && amountNum < MIN_WITHDRAWAL_USD) {
+    toast.error(`Minimum withdrawal amount is $${MIN_WITHDRAWAL_USD}.`);
     return;
   }
-  if (form.currency === "INR" && amountNum < 1000) {
-    toast.error("Minimum withdrawal amount is ₹1000.");
+  if (form.currency === "INR" && amountNum < MIN_WITHDRAWAL_INR) {
+    toast.error(`Minimum withdrawal amount is ₹${MIN_WITHDRAWAL_INR}.`);
     return;
   }
 
+  try {
+    setLoading(true);
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
+      form
+    );
 
-    const rate = await fetchRate();
-    let amt;
-    
-    if(form.currency === "INR"){
-      amt =  parseFloat(form.amount);
+    if (res.data?.success) {
+      toast.success(res.data.message || "Withdrawal request submitted!");
+      setShowModal(false);
+      fetchAccountSummary(form.accountNo);
     } else {
-      amt = parseFloat(form.amount) * rate;
+      toast.error(res.data?.message || "Withdrawal failed.");
     }
-
-
-    if (form.currency === "USD" && amt < 100) {
-      toast.error("Minimum withdrawal amount is $100.");
-      return;
-    }
-    if (form.currency === "INR" && amt < 1000) {
-      toast.error("Minimum withdrawal amount is ₹1000.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
-        form
-      );
-
-      if (res.data?.success) {
-        toast.success(res.data.message || "Withdrawal request submitted!");
-        setShowModal(false);
-        fetchAccountSummary(form.accountNo);
-      } else {
-        toast.error(res.data?.message || "Withdrawal failed.");
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Submission error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || "Submission error occurred.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col gap-4">
