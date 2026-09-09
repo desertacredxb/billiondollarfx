@@ -30,10 +30,14 @@ interface CregisDepositResponse {
   order_currency?: string;
 }
 
-// Mirrors CREGIS_PAYMENT_CHARGE_RATE in Billion_Doller_Backend/controllers/paymentOrder.controller.js.
-// Only used here to preview the total before submitting - the backend computes
-// and charges the authoritative amount.
-const CREGIS_PAYMENT_CHARGE_RATE = 0.005; // 0.5%
+// Mirrors CREGIS_PAYMENT_CHARGE_ENABLED / CREGIS_PAYMENT_CHARGE_RATE in
+// Billion_Doller_Backend/.env - only used here to preview the total before
+// submitting; the backend computes and charges the authoritative amount.
+const CREGIS_PAYMENT_CHARGE_ENABLED =
+  process.env.NEXT_PUBLIC_CREGIS_PAYMENT_CHARGE_ENABLED === "true";
+const CREGIS_PAYMENT_CHARGE_RATE = CREGIS_PAYMENT_CHARGE_ENABLED
+  ? Number(process.env.NEXT_PUBLIC_CREGIS_PAYMENT_CHARGE_RATE) || 0.005
+  : 0;
 
 export default function Cregis() {
   const [loading, setLoading] = useState(false);
@@ -232,9 +236,9 @@ export default function Cregis() {
                 <p className="text-xs text-gray-400 mt-1">
                   Minimum deposit amount is ${MIN_DEPOSIT_USD} USD.
                 </p>
-                {enteredAmount > 0 && (
+                {CREGIS_PAYMENT_CHARGE_ENABLED && enteredAmount > 0 && (
                   <p className="text-xs text-gray-400 mt-1">
-                    A 0.5% payment processing charge applies: $
+                    A {(CREGIS_PAYMENT_CHARGE_RATE * 100).toFixed(2)}% payment processing charge applies: $
                     {estimatedChargeAmount.toFixed(2)}. You&apos;ll be asked to
                     pay <span className="text-gray-200">${estimatedTotal.toFixed(2)}</span> in
                     total.
