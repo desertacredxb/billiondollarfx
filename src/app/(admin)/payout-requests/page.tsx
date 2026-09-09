@@ -13,7 +13,7 @@ export interface Withdrawal {
   currency: "INR" | "USD" | "CRYPTO";
   amount: number;
   amountUSD?: string;
-  status: "Pending" | "Completed" | "Rejected" | "Failed";
+  status: "Pending" | "Processing" | "Completed" | "Rejected" | "Failed";
   createdAt: string;
   note?: string;
   // INR Fields
@@ -37,6 +37,7 @@ export default function AdminWithdrawals() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWithdrawals();
@@ -58,10 +59,28 @@ export default function AdminWithdrawals() {
 
   console.log("fetchWithdrawals", withdrawals);
 
-  const handleReject = async (id: string) => {
+  const formatAmount = (w: Withdrawal) => {
+    if (w.currency === "CRYPTO") return `${w.amount} ${w.cryptoSymbol || "USDT"}`;
+    if (w.currency === "INR") return `₹${w.amount}`;
+    return `$${w.amount}`;
+  };
+
+  const handleReject = async (w: Withdrawal) => {
+    const confirmMessage =
+      w.status === "Failed"
+        ? `The ${w.currency} payout gateway failed for this request. Reject it to refund ${formatAmount(
+            w
+          )} back to MT5 account ${w.accountNo} instead of retrying or transferring manually. This cannot be undone. Continue?`
+        : `This will refund ${formatAmount(w)} back to MT5 account ${
+            w.accountNo
+          } and mark the withdrawal as Rejected. This cannot be undone. Continue?`;
+
+    if (!confirm(confirmMessage)) return;
+
+    setRejectingId(w._id);
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reject/${id}`
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reject/${w._id}`
       );
 
       if (res.data?.success) {
@@ -77,13 +96,9 @@ export default function AdminWithdrawals() {
         errorMsg = err.response?.data?.message || err.message || errorMsg;
       }
       toast.error(errorMsg);
+    } finally {
+      setRejectingId(null);
     }
-  };
-
-  const formatAmount = (w: Withdrawal) => {
-    if (w.currency === "CRYPTO") return `${w.amount} ${w.cryptoSymbol || "USDT"}`;
-    if (w.currency === "INR") return `₹${w.amount}`;
-    return `$${w.amount}`;
   };
 
   if (loading) return <p className="text-gray-400 p-6">Loading...</p>;
@@ -140,9 +155,11 @@ export default function AdminWithdrawals() {
                   <td
                     className={`px-4 py-3 font-semibold ${w.status === "Completed"
                         ? "text-green-400"
-                        : w.status === "Rejected"
+                        : w.status === "Rejected" || w.status === "Failed"
                           ? "text-red-400"
-                          : "text-yellow-400"
+                          : w.status === "Processing"
+                            ? "text-blue-400"
+                            : "text-yellow-400"
                       }`}
                   >
                     {w.status}
@@ -162,7 +179,8 @@ export default function AdminWithdrawals() {
           selectedWithdrawal={selectedWithdrawal}
           onClose={() => setSelectedWithdrawal(null)}
           onSuccess={fetchWithdrawals}
-          onReject={() => handleReject(selectedWithdrawal._id)}
+          onReject={() => handleReject(selectedWithdrawal)}
+          rejecting={rejectingId === selectedWithdrawal._id}
         />
       )}
     </div>

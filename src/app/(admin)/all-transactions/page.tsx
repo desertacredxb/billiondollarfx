@@ -8,9 +8,10 @@ type Transaction = {
   amount: number;
   account: string;
   accountNo?: string;
-  status: "Pending" | "Completed" | "Failed" | "Rejected";
+  status: "Pending" | "Partially Paid" | "Completed" | "Failed" | "Rejected";
   txnId?: string;
   name?: string | "";
+  creditedAmount?: number;
 };
 
 interface Account {
@@ -25,7 +26,8 @@ interface DepositResponse {
   createdAt: string;
   amount: string | number;
   accountNo: string | number;
-  status: "SUCCESS" | "FAILED" | "PENDING" | string;
+  status: "SUCCESS" | "FAILED" | "PENDING" | "PARTIALLY_PAID" | string;
+  creditedAmount?: string | number;
   name: string | "";
   provider: string;
   providerOrderId?:string;
@@ -102,6 +104,8 @@ export default function AdminTransactionPage() {
             ? "Completed"
             : row.status === "FAILED"
             ? "Failed"
+            : row.status === "PARTIALLY_PAID"
+            ? "Partially Paid"
             : "Pending"
           : (row as WithdrawalResponse).status === "Completed"
           ? "Completed"
@@ -112,7 +116,25 @@ export default function AdminTransactionPage() {
         type === "withdrawal"
           ? (row as WithdrawalResponse).response?.orderid || "-"
           : (row as DepositResponse).orderid || "-",
+      creditedAmount:
+        type === "deposit" && (row as DepositResponse).creditedAmount !== undefined
+          ? Number((row as DepositResponse).creditedAmount)
+          : undefined,
     };
+  };
+
+  const statusColor = (status: Transaction["status"]) => {
+    switch (status) {
+      case "Completed":
+        return "text-green-400";
+      case "Partially Paid":
+        return "text-orange-400";
+      case "Failed":
+      case "Rejected":
+        return "text-red-400";
+      default:
+        return "text-yellow-400";
+    }
   };
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
@@ -349,6 +371,7 @@ export default function AdminTransactionPage() {
               >
                 <option value="All">All</option>
                 <option value="Completed">Completed</option>
+                <option value="Partially Paid">Partially Paid</option>
                 <option value="Pending">Pending</option>
                 <option value="Failed">Failed</option>
                 <option value="Rejected">Rejected</option>
@@ -457,7 +480,16 @@ export default function AdminTransactionPage() {
                       <td className="px-4 py-2">{item.name}</td>
                       <td className="px-4 py-2">{item.amount}</td>
 
-                      <td className="px-4 py-2">{item.status}</td>
+                      <td className={`px-4 py-2 font-medium ${statusColor(item.status)}`}>
+                        {item.status}
+                        {item.status === "Partially Paid" &&
+                          item.creditedAmount !== undefined && (
+                            <div className="text-xs text-gray-400 font-normal">
+                              ${item.creditedAmount.toFixed(2)} / ${item.amount.toFixed(2)}{" "}
+                              received
+                            </div>
+                          )}
+                      </td>
                       <td className="px-4 py-2">{item.date}</td>
                     </tr>
                   ))

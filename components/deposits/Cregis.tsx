@@ -23,9 +23,16 @@ interface CregisDepositResponse {
   order_id?: string;
   cregis_id?: string;
   checkout_url?: string;
+  requested_amount?: number;
+  payment_charge_amount?: number;
   order_amount?: string;
   order_currency?: string;
 }
+
+// Mirrors CREGIS_PAYMENT_CHARGE_RATE in Billion_Doller_Backend/controllers/paymentOrder.controller.js.
+// Only used here to preview the total before submitting - the backend computes
+// and charges the authoritative amount.
+const CREGIS_PAYMENT_CHARGE_RATE = 0.005; // 0.5%
 
 export default function Cregis() {
   const [loading, setLoading] = useState(false);
@@ -37,6 +44,12 @@ export default function Cregis() {
     accountNo: "",
     amount: "",
   });
+
+  const enteredAmount = Number(form.amount) || 0;
+  const estimatedChargeAmount =
+    enteredAmount > 0 ? Number((enteredAmount * CREGIS_PAYMENT_CHARGE_RATE).toFixed(2)) : 0;
+  const estimatedTotal =
+    enteredAmount > 0 ? Number((enteredAmount + estimatedChargeAmount).toFixed(2)) : 0;
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -218,6 +231,14 @@ export default function Cregis() {
                 <p className="text-xs text-gray-400 mt-1">
                   Minimum deposit amount is $10 USD.
                 </p>
+                {enteredAmount > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    A 0.5% payment processing charge applies: $
+                    {estimatedChargeAmount.toFixed(2)}. You&apos;ll be asked to
+                    pay <span className="text-gray-200">${estimatedTotal.toFixed(2)}</span> in
+                    total.
+                  </p>
+                )}
               </div>
 
               {/* Submit Button */}

@@ -23,6 +23,7 @@ interface ModalProps {
     onClose: () => void;
     onSuccess: () => void;
     onReject: () => void;
+    rejecting: boolean;
 }
 
 export default function WithdrawalApprovalModal({
@@ -30,6 +31,7 @@ export default function WithdrawalApprovalModal({
     onClose,
     onSuccess,
     onReject,
+    rejecting,
 }: ModalProps) {
     const isCrypto = selectedWithdrawal.currency === "CRYPTO";
     const canProcess = selectedWithdrawal.status === "Pending" || selectedWithdrawal.status === "Failed";
@@ -150,8 +152,10 @@ export default function WithdrawalApprovalModal({
                         className={`text-xs px-2.5 py-1 rounded font-semibold ${
                             selectedWithdrawal.status === "Completed"
                                 ? "bg-green-600/20 text-green-400 border border-green-500"
-                                : selectedWithdrawal.status === "Failed"
+                                : selectedWithdrawal.status === "Failed" || selectedWithdrawal.status === "Rejected"
                                 ? "bg-red-600/20 text-red-400 border border-red-500"
+                                : selectedWithdrawal.status === "Processing"
+                                ? "bg-blue-600/20 text-blue-400 border border-blue-500"
                                 : "bg-amber-600/20 text-amber-400 border border-amber-500"
                         }`}
                     >
@@ -281,12 +285,21 @@ export default function WithdrawalApprovalModal({
 
                 {/* Actions */}
                 <div className="flex justify-between pt-4 border-t border-gray-700">
-                    <button
-                        onClick={onReject}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-xs font-semibold text-white"
-                    >
-                        Reject Request
-                    </button>
+                    {canProcess ? (
+                        <button
+                            onClick={onReject}
+                            disabled={rejecting || loading}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                            {rejecting
+                                ? "Refunding..."
+                                : selectedWithdrawal.status === "Failed"
+                                ? "Reject & Refund to MT5"
+                                : "Reject & Refund"}
+                        </button>
+                    ) : (
+                        <span />
+                    )}
 
                     <div className="flex gap-2">
                         <button onClick={onClose} className="px-4 py-2 bg-gray-700 rounded text-xs">
@@ -295,7 +308,7 @@ export default function WithdrawalApprovalModal({
                         {canProcess && (
                             <button
                                 onClick={handleApprove}
-                                disabled={loading}
+                                disabled={loading || rejecting}
                                 className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-xs font-semibold text-white disabled:opacity-50"
                             >
                                 {loading
@@ -305,6 +318,21 @@ export default function WithdrawalApprovalModal({
                         )}
                     </div>
                 </div>
+
+                {selectedWithdrawal.status === "Failed" && (
+                    <p className="text-xs text-amber-400 bg-amber-900/20 border border-amber-700 rounded p-2">
+                        The last payout attempt failed and the request is still holding the customer&apos;s funds.
+                        If the gateway keeps failing, either process it manually above, or use{" "}
+                        <strong>Reject &amp; Refund</strong> to return the funds to their MT5 account.
+                    </p>
+                )}
+
+                {selectedWithdrawal.status === "Processing" && (
+                    <p className="text-xs text-blue-400 bg-blue-900/20 border border-blue-700 rounded p-2">
+                        Cregis has accepted this payout and is confirming it on-chain. It will automatically move to
+                        Completed or Failed once Cregis sends the final confirmation - no action needed here yet.
+                    </p>
+                )}
             </div>
         </div>
     );
