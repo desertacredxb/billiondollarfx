@@ -13,7 +13,7 @@ export interface Withdrawal {
   currency: "INR" | "USD" | "CRYPTO";
   amount: number;
   amountUSD?: string;
-  status: "Pending" | "Completed" | "Rejected";
+  status: "Pending" | "Completed" | "Rejected" | "Failed";
   createdAt: string;
   note?: string;
   // INR Fields
@@ -55,6 +55,8 @@ export default function AdminWithdrawals() {
       setLoading(false);
     }
   };
+
+  console.log("fetchWithdrawals", withdrawals);
 
   const handleReject = async (id: string) => {
     try {

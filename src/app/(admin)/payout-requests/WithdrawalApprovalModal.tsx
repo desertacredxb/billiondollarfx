@@ -25,7 +25,6 @@ interface ModalProps {
     onReject: () => void;
 }
 
-
 export default function WithdrawalApprovalModal({
     selectedWithdrawal,
     onClose,
@@ -33,6 +32,7 @@ export default function WithdrawalApprovalModal({
     onReject,
 }: ModalProps) {
     const isCrypto = selectedWithdrawal.currency === "CRYPTO";
+    const canProcess = selectedWithdrawal.status === "Pending" || selectedWithdrawal.status === "Failed";
 
     // Initial state selection logic
     const [processType, setProcessType] = useState<"rameepay" | "cregis" | "manual">(
@@ -74,7 +74,6 @@ export default function WithdrawalApprovalModal({
                     MarginFree: data.MarginFree ?? "0",
                     Equity: data.Equity ?? "0",
                     DWBalance: data.DWBalance ?? "0",
-                    // Optional MT5 meta fields
                     group: data.Group || "",
                     rights: data.Rights || "",
                     registration: data.Registration || "",
@@ -82,7 +81,8 @@ export default function WithdrawalApprovalModal({
             } else {
                 setSummary(null);
             }
-        } catch {
+        } catch (err: any) {
+            console.error("Failed to fetch MT5 balance:", err);
             toast.error("Failed to fetch MT5 balance");
         } finally {
             setLoadingBalance(false);
@@ -109,14 +109,27 @@ export default function WithdrawalApprovalModal({
             );
 
             if (res.data?.success) {
-                toast.success("Payout processed successfully!");
+                toast.success(
+                    selectedWithdrawal.status === "Failed"
+                        ? "Payout retried successfully!"
+                        : "Payout processed successfully!"
+                );
                 onSuccess();
                 onClose();
             } else {
                 toast.error(res.data?.message || "Approval failed.");
             }
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "Approval execution error");
+            // Detailed error logging to browser console
+            console.error("Payout Processing Error details:", err.response?.data || err);
+
+            const errorMessage =
+                err.response?.data?.message ||
+                err.response?.data?.error?.msg ||
+                err.message ||
+                "Approval execution error";
+
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -129,9 +142,22 @@ export default function WithdrawalApprovalModal({
                     ✕
                 </button>
 
-                <h3 className="text-xl font-bold border-b border-gray-700 pb-2">
-                    Process Withdrawal #{selectedWithdrawal.orderid}
-                </h3>
+                <div className="flex items-center justify-between border-b border-gray-700 pb-2">
+                    <h3 className="text-xl font-bold">
+                        Process Withdrawal #{selectedWithdrawal.orderid}
+                    </h3>
+                    <span
+                        className={`text-xs px-2.5 py-1 rounded font-semibold ${
+                            selectedWithdrawal.status === "Completed"
+                                ? "bg-green-600/20 text-green-400 border border-green-500"
+                                : selectedWithdrawal.status === "Failed"
+                                ? "bg-red-600/20 text-red-400 border border-red-500"
+                                : "bg-amber-600/20 text-amber-400 border border-amber-500"
+                        }`}
+                    >
+                        {selectedWithdrawal.status}
+                    </span>
+                </div>
 
                 {/* Request Overview */}
                 <div className="grid grid-cols-2 gap-4 text-xs bg-[#111827] p-3 rounded border border-gray-700">
@@ -174,19 +200,21 @@ export default function WithdrawalApprovalModal({
                     )}
                 </div>
 
-                {/* Dynamic Execution Gateway Selector */}
-                {selectedWithdrawal.status === "Pending" && (
+                {/* Gateway Options Selection (Visible for both Pending and Failed requests) */}
+                {canProcess && (
                     <div>
-                        <label className="block text-xs font-medium mb-1">Select Payout Gateway / Execution Mode:</label>
+                        <label className="block text-xs font-medium mb-1 text-gray-300">
+                            Select Payout Gateway / Execution Mode:
+                        </label>
                         <div className={`grid ${isCrypto ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
-
-                            {/* RameePay option (Works for both Crypto and Fiat) */}
+                            {/* RameePay option */}
                             <button
                                 type="button"
-                                className={`p-2.5 rounded text-xs font-semibold border text-center transition-all ${processType === "rameepay"
+                                className={`p-2.5 rounded text-xs font-semibold border text-center transition-all ${
+                                    processType === "rameepay"
                                         ? "bg-blue-600 border-blue-500 text-white shadow-lg"
                                         : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
-                                    }`}
+                                }`}
                                 onClick={() => setProcessType("rameepay")}
                             >
                                 RameePay ({isCrypto ? "Crypto" : "Fiat"})
@@ -196,10 +224,11 @@ export default function WithdrawalApprovalModal({
                             {isCrypto && (
                                 <button
                                     type="button"
-                                    className={`p-2.5 rounded text-xs font-semibold border text-center transition-all ${processType === "cregis"
+                                    className={`p-2.5 rounded text-xs font-semibold border text-center transition-all ${
+                                        processType === "cregis"
                                             ? "bg-purple-600 border-purple-500 text-white shadow-lg"
                                             : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
-                                        }`}
+                                    }`}
                                     onClick={() => setProcessType("cregis")}
                                 >
                                     Cregis (Crypto)
@@ -209,10 +238,11 @@ export default function WithdrawalApprovalModal({
                             {/* Manual Transfer option */}
                             <button
                                 type="button"
-                                className={`p-2.5 rounded text-xs font-semibold border text-center transition-all ${processType === "manual"
+                                className={`p-2.5 rounded text-xs font-semibold border text-center transition-all ${
+                                    processType === "manual"
                                         ? "bg-amber-600 border-amber-500 text-white shadow-lg"
                                         : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
-                                    }`}
+                                }`}
                                 onClick={() => setProcessType("manual")}
                             >
                                 Manual Transfer
@@ -222,7 +252,7 @@ export default function WithdrawalApprovalModal({
                 )}
 
                 {/* Inputs for Manual Transfer Option */}
-                {processType === "manual" && selectedWithdrawal.status === "Pending" && (
+                {canProcess && processType === "manual" && (
                     <div className="space-y-3 bg-[#111827] p-3 rounded border border-gray-700">
                         <div>
                             <label className="block text-xs font-medium text-gray-300">
@@ -262,13 +292,15 @@ export default function WithdrawalApprovalModal({
                         <button onClick={onClose} className="px-4 py-2 bg-gray-700 rounded text-xs">
                             Cancel
                         </button>
-                        {selectedWithdrawal.status === "Pending" && (
+                        {canProcess && (
                             <button
                                 onClick={handleApprove}
                                 disabled={loading}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-xs font-semibold text-white"
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-xs font-semibold text-white disabled:opacity-50"
                             >
-                                {loading ? "Processing..." : `Approve (${processType.toUpperCase()})`}
+                                {loading
+                                    ? "Processing..."
+                                    : `${selectedWithdrawal.status === "Failed" ? "Retry" : "Approve"} (${processType.toUpperCase()})`}
                             </button>
                         )}
                     </div>

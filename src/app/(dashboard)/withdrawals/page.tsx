@@ -128,37 +128,61 @@ export default function Withdrawal() {
     fetchAccountSummary(accNo);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amountNum = Number(form.amount);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const amountNum = Number(form.amount);
 
-    if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error("Please enter a valid withdrawal amount.");
-      return;
-    }
+  if (isNaN(amountNum) || amountNum <= 0) {
+    toast.error("Please enter a valid withdrawal amount.");
+    return;
+  }
 
-    if (amountNum > balance) {
-      toast.error("Withdrawal amount exceeds current account balance.");
-      return;
-    }
+  // 1. Calculate USD equivalent for balance check
+  let amountInUSD = amountNum;
+  if (form.currency === "INR") {
+    const rate = await fetchRate(); // INR to USD rate
+    amountInUSD = amountNum * rate;
+  }
 
-    // Dynamic Validations
-    if (form.currency === "CRYPTO" && !form.walletAddress) {
-      toast.error("Wallet Address is required for Crypto payout.");
-      return;
-    }
-    if (form.currency === "INR" && !form.account && !form.upiId) {
-      toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
-      return;
-    }
-    if (form.currency === "USD" && (!form.account || !form.bankName)) {
-      toast.error("Account Number and Bank Name are required for USD wire.");
-      return;
-    }
+  // 2. Balance Check (MT5 balance is in USD)
+  if (amountInUSD > balance) {
+    toast.error("Withdrawal amount exceeds current account balance.");
+    return;
+  }
+
+  // Dynamic Validations
+  if (form.currency === "CRYPTO" && !form.walletAddress) {
+    toast.error("Wallet Address is required for Crypto payout.");
+    return;
+  }
+  if (form.currency === "INR" && !form.account && !form.upiId) {
+    toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
+    return;
+  }
+  if (form.currency === "USD" && (!form.account || !form.bankName)) {
+    toast.error("Account Number and Bank Name are required for USD wire.");
+    return;
+  }
+
+  // Minimum checks based on input currency
+  if (form.currency === "USD" && amountNum < 100) {
+    toast.error("Minimum withdrawal amount is $100.");
+    return;
+  }
+  if (form.currency === "INR" && amountNum < 1000) {
+    toast.error("Minimum withdrawal amount is ₹1000.");
+    return;
+  }
 
 
     const rate = await fetchRate();
-    const amt = parseFloat(form.amount) * rate;
+    let amt;
+    
+    if(form.currency === "INR"){
+      amt =  parseFloat(form.amount);
+    } else {
+      amt = parseFloat(form.amount) * rate;
+    }
 
 
     if (form.currency === "USD" && amt < 100) {
@@ -432,8 +456,8 @@ export default function Withdrawal() {
                 {/* Common Inputs */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                    Amount (₹)
-                  </label>
+  Amount ({form.currency === "INR" ? "₹" : "$"})
+</label>
                   <input
                     type="number"
                     name="amount"
