@@ -162,7 +162,7 @@ export default function WithdrawalApprovalModal({
                     </div>
                 </div>
 
-                <div className="p-6 sm:p-8 space-y-6">
+                <div className="p-4 sm:p-6 space-y-6">
                     {/* Request Overview */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-[#111827] rounded-xl p-4 border border-gray-700 space-y-2.5">
@@ -173,14 +173,14 @@ export default function WithdrawalApprovalModal({
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">Amount</span>
-                                <span className="font-bold text-lg">
+                                <span className="font-bold text-sm">
                                     {selectedWithdrawal.amount}{" "}
                                     {isCrypto ? selectedWithdrawal.cryptoSymbol || "USDT" : selectedWithdrawal.currency}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">MT5 Account</span>
-                                <span className="font-mono">{selectedWithdrawal.accountNo}</span>
+                                <span className="font-mono font-semibold ">{selectedWithdrawal.accountNo}</span>
                             </div>
                         </div>
 
@@ -206,11 +206,15 @@ export default function WithdrawalApprovalModal({
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-400">Network</span>
-                                        <span className="font-semibold">{selectedWithdrawal.network || "TRC20"}</span>
+                                        <span className="font-semibold text-xs">{selectedWithdrawal.network || "TRC20"}</span>
                                     </div>
                                 </>
                             ) : (
                                 <>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-400">Account Holder</span>
+                                        <span className="font-semibold text-xs">{selectedWithdrawal.name || "N/A"}</span>
+                                    </div>
                                     <div className="flex items-start justify-between gap-2">
                                         <span className="font-mono text-sm break-all">{bankDestination || "N/A"}</span>
                                         {bankDestination && (
@@ -224,7 +228,7 @@ export default function WithdrawalApprovalModal({
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-400">IFSC / Bank</span>
-                                        <span className="font-semibold">
+                                        <span className="font-semibold text-xs">
                                             {selectedWithdrawal.ifsc || selectedWithdrawal.bankName || "N/A"}
                                         </span>
                                     </div>
