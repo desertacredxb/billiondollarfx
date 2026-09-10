@@ -16,6 +16,7 @@ type Transaction = {
   txnId?: string;
   name?: string | "";
   creditedAmount?: number;
+  currencySymbol: string;
 };
 
 interface Account {
@@ -45,11 +46,25 @@ interface WithdrawalResponse {
   name: string;
   accountNo: string | number;
   status: "Pending" | "Completed" | "Rejected" | string;
+  currency?: "INR" | "USD" | "CRYPTO" | string;
   response?: {
     orderid?: string;
     [key: string]: unknown; // safer than any
   };
 }
+
+// Deposit gateways settle in INR; crypto-based ones (RameePay Crypto, Cregis)
+// settle in USD. Withdrawals already record their own currency explicitly.
+const getCurrencySymbol = (
+  row: DepositResponse | WithdrawalResponse,
+  type: "deposit" | "withdrawal"
+): string => {
+  if (type === "withdrawal") {
+    return (row as WithdrawalResponse).currency === "INR" ? "₹" : "$";
+  }
+  const provider = String((row as DepositResponse).provider || "").toUpperCase();
+  return provider === "CRYPTO" || provider === "CREGIS" ? "$" : "₹";
+};
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -125,6 +140,7 @@ export default function AdminTransactionPage() {
         type === "deposit" && (row as DepositResponse).creditedAmount !== undefined
           ? Number((row as DepositResponse).creditedAmount)
           : undefined,
+      currencySymbol: getCurrencySymbol(row, type),
     };
   };
 
@@ -523,16 +539,16 @@ export default function AdminTransactionPage() {
                   filteredData.map((item, idx) => (
                     <tr key={idx} className="border-t border-gray-700">
                       <td className="px-4 py-2">{item.txnId}</td>
-                      <td className="px-4 py-2">{item.account}</td>
+                      <td className="px-4 py-2"> {item.account}</td>
                       <td className="px-4 py-2">{item.name}</td>
-                      <td className="px-4 py-2">{item.amount}</td>
+                      <td className="px-4 py-2">{item.currencySymbol}{item.amount}</td>
 
                       <td className={`px-4 py-2 font-medium ${statusColor(item.status)}`}>
                         {item.status}
                         {item.status === "Partially Paid" &&
                           item.creditedAmount !== undefined && (
                             <div className="text-xs text-gray-400 font-normal">
-                              ${item.creditedAmount.toFixed(2)} / ${item.amount.toFixed(2)}{" "}
+                              {item.currencySymbol}{item.creditedAmount.toFixed(2)} / {item.currencySymbol}{item.amount.toFixed(2)}{" "}
                               received
                             </div>
                           )}
