@@ -110,8 +110,8 @@ export default function Footer() {
             {[
               { Icon: FaFacebookF, url: "https://www.facebook.com/profile.php?id=61593561772784#" },
               { Icon: FaInstagram, url: "https://www.instagram.com/billion.dollar_fx" },
-              { Icon: FaLinkedinIn, url: "#" },
-              { Icon: FaYoutube, url: "#" },
+              // { Icon: FaLinkedinIn, url: "#" },
+              // { Icon: FaYoutube, url: "#" },
             ].map(({ Icon, url }, idx) => (
               <a
                 key={idx}
