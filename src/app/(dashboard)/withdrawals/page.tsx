@@ -5,6 +5,7 @@ import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
 import toast, { Toaster } from "react-hot-toast";
 import { MIN_WITHDRAWAL_USD, MIN_WITHDRAWAL_INR, RAMEEPAY_MIN_INR, RAMEEPAY_MAX_INR } from "../../../../constants/withdrawal";
+import { useMT5AccountSummary } from "../../../../lib/mt5Store";
 
 interface Account {
   _id: string;
@@ -15,7 +16,6 @@ interface Account {
 
 export default function Withdrawal() {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -62,8 +62,6 @@ export default function Withdrawal() {
           ...prev,
           accountNo: defaultAcc,
         }));
-
-        fetchAccountSummary(userData.accounts[0].accountNo);
       }
 
       // 2. Prefill Bank Details matching your EXACT JSON payload keys
@@ -85,24 +83,11 @@ export default function Withdrawal() {
     }
   };
 
-  const fetchAccountSummary = async (accNo: number | string) => {
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/user`,
-        {
-          params: { login: accNo.toString() },
-        }
-      );
-
-      if (res.data?.success && res.data?.data) {
-        const data = res.data.data;
-        const currentBalance = data.Balance ?? data.balance ?? "0";
-        setBalance(parseFloat(currentBalance));
-      }
-    } catch (error) {
-      console.error("Error fetching MT5 balance:", error);
-    }
-  };
+  // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
+  // the local fetchAccountSummary()/balance state that hit /api/mt5/user
+  // directly; same endpoint, now shared/cached/kept fresh across pages.
+  const { summary, refresh: refreshBalance } = useMT5AccountSummary(form.accountNo || undefined);
+  const balance = summary ? parseFloat(summary.balance) : 0;
 
   useEffect(() => {
     fetchUserData();
@@ -128,7 +113,6 @@ export default function Withdrawal() {
 
   const handleAccountSelect = (accNo: string) => {
     setForm((prev) => ({ ...prev, accountNo: accNo }));
-    fetchAccountSummary(accNo);
   };
 
 const handleSubmit = async (e: React.FormEvent) => {
@@ -195,7 +179,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     if (res.data?.success) {
       toast.success(res.data.message || "Withdrawal request submitted!");
       setShowModal(false);
-      fetchAccountSummary(form.accountNo);
+      refreshBalance();
     } else {
       toast.error(res.data?.message || "Withdrawal failed.");
     }

@@ -9,9 +9,9 @@ import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount";
 import UpdatePasswordModal from "../../../../components/UpdatePasswordModal";
 import { useRouter } from "next/navigation";
-import AddBalanceModal from "../../../../components/AddBalanceModal";
 import bannerImage from "../../../../assets/grgrgr 1.jpg";
 import Link from "next/link";
+import { useMT5AccountSummary } from "../../../../lib/mt5Store";
 
 interface Account {
   _id: string;
@@ -19,29 +19,17 @@ interface Account {
   currency: string;
 }
 
-interface AccountSummary {
-  balance: string;
-  Credit: string;
-  // Floating: string;
-  // Margin: string;
-  // MarginFree: string;
-  // Equity: string;
-  group?: string;
-  rights?: string;
-  registration?: string;
-}
-
 export default function LiveAccounts() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [summary, setSummary] = useState<AccountSummary | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
-  const [balanceMode, setBalanceMode] = useState<"deposit" | "withdraw">(
-    "deposit"
-  );
+
+  // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
+  // the local fetchAccountSummary()/summary state that hit /api/mt5/user
+  // directly; same endpoint, now shared/cached/kept fresh across pages.
+  const { summary } = useMT5AccountSummary(selectedAccount?.accountNo);
 
   const router = useRouter();
   const fetchUserData = async () => {
@@ -62,7 +50,6 @@ export default function LiveAccounts() {
       if (Array.isArray(userData.accounts) && userData.accounts.length > 0) {
         setAccounts(userData.accounts);
         setSelectedAccount(userData.accounts[0]);
-        fetchAccountSummary(userData.accounts[0].accountNo);
       } else {
         setAccounts([]);
       }
@@ -74,48 +61,6 @@ export default function LiveAccounts() {
       setIsLoggedIn(false);
     }
   };
-
-const fetchAccountSummary = async (accountNo: number | string) => {
-
-  console.log("workign")
-  try {
-    const res = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/user`,
-      {
-        params: {
-          login: accountNo.toString(),
-        },
-      }
-    );
-
-    if (res.data?.success && res.data?.data) {
-      const data = res.data.data;
-
-      setSummary({
-        balance: data.Balance ?? data.balance ?? "0",
-        Credit: data.Credit ?? "0",
-        // Optional MT5 meta fields
-        group: data.Group || "",
-        rights: data.Rights || "",
-        registration: data.Registration || "",
-      });
-
-      console.log({
-        balance: data.Balance ?? data.balance ?? "0",
-        Credit: data.Credit ?? "0",
-        // Optional MT5 meta fields
-        // group: data.Group || "",
-        rights: data.Rights || "",
-        registration: data.Registration || "",
-      })
-    } else {
-      setSummary(null);
-    }
-  } catch (error: any) {
-    console.error("Error fetching account summary:", error?.response?.data || error.message);
-    setSummary(null);
-  }
-};
 
   useEffect(() => {
     fetchUserData();
@@ -174,10 +119,7 @@ const fetchAccountSummary = async (accountNo: number | string) => {
               {accounts.map((acc) => (
                 <div
                   key={acc._id}
-                  onClick={() => {
-                    setSelectedAccount(acc);
-                    fetchAccountSummary(acc.accountNo);
-                  }}
+                  onClick={() => setSelectedAccount(acc)}
                   className={`cursor-pointer px-4 py-3 rounded-md border border-gray-700  transition ${
                     selectedAccount?.accountNo === acc.accountNo
                       ? " text-white font-semibold border border-[var(--primary)]"
@@ -220,7 +162,7 @@ const fetchAccountSummary = async (accountNo: number | string) => {
                 <div>
                   <p className="text-gray-400">Credit</p>
                   <p className="bg-[#17263e] px-3 py-2 rounded-md">
-                    ${summary.Credit}
+                    ${summary.credit}
                   </p>
                 </div>
               </div>
@@ -233,24 +175,12 @@ const fetchAccountSummary = async (accountNo: number | string) => {
                   Trade Now
                 </button>
                 <Link href="/deposits">
-                  <button
-                    className="bg-green-600 px-4 py-2 rounded-md text-sm cursor-pointer"
-                    // onClick={() => {
-                    //   setBalanceMode("deposit");
-                    //   setShowAddBalanceModal(true);
-                    // }}
-                  >
+                  <button className="bg-green-600 px-4 py-2 rounded-md text-sm cursor-pointer">
                     Deposit
                   </button>
                 </Link>
                 <Link href="/withdrawals">
-                  <button
-                    className="bg-red-600 px-4 py-2 rounded-md text-sm cursor-pointer"
-                    // onClick={() => {
-                    //   setBalanceMode("withdraw");
-                    //   setShowAddBalanceModal(true);
-                    // }}
-                  >
+                  <button className="bg-red-600 px-4 py-2 rounded-md text-sm cursor-pointer">
                     Withdraw
                   </button>
                 </Link>
@@ -284,23 +214,6 @@ const fetchAccountSummary = async (accountNo: number | string) => {
             accountNo={selectedAccount.accountNo}
           />
         )}
-
-        <AddBalanceModal
-          isOpen={showAddBalanceModal}
-          onClose={() => setShowAddBalanceModal(false)}
-          accountNo={selectedAccount?.accountNo || 0}
-          mode={balanceMode}
-          onSuccess={() => {
-            const accNo = selectedAccount?.accountNo;
-            setShowAddBalanceModal(false); // ✅ Close modal immediately
-            if (accNo) {
-              setTimeout(() => {
-                fetchAccountSummary(accNo); // ✅ Allow time for modal to close before fetching
-                fetchUserData();
-              }, 100);
-            }
-          }}
-        />
       </div>
     </div>
   );

@@ -31,7 +31,8 @@
     "react-slick": "^0.30.3",
     "slick-carousel": "^1.8.1",
     "sweetalert2": "^11.26.3",
-    "typewriter-effect": "^2.22.0"
+    "typewriter-effect": "^2.22.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

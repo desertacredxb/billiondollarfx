@@ -1,22 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { Withdrawal } from "./page";
-
-interface AccountSummary {
-    balance: string;
-    Credit: string;
-    Floating: string;
-    Margin: string;
-    MarginFree: string;
-    Equity: string;
-    DWBalance: string;
-    group?: string;
-    rights?: string;
-    registration?: string;
-}
+import { fetchMT5AccountSummary, MT5AccountSummary } from "../../../../lib/mt5Store";
 
 interface ModalProps {
     selectedWithdrawal: Withdrawal;
@@ -45,51 +33,41 @@ export default function WithdrawalApprovalModal({
     const [adminNote, setAdminNote] = useState("");
     const [loading, setLoading] = useState(false);
     const [loadingBalance, setLoadingBalance] = useState(false);
-    const [summary, setSummary] = useState<AccountSummary | null>(null);
+    const [summary, setSummary] = useState<MT5AccountSummary | null>(null);
 
+    // Admin cycles through many different accounts on demand, so this is a
+    // deliberate one-shot fetch (not the shared client-side polling store in
+    // lib/mt5Store.ts - see the doc comment on useMT5AccountSummary for why
+    // that store isn't right here). Reuses the same MT5 normalization logic
+    // via fetchMT5AccountSummary so the two don't drift, without sharing any
+    // cached/cross-account state. Also drops the bogus DWBalance field that
+    // used to be shown here - it was never a real MT5 field, only ever
+    // existed on the unrelated legacy MoneyPlantFX response shape.
     useEffect(() => {
-        if (selectedWithdrawal.accountNo) {
-            fetchBalance(selectedWithdrawal.accountNo);
-        }
-    }, [selectedWithdrawal]);
+        if (!selectedWithdrawal.accountNo) return;
 
-    const fetchBalance = async (accountNo: string) => {
-        try {
-            setLoadingBalance(true);
-            const res = await axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/user`,
-                {
-                    params: {
-                        login: accountNo.toString(),
-                    },
+        let cancelled = false;
+        setLoadingBalance(true);
+
+        fetchMT5AccountSummary(selectedWithdrawal.accountNo)
+            .then((result) => {
+                if (!cancelled) setSummary(result);
+            })
+            .catch((err) => {
+                console.error("Failed to fetch MT5 balance:", err);
+                if (!cancelled) {
+                    setSummary(null);
+                    toast.error("Failed to fetch MT5 balance");
                 }
-            );
+            })
+            .finally(() => {
+                if (!cancelled) setLoadingBalance(false);
+            });
 
-            if (res.data?.success && res.data?.data) {
-                const data = res.data.data;
-
-                setSummary({
-                    balance: data.Balance ?? data.balance ?? "0",
-                    Credit: data.Credit ?? "0",
-                    Floating: data.Floating ?? "0",
-                    Margin: data.Margin ?? "0",
-                    MarginFree: data.MarginFree ?? "0",
-                    Equity: data.Equity ?? "0",
-                    DWBalance: data.DWBalance ?? "0",
-                    group: data.Group || "",
-                    rights: data.Rights || "",
-                    registration: data.Registration || "",
-                });
-            } else {
-                setSummary(null);
-            }
-        } catch (err: any) {
-            console.error("Failed to fetch MT5 balance:", err);
-            toast.error("Failed to fetch MT5 balance");
-        } finally {
-            setLoadingBalance(false);
-        }
-    };
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedWithdrawal.accountNo]);
 
     const handleApprove = async () => {
         if (processType === "manual" && !txId.trim()) {
@@ -196,11 +174,21 @@ export default function WithdrawalApprovalModal({
                     ) : summary ? (
                         <div className="flex justify-between bg-black/40 p-2 rounded">
                             <span>Balance: ${summary.balance}</span>
-                            <span>Equity: ${summary.Equity}</span>
-                            <span>Free Margin: ${summary.MarginFree}</span>
+                            <span>Equity: ${summary.equity}</span>
+                            <span>Free Margin: ${summary.marginFree}</span>
                         </div>
                     ) : (
                         <p className="text-gray-500">Unavailable</p>
+                    )}
+                    {canProcess && (
+                        <p className="mt-2 text-cyan-300 bg-cyan-900/20 border border-cyan-700 rounded p-2">
+                            The balance above already excludes{" "}
+                            {selectedWithdrawal.amountUSD
+                                ? `~$${selectedWithdrawal.amountUSD}`
+                                : `${selectedWithdrawal.amount} ${selectedWithdrawal.currency}`}{" "}
+                            for <strong>this</strong> withdrawal request - it was deducted/held from MT5 the moment
+                            the request was submitted, before any admin review.
+                        </p>
                     )}
                 </div>
 
