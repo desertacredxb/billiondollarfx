@@ -9,7 +9,8 @@ import Stats from "../../components/Stats";
 import TradeSection from "../../components/Markets";
 import Image from "next/image";
 import Button from "../../components/Button";
-import logo from "../../assets/logo.webp";
+import logo from "../../assets/bdfx.gif";
+
 import NewsInsights from "../../components/NewsInsights";
 import PaymentMethods from "../../components/PaymentMethods";
 import InsightsSection from "../../components/Inside_Contact";

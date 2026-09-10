@@ -99,7 +99,7 @@ export default function Education() {
         </h1>
         <p className="text-center text-gray-400 max-w-4xl mx-auto px-4 text-medium">
           Build your forex skills from the ground up with BillionDollarFX. This
-          beginner-friendly video program introduces you to how the Forex market
+          beginner-friendly program introduces you to how the Forex market
           works and how you can unlock its earning potential. Get familiar with
           essential trading terms and learn how to execute your first trades.
           Build your skills and confidence with the most trusted beginner course

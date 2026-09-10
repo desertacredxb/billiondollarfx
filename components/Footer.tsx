@@ -99,25 +99,30 @@ export default function Footer() {
           <h3 className="font-bold text-white mb-2">Contact Info</h3>
           <ul className="text-gray-400 space-y-2">
             <li className="flex items-center gap-2">
-              <FaWhatsapp className="text-green-400" /> +447593611999
+              <FaWhatsapp className="text-green-400" /> +447999283366
             </li>
             <li className="flex items-center gap-2">
               <FaEnvelope className="text-blue-400" /> info@billiondollarfx.com
             </li>
-            <li className="flex items-center gap-2">
-              <FaPhoneAlt className="text-cyan-400" /> +971 509818742
-            </li>
-            <li className="flex items-center gap-2">
-              <FaPhoneAlt className="text-cyan-400" />
-              +91 8140431207
-            </li>
+
           </ul>
           <div className="flex gap-3 mt-4 text-gray-400">
-            {[FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube].map(
-              (Icon, idx) => (
-                <Icon key={idx} className="hover:text-white cursor-pointer" />
-              )
-            )}
+            {[
+              { Icon: FaFacebookF, url: "https://www.facebook.com/profile.php?id=61593561772784#" },
+              { Icon: FaInstagram, url: "https://www.instagram.com/billion.dollar_fx" },
+              { Icon: FaLinkedinIn, url: "#" },
+              { Icon: FaYoutube, url: "#" },
+            ].map(({ Icon, url }, idx) => (
+              <a
+                key={idx}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white cursor-pointer"
+              >
+                <Icon />
+              </a>
+            ))}
           </div>
         </div>
 
