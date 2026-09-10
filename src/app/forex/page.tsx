@@ -10,6 +10,13 @@ import Button from "../../../components/Button";
 import InsightsSection from "../../../components/Inside_Contact";
 import { useRouter } from "next/navigation";
 
+import euro from "../../../assets/icons1/euro.png"
+import eth from "../../../assets/icons1/eth.png"
+import doller from "../../../assets/icons1/doller.png"
+import gbp from "../../../assets/icons1/gbp.png"
+
+
+
 export default function Forex() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -22,41 +29,44 @@ export default function Forex() {
     // router.push("https://crm.billiondollarfx.com/#/client/signup");
   };
 
-  const chartItems = [
-    {
-      id: 1,
-      pair: "EURUSD",
-      name: "Euro / U.S. Dollar",
-      price: "1.0932 USD",
-      change: "+0.00072 +0.07%",
-      changeColor: "text-green-400",
-      flag1: "https://winprofx.com/_next/static/media/flag(1).480b259d.svg",
-      flag2: "https://winprofx.com/_next/static/media/flag(2).1188a6c2.svg",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 2,
-      pair: "ETHUSD",
-      name: "Ethereum / U.S. Dollar",
-      price: "1.0932 USD",
-      change: "-0.00072 -0.07%",
-      changeColor: "text-red-400",
-      flag1: "https://winprofx.com/_next/static/media/flag(1).480b259d.svg",
-      flag2: "https://winprofx.com/_next/static/media/flag(2).1188a6c2.svg",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 3,
-      pair: "GBPUSD",
-      name: "British Pound / U.S. Dollar",
-      price: "1.2893 USD",
-      change: "+0.00112 +0.09%",
-      changeColor: "text-green-400",
-      flag1: "https://winprofx.com/_next/static/media/flag(1).480b259d.svg",
-      flag2: "https://winprofx.com/_next/static/media/flag(2).1188a6c2.svg",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-  ];
+const chartItems = [
+  {
+    id: 1,
+    pair: "EURUSD",
+    name: "Euro / U.S. Dollar",
+    price: "1.0932 USD",
+    change: "+0.00072 +0.07%",
+    changeColor: "text-green-400",
+    icon1: euro,
+    icon2: doller,
+    chart:
+      "https://winprofx.com/_next/static/media/grap.37f414da.svg",
+  },
+  {
+    id: 2,
+    pair: "ETHUSD",
+    name: "Ethereum / U.S. Dollar",
+    price: "1.0932 USD",
+    change: "-0.00072 -0.07%",
+    changeColor: "text-red-400",
+    icon1: eth,
+    icon2: doller,
+    chart:
+      "https://winprofx.com/_next/static/media/grap.37f414da.svg",
+  },
+  {
+    id: 3,
+    pair: "GBPUSD",
+    name: "British Pound / U.S. Dollar",
+    price: "1.2893 USD",
+    change: "+0.00112 +0.09%",
+    changeColor: "text-green-400",
+    icon1: gbp,
+    icon2: doller,
+    chart:
+      "https://winprofx.com/_next/static/media/grap.37f414da.svg",
+  },
+];
 
   const accordionItems = [
     {
@@ -108,22 +118,22 @@ export default function Forex() {
                 key={item.id}
                 className="bg-[#0b1e26] p-4 rounded-lg shadow-md"
               >
-                <div className="flex items-center gap-2">
-                  <Image src={item.flag1} alt="flag1" width={24} height={24} />
-                  <Image src={item.flag2} alt="flag2" width={24} height={24} />
+                <div className="flex items-center gap-4">
+                  <Image src={item.icon1} alt="flag1" width={35} height={35} />
+                  <Image src={item.icon2} alt="flag1" width={35} height={35} />
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">{item.pair}</h3>
                 <p className="text-sm text-gray-400">{item.name}</p>
                 <p className="mt-2 text-xl font-semibold">{item.price}</p>
                 <p className={`${item.changeColor} text-sm`}>{item.change}</p>
                 <p className="text-xs mt-2 text-gray-400">Data Provider</p>
-                <Image
+                {/* <Image
                   src={item.chart}
                   alt="chart"
                   width={400}
                   height={100}
                   className="mt-4 w-full"
-                />
+                /> */}
               </div>
             ))}
           </div>
