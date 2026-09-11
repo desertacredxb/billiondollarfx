@@ -388,12 +388,12 @@ function IBPage({ user }: IBPageProps) {
       <div className="w-full max-w-6xl mx-auto bg-[#111a2e] rounded-2xl shadow-lg p-4 sm:p-6">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
           <h2 className="text-xl sm:text-2xl font-semibold">
-            👥 My Connections
+            My Connections
           </h2>
 
           <div className="bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center gap-3 shadow-md">
             <span className="text-lg font-semibold">
-              💰 Total Commission: ${ibCommission.toFixed(2)}
+              Total Commission: ${ibCommission.toFixed(2)}
             </span>
             <button
               onClick={handleOpenWithdraw}
