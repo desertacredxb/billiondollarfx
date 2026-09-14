@@ -207,22 +207,37 @@ export default function KycVerification() {
           </p>
 
           <div className="mt-6 text-left grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#0f172a] p-4 rounded-lg">
+            {/* <div className="bg-[#0f172a] p-4 rounded-lg">
               <p className="text-xs text-gray-500 uppercase">Country</p>
               <p className="text-white mt-1">{country || "Not set"}</p>
-            </div>
+            </div> */}
             <div className="bg-[#0f172a] p-4 rounded-lg">
               <p className="text-xs text-gray-500 uppercase">ID Proof 1</p>
-              <p className="text-white mt-1">
-                {submittedIdProof1?.docType} — {submittedIdProof1?.docNumber}
-              </p>
+              <div className="space-y-1 text-sm">
+                <p className="text-gray-300">
+                  <span className="text-gray-400 font-medium">Doc Type:</span>{" "}
+                  <span className="text-white capitalize">{submittedIdProof1?.docType || "—"}</span>
+                </p>
+                <p className="text-gray-300">
+                  <span className="text-gray-400 font-medium">Doc No:</span>{" "}
+                  <span className="text-white font-mono">{submittedIdProof1?.docNumber || "—"}</span>
+                </p>
+              </div>
             </div>
             {submittedIdProof2?.docType && (
               <div className="bg-[#0f172a] p-4 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase">ID Proof 2</p>
-                <p className="text-white mt-1">
-                  {submittedIdProof2.docType} — {submittedIdProof2.docNumber}
+                              <p className="text-xs text-gray-500 uppercase">ID Proof 2</p>
+
+                <div className="space-y-1 text-sm">
+                <p className="text-gray-300">
+                  <span className="text-gray-400 font-medium">Doc Type:</span>{" "}
+                  <span className="text-white capitalize">{submittedIdProof2?.docType || "—"}</span>
                 </p>
+                <p className="text-gray-300">
+                  <span className="text-gray-400 font-medium">Doc No:</span>{" "}
+                  <span className="text-white font-mono">{submittedIdProof2?.docNumber || "—"}</span>
+                </p>
+              </div>
               </div>
             )}
           </div>
