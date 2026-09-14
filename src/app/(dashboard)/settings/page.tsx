@@ -1,27 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ProfileForm from "../../../../components/settings/ProfileForm";
-import IdentityVerification from "../../../../components/settings/IdentityVerification";
+import KycVerification from "../../../../components/settings/KycVerification";
 import SecurityForm from "../../../../components/settings/SecurityForm";
 import BankDetailsForm from "../../../../components/settings/BankDetailsForm";
 
 const tabs = [
   { key: "profile", label: "Profile Info" },
-  // { key: "identity", label: "Identity-Verification" },
+  { key: "identity", label: "Identity-Verification" },
   { key: "security", label: "Security" },
   { key: "bank", label: "Bank Details" },
 ];
 
-export default function Setting() {
-  const [activeTab, setActiveTab] = useState("profile");
+const tabKeys = tabs.map((tab) => tab.key);
+
+// useSearchParams() opts this page out of static rendering unless wrapped in
+// Suspense - split into an inner component so the ?tab= read doesn't block
+// the outer page.
+function SettingContent() {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab = tabKeys.includes(requestedTab ?? "")
+    ? (requestedTab as string)
+    : "profile";
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile":
         return <ProfileForm />;
       case "identity":
-        return <IdentityVerification />;
+        return <KycVerification />;
       case "security":
         return <SecurityForm />;
       case "bank":
@@ -32,8 +44,8 @@ export default function Setting() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white md:p-6 font-raleway">
-      <h1 className="sticky md:top-10 text-2xl font-bold mb-6">Settings</h1>
+    <div className="min-h-screen bg-black text-white font-raleway">
+      <h1 className="sticky md:top-0 text-2xl font-bold mb-6">Settings</h1>
 
       {/* Mobile Tabs at Top */}
       <div className="md:hidden mb-4 grid grid-cols-2 gap-2">
@@ -55,7 +67,7 @@ export default function Setting() {
       <div className="flex gap-6">
         {/* LEFT MENU (Desktop) */}
         <div className="hidden md:block md:w-64">
-          <div className="sticky top-20 bg-[#121a2a] rounded-lg p-4 shadow-md">
+          <div className="sticky top-14 bg-[#121a2a] rounded-lg p-4 shadow-md">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -78,5 +90,13 @@ export default function Setting() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Setting() {
+  return (
+    <Suspense fallback={null}>
+      <SettingContent />
+    </Suspense>
   );
 }

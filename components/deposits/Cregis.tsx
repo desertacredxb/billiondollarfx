@@ -6,17 +6,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Button from "../Button";
 import { MIN_DEPOSIT_USD } from "../../constants/deposit";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
-
-interface User {
-  isKycVerified: boolean;
-  accounts: Account[];
-}
+import { useUserProfile } from "../../lib/userStore";
 
 interface CregisDepositResponse {
   success: boolean;
@@ -40,10 +30,9 @@ const CREGIS_PAYMENT_CHARGE_RATE = CREGIS_PAYMENT_CHARGE_ENABLED
   : 0;
 
 export default function Cregis() {
+  const { accounts } = useUserProfile();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [userData, setUserData] = useState<User | null>(null);
 
   const [form, setForm] = useState({
     accountNo: "",
@@ -56,42 +45,15 @@ export default function Cregis() {
   const estimatedTotal =
     enteredAmount > 0 ? Number((enteredAmount + estimatedChargeAmount).toFixed(2)) : 0;
 
+  // Auto-select the first account once accounts load from the store.
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
-
-        if (!token || !storedUser) return;
-
-        const { email } = JSON.parse(storedUser) as { email: string };
-
-        const response = await axios.get<User>(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setUserData(response.data);
-        setAccounts(response.data.accounts ?? []);
-
-        if (response.data.accounts?.length) {
-          setForm((current) => ({
-            ...current,
-            accountNo: response.data.accounts[0].accountNo.toString(),
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching accounts:", error);
-        toast.error("Unable to load your trading accounts.");
-      }
-    };
-
-    void fetchAccounts();
-  }, []);
+    if (accounts.length > 0 && !form.accountNo) {
+      setForm((current) => ({
+        ...current,
+        accountNo: accounts[0].accountNo.toString(),
+      }));
+    }
+  }, [accounts, form.accountNo]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

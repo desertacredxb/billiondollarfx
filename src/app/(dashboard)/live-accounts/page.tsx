@@ -2,29 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import axios from "axios";
 import { Wallet } from "lucide-react";
 import emptyIcon from "../../../../assets/icons/empty_state.png";
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount";
 import UpdatePasswordModal from "../../../../components/UpdatePasswordModal";
+import KycAlertModal from "../../../../components/KycAlertModal";
 import { useRouter } from "next/navigation";
 import bannerImage from "../../../../assets/grgrgr 1.jpg";
 import Link from "next/link";
 import { useMT5AccountSummary } from "../../../../lib/mt5Store";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
+import { useUserProfile, type Account } from "../../../../lib/userStore";
 
 export default function LiveAccounts() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { profile, accounts, isKycVerified, hasSubmittedDocuments, refresh } =
+    useUserProfile();
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showKycPopup, setShowKycPopup] = useState(false);
 
   // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
   // the local fetchAccountSummary()/summary state that hit /api/mt5/user
@@ -32,41 +28,15 @@ export default function LiveAccounts() {
   const { summary } = useMT5AccountSummary(selectedAccount?.accountNo);
 
   const router = useRouter();
-  const fetchUserData = async () => {
-    const token = localStorage.getItem("token");
-    const userString = localStorage.getItem("user");
 
-    if (!token || !userString) return;
-
-    const user = JSON.parse(userString);
-    const email = user.email;
-
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
-      );
-      const userData = res.data;
-
-      if (Array.isArray(userData.accounts) && userData.accounts.length > 0) {
-        setAccounts(userData.accounts);
-        setSelectedAccount(userData.accounts[0]);
-      } else {
-        setAccounts([]);
-      }
-
-      setIsLoggedIn(true);
-    } catch (err) {
-      console.error("Error fetching user data:", err);
-      setAccounts([]);
-      setIsLoggedIn(false);
-    }
-  };
-
+  // Default to the first account once accounts load from the store.
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (accounts.length > 0 && !selectedAccount) {
+      setSelectedAccount(accounts[0]);
+    }
+  }, [accounts, selectedAccount]);
 
-  if (!isLoggedIn) return null;
+  if (!profile) return null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -111,7 +81,13 @@ export default function LiveAccounts() {
               </p>
               <Button
                 text="+ Create Account"
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  if (!isKycVerified) {
+                    setShowKycPopup(true);
+                  } else {
+                    setShowModal(true);
+                  }
+                }}
               />
             </div>
           ) : (
@@ -129,12 +105,6 @@ export default function LiveAccounts() {
                   {acc.accountNo}
                 </div>
               ))}
-              {accounts.length === 0 && (
-                <Button
-                  text="+ Create Account"
-                  onClick={() => setShowModal(true)}
-                />
-              )}
             </>
           )}
         </div>
@@ -204,7 +174,7 @@ export default function LiveAccounts() {
           isOpen={showModal}
           onClose={() => {
             setShowModal(false);
-            fetchUserData();
+            refresh();
           }}
         />
         {selectedAccount && (
@@ -214,6 +184,12 @@ export default function LiveAccounts() {
             accountNo={selectedAccount.accountNo}
           />
         )}
+
+        <KycAlertModal
+          isOpen={showKycPopup}
+          onClose={() => setShowKycPopup(false)}
+          hasSubmittedDocuments={hasSubmittedDocuments}
+        />
       </div>
     </div>
   );

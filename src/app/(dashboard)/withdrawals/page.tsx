@@ -1,23 +1,24 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import axios from "axios";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
+import RegisterModal from "../../../../components/CreateAccount";
+import KycAlertModal from "../../../../components/KycAlertModal";
+import emptyIcon from "../../../../assets/icons/empty_state.png";
 import toast, { Toaster } from "react-hot-toast";
 import { MIN_WITHDRAWAL_USD, MIN_WITHDRAWAL_INR, RAMEEPAY_MIN_INR, RAMEEPAY_MAX_INR } from "../../../../constants/withdrawal";
 import { useMT5AccountSummary } from "../../../../lib/mt5Store";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-  accountType?: string;
-}
+import { useUserProfile } from "../../../../lib/userStore";
 
 export default function Withdrawal() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { profile, accounts, isKycVerified, hasSubmittedDocuments, refresh } =
+    useUserProfile();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showKycPopup, setShowKycPopup] = useState(false);
 
   // 🔹 Form state with default values
   const [form, setForm] = useState({
@@ -41,57 +42,31 @@ export default function Withdrawal() {
     memo: "",
   });
 
-  const fetchUserData = async () => {
-    try {
-      const userString = localStorage.getItem("user");
-      if (!userString) return;
-      const storedUser = JSON.parse(userString);
+  // Prefill the account selector and bank details from the shared profile
+  // store once it loads (and again whenever it's refreshed).
+  useEffect(() => {
+    if (!profile) return;
 
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${storedUser.email}`
-      );
-
-      const userData = res.data;
-
-      // 1. Process Trading Accounts
-      if (Array.isArray(userData?.accounts) && userData.accounts.length > 0) {
-        setAccounts(userData.accounts);
-        const defaultAcc = userData.accounts[0].accountNo.toString();
-
-        setForm((prev) => ({
-          ...prev,
-          accountNo: defaultAcc,
-        }));
-      }
-
-      // 2. Prefill Bank Details matching your EXACT JSON payload keys
-      setForm((prev) => ({
-        ...prev,
-        // INR Bank Details
-        account: userData?.accountNumber || "",
-        ifsc: userData?.ifscCode || "",
-        accountHolderName: userData?.accountHolderName || "",
-        upiId: userData?.upiId || "",
-        mobile: userData?.mobile || userData?.phone || "",
-        // USD Bank Details
-        bankName: userData?.bankName || "",
-        swiftCode: userData?.iban || "",
-      }));
-
-    } catch (err) {
-      console.error("Error fetching user data:", err);
-    }
-  };
+    setForm((prev) => ({
+      ...prev,
+      accountNo: prev.accountNo || accounts[0]?.accountNo.toString() || "",
+      // Bank Details matching the EXACT JSON payload keys /api/payment/request expects
+      account: profile.accountNumber || "",
+      ifsc: profile.ifscCode || "",
+      accountHolderName: profile.accountHolderName || "",
+      upiId: profile.upiId != null ? String(profile.upiId) : "",
+      mobile:
+        profile.mobile != null ? String(profile.mobile) : profile.phone || "",
+      bankName: profile.bankName || "",
+      swiftCode: profile.iban || "",
+    }));
+  }, [profile, accounts]);
 
   // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
   // the local fetchAccountSummary()/balance state that hit /api/mt5/user
   // directly; same endpoint, now shared/cached/kept fresh across pages.
   const { summary, refresh: refreshBalance } = useMT5AccountSummary(form.accountNo || undefined);
   const balance = summary ? parseFloat(summary.balance) : 0;
-
-  useEffect(() => {
-    fetchUserData();
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -196,29 +171,59 @@ const handleSubmit = async (e: React.FormEvent) => {
         <h1 className="text-2xl font-bold mb-6">Withdrawal Portal</h1>
 
         {/* Account Display Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {accounts.map((acc) => (
-            <div
-              key={acc._id}
-              className="border border-gray-700 bg-[#111827] rounded-2xl p-6 flex flex-col space-y-4 shadow-lg"
-            >
-              <div className="flex justify-between items-center">
-                <Wallet size={30} className="text-cyan-400" />
-                <div>
-                  <h2 className="text-xl font-bold">${balance}</h2>
-                  <p className="text-sm text-gray-400">Acc #: {acc.accountNo}</p>
+        {accounts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-12">
+            <Image
+              src={emptyIcon}
+              alt="No Live Accounts"
+              width={120}
+              height={120}
+              className="mb-4 grayscale opacity-80"
+            />
+            <p className="text-gray-400 text-sm mb-2">
+              You don&apos;t have a live trading account yet. Create one to
+              request a withdrawal.
+            </p>
+            <Button
+              text="+ Create Account"
+              onClick={() => {
+                if (!isKycVerified) {
+                  setShowKycPopup(true);
+                } else {
+                  setShowCreateModal(true);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {accounts.map((acc) => (
+              <div
+                key={acc._id}
+                className="border border-gray-700 bg-[#111827] rounded-2xl p-6 flex flex-col space-y-4 shadow-lg"
+              >
+                <div className="flex justify-between items-center">
+                  <Wallet size={30} className="text-cyan-400" />
+                  <div>
+                    <h2 className="text-xl font-bold">${balance}</h2>
+                    <p className="text-sm text-gray-400">Acc No: {acc.accountNo}</p>
+                  </div>
                 </div>
+                <Button
+                  text="Request Withdrawal"
+                  onClick={() => {
+                    if (!isKycVerified) {
+                      setShowKycPopup(true);
+                      return;
+                    }
+                    handleAccountSelect(acc.accountNo.toString());
+                    setShowModal(true);
+                  }}
+                />
               </div>
-              <Button
-                text="Request Withdrawal"
-                onClick={() => {
-                  handleAccountSelect(acc.accountNo.toString());
-                  setShowModal(true);
-                }}
-              />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Withdrawal Modal */}
         {showModal && (
@@ -475,6 +480,21 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
         )}
       </div>
+
+      <RegisterModal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          refresh();
+        }}
+      />
+
+      <KycAlertModal
+        isOpen={showKycPopup}
+        onClose={() => setShowKycPopup(false)}
+        hasSubmittedDocuments={hasSubmittedDocuments}
+      />
+
       <Toaster />
     </div>
   );

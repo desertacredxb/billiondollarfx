@@ -43,7 +43,7 @@ export default function ProfileForm() {
                 gender: user.gender || "",
                 accountType: user.accountType || "",
                 address: user.address || "",
-                country: user.country || "",
+                country: user.country || user.nationality || "",
                 state: user.state || "",
                 city: user.city || "",
                 postalCode: user.postalCode || "",
@@ -224,6 +224,7 @@ export default function ProfileForm() {
               <input
                 name={field}
                 required
+                disabled={field==="country"?true:false}
                 onChange={handleInputChange}
                 value={formData[field as keyof typeof formData]}
                 className="w-full p-2 rounded-md bg-[#10151f] border border-gray-700 text-white focus:outline-none focus:border-[var(--primary)]"

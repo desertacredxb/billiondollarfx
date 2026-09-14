@@ -5,19 +5,8 @@ import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Button from "../Button";
-import KycAlertModal from "../KycAlertModal";
 import { MIN_DEPOSIT_INR } from "../../constants/deposit";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
-
-interface User {
-  isKycVerified: boolean;
-  accounts: Account[];
-}
+import { useUserProfile } from "../../lib/userStore";
 
 interface TruePay9DepositResponse {
   payment_url?: string;
@@ -33,43 +22,20 @@ interface TruePay9DepositResponse {
 }
 
 export default function TruePay9() {
+  const { accounts } = useUserProfile();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showKycPopup, setShowKycPopup] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [userData, setUserData] = useState<User | null>(null);
   const [form, setForm] = useState({ accountNo: "", amount: "" });
 
+  // Auto-select the first account once accounts load from the store.
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
-
-        if (!token || !storedUser) return;
-
-        const { email } = JSON.parse(storedUser) as { email: string };
-        const response = await axios.get<User>(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-        );
-
-        setUserData(response.data);
-        setAccounts(response.data.accounts ?? []);
-
-        if (response.data.accounts?.length) {
-          setForm((current) => ({
-            ...current,
-            accountNo: response.data.accounts[0].accountNo.toString(),
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching accounts:", error);
-        toast.error("Unable to load your trading accounts.");
-      }
-    };
-
-    void fetchAccounts();
-  }, []);
+    if (accounts.length > 0 && !form.accountNo) {
+      setForm((current) => ({
+        ...current,
+        accountNo: accounts[0].accountNo.toString(),
+      }));
+    }
+  }, [accounts, form.accountNo]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -120,10 +86,7 @@ export default function TruePay9() {
         </p>
         <Button
           text="Deposit"
-          onClick={() => {
-            if (userData?.isKycVerified === false) setShowKycPopup(true);
-            else setShowModal(true);
-          }}
+          onClick={() => setShowModal(true)}
           className="w-fit"
         />
       </div>
@@ -209,11 +172,6 @@ export default function TruePay9() {
           </div>
         </div>
       )}
-
-      <KycAlertModal
-        isOpen={showKycPopup}
-        onClose={() => setShowKycPopup(false)}
-      />
     </div>
   );
 }

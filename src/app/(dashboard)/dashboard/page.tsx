@@ -10,27 +10,15 @@ import axios from "axios";
 import Link from "next/link";
 import KycAlertModal from "../../../../components/KycAlertModal";
 import { useMT5AccountSummary } from "../../../../lib/mt5Store";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
-
-interface User {
-  email: string;
-  isKycVerified: boolean;
-  accounts: Account[];
-}
+import { useUserProfile } from "../../../../lib/userStore";
 
 export default function DepositsPage() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [accountNo, setAccountNo] = useState("");
   const [showKycPopup, setShowKycPopup] = useState(false);
-  const [userData, setUserData] = useState<User | null>(null);
+  const { profile, accounts, isKycVerified, hasSubmittedDocuments, refresh } =
+    useUserProfile();
 
   useEffect(() => {
     const verifySession = async () => {
@@ -68,7 +56,7 @@ export default function DepositsPage() {
   }, []);
 
   useEffect(() => {
-    if (isLoggedIn && userData && !userData.isKycVerified) {
+    if (isLoggedIn && profile && !isKycVerified) {
       // show first popup after 5s
       const timeout = setTimeout(() => setShowKycPopup(true), 5000);
 
@@ -82,62 +70,13 @@ export default function DepositsPage() {
         clearInterval(interval);
       };
     }
-  }, [isLoggedIn, userData?.isKycVerified]);
-
-  const fetchUserData = async () => {
-    const userString = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (!userString) {
-      router.replace("/login");
-      return;
-    }
-
-    const user = JSON.parse(userString);
-    const email = user.email;
-
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const userData = res.data;
-      console.log("userData", userData)
-      setUserData(userData);
-      if (
-        userData &&
-        Array.isArray(userData.accounts) &&
-        userData.accounts.length > 0
-      ) {
-        setAccounts(userData.accounts);
-        const firstAccountNo = userData.accounts[0].accountNo;
-        setAccountNo(firstAccountNo);
-      } else {
-        setAccounts([]); // Set empty accounts safely
-      }
-
-      setIsLoggedIn(true);
-    } catch (err) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      router.replace("/login");
-    }
-  };
+  }, [isLoggedIn, profile, isKycVerified]);
 
   // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
   // the old fetchAccountSummary() that read from the legacy MoneyPlantFX API
   // (/api/moneyplant/checkBalance), which could disagree with the real MT5
   // balance shown on every other page for the same account.
-  const { summary } = useMT5AccountSummary(accountNo || undefined);
-
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  const { summary } = useMT5AccountSummary(accounts[0]?.accountNo);
 
   if (!isLoggedIn) return null;
 
@@ -172,7 +111,13 @@ export default function DepositsPage() {
             {accounts.length === 0 && (
               <Button
                 text="+ Create Account"
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  if (profile && !isKycVerified) {
+                    setShowKycPopup(true);
+                  } else {
+                    setShowModal(true);
+                  }
+                }}
               />
             )}
           </div>
@@ -249,13 +194,14 @@ export default function DepositsPage() {
           isOpen={showModal}
           onClose={() => {
             setShowModal(false);
-            fetchUserData(); // ✅ Refresh account list after modal closes
+            refresh(); // ✅ Refresh account list after modal closes
           }}
         />
 
         <KycAlertModal
           isOpen={showKycPopup}
           onClose={() => setShowKycPopup(false)}
+          hasSubmittedDocuments={hasSubmittedDocuments}
         />
       </div>
     </div>
