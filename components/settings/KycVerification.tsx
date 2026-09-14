@@ -198,7 +198,7 @@ export default function KycVerification() {
           </div>
 
           <h2 className="text-xl font-semibold mt-4 text-white">
-            {isKycVerified ? "Documents Verified" : "Documents Under Review"}
+            {isKycVerified ? "KYC Verified" : "KYC Under Review"}
           </h2>
           <p className="text-gray-400 mt-2">
             {isKycVerified
@@ -238,7 +238,7 @@ export default function KycVerification() {
       <div className="bg-[#121a2a] border border-gray-800 p-6 rounded-xl shadow-lg space-y-6">
         <div>
           <h2 className="text-xl font-semibold text-white">
-            Identity Verification (KYC)
+            KYC Verification
           </h2>
           <p className="text-sm text-gray-400 mt-1">
             Country is taken from your profile and can't be changed here. Update

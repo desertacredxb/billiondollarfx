@@ -9,7 +9,7 @@ import BankDetailsForm from "../../../../components/settings/BankDetailsForm";
 
 const tabs = [
   { key: "profile", label: "Profile Info" },
-  { key: "identity", label: "Identity-Verification" },
+  { key: "identity", label: "KYC Verification" },
   { key: "security", label: "Security" },
   { key: "bank", label: "Bank Details" },
 ];
