@@ -12,6 +12,23 @@ const DOC_TYPES = [
   "Other",
 ];
 
+const MAX_FILE_SIZE_MB = 10;
+const ACCEPTED_FORMATS_LABEL = "JPG, JPEG, PNG, or PDF";
+const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+const FILE_INPUT_ACCEPT = ".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf";
+
+// Checked before the file ever reaches the server, so the user finds out
+// right away what to fix instead of waiting on a submit round-trip.
+const validateFile = (file: File): string => {
+  if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+    return `Please upload a ${ACCEPTED_FORMATS_LABEL} file — that file type isn't supported.`;
+  }
+  if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    return `That file is over ${MAX_FILE_SIZE_MB}MB. Please upload a smaller ${ACCEPTED_FORMATS_LABEL} file (max ${MAX_FILE_SIZE_MB}MB).`;
+  }
+  return "";
+};
+
 interface IdProof {
   docType?: string;
   docNumber?: string;
@@ -78,6 +95,24 @@ export default function KycVerification() {
     setter((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleFileSelect = (
+    proof: "idProof1" | "idProof2",
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileError = validateFile(file);
+    if (fileError) {
+      setError(fileError);
+      e.target.value = ""; // let them pick again with the same filename
+      return;
+    }
+
+    setError("");
+    handleProofChange(proof, "image", file);
+  };
+
   const validate = () => {
     if (!idProof1.docType || !idProof1.docNumber || !idProof1.image) {
       return "ID Proof 1 is required — please select a document type, enter the document number, and upload an image.";
@@ -121,9 +156,10 @@ export default function KycVerification() {
       window.location.reload();
     } catch (err) {
       console.error(err);
+      const fallback = `Please make sure each file is a ${ACCEPTED_FORMATS_LABEL} under ${MAX_FILE_SIZE_MB}MB, then try again.`;
       const message = axios.isAxiosError(err)
-        ? err.response?.data?.message || "Submission failed. Try again."
-        : "Submission failed. Try again.";
+        ? err.response?.data?.message || fallback
+        : fallback;
       setError(message);
     } finally {
       setLoading(false);
@@ -259,6 +295,9 @@ export default function KycVerification() {
             Country is taken from your profile and can't be changed here. Update
             it under Profile Info if it's wrong.
           </p>
+          <p className="text-sm text-gray-400 mt-1">
+            Accepted formats: {ACCEPTED_FORMATS_LABEL}. Max size: {MAX_FILE_SIZE_MB}MB per file.
+          </p>
         </div>
 
         {/* Country */}
@@ -321,13 +360,13 @@ export default function KycVerification() {
             <label className="text-sm text-gray-300">Document Image</label>
             <input
               type="file"
-              accept="image/*,application/pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleProofChange("idProof1", "image", file);
-              }}
+              accept={FILE_INPUT_ACCEPT}
+              onChange={(e) => handleFileSelect("idProof1", e)}
               className="mt-1 file:bg-white file:text-black file:px-3 file:py-1 file:rounded file:border-0 file:font-medium text-sm text-white w-full cursor-pointer"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {ACCEPTED_FORMATS_LABEL} · up to {MAX_FILE_SIZE_MB}MB
+            </p>
             {filePreview(idProof1.image)}
           </div>
         </div>
@@ -382,13 +421,13 @@ export default function KycVerification() {
             <label className="text-sm text-gray-300">Document Image</label>
             <input
               type="file"
-              accept="image/*,application/pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleProofChange("idProof2", "image", file);
-              }}
+              accept={FILE_INPUT_ACCEPT}
+              onChange={(e) => handleFileSelect("idProof2", e)}
               className="mt-1 file:bg-white file:text-black file:px-3 file:py-1 file:rounded file:border-0 file:font-medium text-sm text-white w-full cursor-pointer"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {ACCEPTED_FORMATS_LABEL} · up to {MAX_FILE_SIZE_MB}MB
+            </p>
             {filePreview(idProof2.image)}
           </div>
         </div>
