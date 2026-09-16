@@ -532,7 +532,7 @@ export default function UsersPage() {
 
             {/* Actions */}
             <div className="sticky bottom-0 bg-[#1f2937] border-t border-gray-800 px-6 py-4 flex flex-wrap justify-end gap-3">
-              {!selectedUser.isKycVerified && (
+              {!selectedUser.isKycVerified && selectedUser.hasSubmittedDocuments && (
                 <button
                   onClick={() => handleVerifyKyc(selectedUser.email)}
                   disabled={verifying}

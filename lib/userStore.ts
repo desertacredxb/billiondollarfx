@@ -118,7 +118,7 @@ export function useUserProfile() {
   return {
     profile,
     accounts: profile?.accounts ?? [],
-    isKycVerified: !!profile?.isKycVerified && !!profile?.hasSubmittedDocuments,
+    isKycVerified: !!profile?.isKycVerified,
     hasSubmittedDocuments: !!profile?.hasSubmittedDocuments,
     refresh: () => {
       if (email) refreshProfile(email);
