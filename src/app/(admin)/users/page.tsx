@@ -59,6 +59,7 @@ interface User {
   iban?: string;
   bankName: string;
   bankAddress: string;
+  hasSubmittedDocuments?:boolean;
 
   // Documents
   idProof1?: { docType?: string; docNumber?: string; image?: string };
@@ -77,7 +78,7 @@ export default function UsersPage() {
 
   // ✅ Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage, setUsersPerPage] = useState(5);
+  const [usersPerPage, setUsersPerPage] = useState(10);
 
   // ✅ For document preview modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
