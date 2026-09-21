@@ -33,10 +33,14 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
     const fetchCounts = async () => {
       try {
         // ✅ Fetch Payout Requests
+        // /api/payment/withdrawals is now server-paginated (defaults to the
+        // first 15 rows) - .data.length would silently cap this badge at 15
+        // regardless of the real count. Use the endpoint's own `total` field,
+        // which reflects the full collection count.
         const payoutRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`
         );
-        setPayoutCount(payoutRes.data?.data?.length || 0);
+        setPayoutCount(payoutRes.data?.total ?? payoutRes.data?.data?.length ?? 0);
 
         // ✅ Fetch Bank Approvals
         const bankRes = await axios.get(

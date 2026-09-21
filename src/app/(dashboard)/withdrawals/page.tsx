@@ -1,22 +1,24 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import axios from "axios";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
+import RegisterModal from "../../../../components/CreateAccount";
+import KycAlertModal from "../../../../components/KycAlertModal";
+import emptyIcon from "../../../../assets/icons/empty_state.png";
 import toast, { Toaster } from "react-hot-toast";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-  accountType?: string;
-}
+import { MIN_WITHDRAWAL_USD, MIN_WITHDRAWAL_INR, RAMEEPAY_MIN_INR, RAMEEPAY_MAX_INR } from "../../../../constants/withdrawal";
+import { useMT5AccountSummary } from "../../../../lib/mt5Store";
+import { useUserProfile } from "../../../../lib/userStore";
 
 export default function Withdrawal() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [balance, setBalance] = useState<number>(0);
+  const { profile, accounts, isKycVerified, hasSubmittedDocuments, refresh } =
+    useUserProfile();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showKycPopup, setShowKycPopup] = useState(false);
 
   // 🔹 Form state with default values
   const [form, setForm] = useState({
@@ -29,6 +31,7 @@ export default function Withdrawal() {
     ifsc: "",
     upiId: "",
     accountHolderName: "",
+    mobile: "",
     // USD Details (Prefilled)
     bankName: "",
     swiftCode: "",
@@ -39,71 +42,31 @@ export default function Withdrawal() {
     memo: "",
   });
 
-  const fetchUserData = async () => {
-    try {
-      const userString = localStorage.getItem("user");
-      if (!userString) return;
-      const storedUser = JSON.parse(userString);
-
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${storedUser.email}`
-      );
-
-      const userData = res.data;
-
-      // 1. Process Trading Accounts
-      if (Array.isArray(userData?.accounts) && userData.accounts.length > 0) {
-        setAccounts(userData.accounts);
-        const defaultAcc = userData.accounts[0].accountNo.toString();
-
-        setForm((prev) => ({
-          ...prev,
-          accountNo: defaultAcc,
-        }));
-
-        fetchAccountSummary(userData.accounts[0].accountNo);
-      }
-
-      // 2. Prefill Bank Details matching your EXACT JSON payload keys
-      setForm((prev) => ({
-        ...prev,
-        // INR Bank Details
-        account: userData?.accountNumber || "",
-        ifsc: userData?.ifscCode || "",
-        accountHolderName: userData?.accountHolderName || "",
-        upiId: userData?.upiId || "",
-        // USD Bank Details
-        bankName: userData?.bankName || "",
-        swiftCode: userData?.iban || "",
-      }));
-
-    } catch (err) {
-      console.error("Error fetching user data:", err);
-    }
-  };
-
-  const fetchAccountSummary = async (accNo: number | string) => {
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/user`,
-        {
-          params: { login: accNo.toString() },
-        }
-      );
-
-      if (res.data?.success && res.data?.data) {
-        const data = res.data.data;
-        const currentBalance = data.Balance ?? data.balance ?? "0";
-        setBalance(parseFloat(currentBalance));
-      }
-    } catch (error) {
-      console.error("Error fetching MT5 balance:", error);
-    }
-  };
-
+  // Prefill the account selector and bank details from the shared profile
+  // store once it loads (and again whenever it's refreshed).
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (!profile) return;
+
+    setForm((prev) => ({
+      ...prev,
+      accountNo: prev.accountNo || accounts[0]?.accountNo.toString() || "",
+      // Bank Details matching the EXACT JSON payload keys /api/payment/request expects
+      account: profile.accountNumber || "",
+      ifsc: profile.ifscCode || "",
+      accountHolderName: profile.accountHolderName || "",
+      upiId: profile.upiId != null ? String(profile.upiId) : "",
+      mobile:
+        profile.mobile != null ? String(profile.mobile) : profile.phone || "",
+      bankName: profile.bankName || "",
+      swiftCode: profile.iban || "",
+    }));
+  }, [profile, accounts]);
+
+  // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
+  // the local fetchAccountSummary()/balance state that hit /api/mt5/user
+  // directly; same endpoint, now shared/cached/kept fresh across pages.
+  const { summary, refresh: refreshBalance } = useMT5AccountSummary(form.accountNo || undefined);
+  const balance = summary ? parseFloat(summary.balance) : 0;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -125,71 +88,82 @@ export default function Withdrawal() {
 
   const handleAccountSelect = (accNo: string) => {
     setForm((prev) => ({ ...prev, accountNo: accNo }));
-    fetchAccountSummary(accNo);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amountNum = Number(form.amount);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const amountNum = Number(form.amount);
 
-    if (isNaN(amountNum) || amountNum <= 0) {
-      toast.error("Please enter a valid withdrawal amount.");
-      return;
+  if (isNaN(amountNum) || amountNum <= 0) {
+    toast.error("Please enter a valid withdrawal amount.");
+    return;
+  }
+
+  // 1. Calculate USD equivalent for balance check
+  let amountInUSD = amountNum;
+  if (form.currency === "INR") {
+    const rate = await fetchRate(); // INR to USD rate
+    amountInUSD = amountNum * rate;
+  }
+
+  // 2. Balance Check (MT5 balance is in USD)
+  if (amountInUSD > balance) {
+    toast.error("Withdrawal amount exceeds current account balance.");
+    return;
+  }
+
+  // Dynamic Validations
+  if (form.currency === "CRYPTO" && !form.walletAddress) {
+    toast.error("Wallet Address is required for Crypto payout.");
+    return;
+  }
+  if (form.currency === "INR" && !form.account && !form.upiId) {
+    toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
+    return;
+  }
+  if (form.currency === "INR" && form.mobile.replace(/\D/g, "").length !== 10) {
+    toast.error("A valid 10-digit mobile number is required for INR withdrawals.");
+    return;
+  }
+  if (form.currency === "USD" && (!form.account || !form.bankName)) {
+    toast.error("Account Number and Bank Name are required for USD wire.");
+    return;
+  }
+
+  // Minimum checks based on input currency
+  if (form.currency === "USD" && amountNum < MIN_WITHDRAWAL_USD) {
+    toast.error(`Minimum withdrawal amount is $${MIN_WITHDRAWAL_USD}.`);
+    return;
+  }
+  if (form.currency === "INR" && amountNum < MIN_WITHDRAWAL_INR) {
+    toast.error(`Minimum withdrawal amount is ₹${MIN_WITHDRAWAL_INR}.`);
+    return;
+  }
+  if (form.currency === "INR" && (amountNum < RAMEEPAY_MIN_INR || amountNum > RAMEEPAY_MAX_INR)) {
+    toast.error(`INR withdrawals must be between ₹${RAMEEPAY_MIN_INR} and ₹${RAMEEPAY_MAX_INR}.`);
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
+      form
+    );
+
+    if (res.data?.success) {
+      toast.success(res.data.message || "Withdrawal request submitted!");
+      setShowModal(false);
+      refreshBalance();
+    } else {
+      toast.error(res.data?.message || "Withdrawal failed.");
     }
-
-    if (amountNum > balance) {
-      toast.error("Withdrawal amount exceeds current account balance.");
-      return;
-    }
-
-    // Dynamic Validations
-    if (form.currency === "CRYPTO" && !form.walletAddress) {
-      toast.error("Wallet Address is required for Crypto payout.");
-      return;
-    }
-    if (form.currency === "INR" && !form.account && !form.upiId) {
-      toast.error("Please provide Bank Account Number/IFSC or a UPI ID.");
-      return;
-    }
-    if (form.currency === "USD" && (!form.account || !form.bankName)) {
-      toast.error("Account Number and Bank Name are required for USD wire.");
-      return;
-    }
-
-
-    const rate = await fetchRate();
-    const amt = parseFloat(form.amount) * rate;
-
-
-    if (form.currency === "USD" && amt < 100) {
-      toast.error("Minimum withdrawal amount is $100.");
-      return;
-    }
-    if (form.currency === "INR" && amt < 1000) {
-      toast.error("Minimum withdrawal amount is ₹1000.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
-        form
-      );
-
-      if (res.data?.success) {
-        toast.success(res.data.message || "Withdrawal request submitted!");
-        setShowModal(false);
-        fetchAccountSummary(form.accountNo);
-      } else {
-        toast.error(res.data?.message || "Withdrawal failed.");
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Submission error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || "Submission error occurred.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col gap-4">
@@ -197,29 +171,59 @@ export default function Withdrawal() {
         <h1 className="text-2xl font-bold mb-6">Withdrawal Portal</h1>
 
         {/* Account Display Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {accounts.map((acc) => (
-            <div
-              key={acc._id}
-              className="border border-gray-700 bg-[#111827] rounded-2xl p-6 flex flex-col space-y-4 shadow-lg"
-            >
-              <div className="flex justify-between items-center">
-                <Wallet size={30} className="text-cyan-400" />
-                <div>
-                  <h2 className="text-xl font-bold">${balance}</h2>
-                  <p className="text-sm text-gray-400">Acc #: {acc.accountNo}</p>
+        {accounts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-12">
+            <Image
+              src={emptyIcon}
+              alt="No Live Accounts"
+              width={120}
+              height={120}
+              className="mb-4 grayscale opacity-80"
+            />
+            <p className="text-gray-400 text-sm mb-2">
+              You don&apos;t have a live trading account yet. Create one to
+              request a withdrawal.
+            </p>
+            <Button
+              text="+ Create Account"
+              onClick={() => {
+                if (!isKycVerified) {
+                  setShowKycPopup(true);
+                } else {
+                  setShowCreateModal(true);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {accounts.map((acc) => (
+              <div
+                key={acc._id}
+                className="border border-gray-700 bg-[#111827] rounded-2xl p-6 flex flex-col space-y-4 shadow-lg"
+              >
+                <div className="flex justify-between items-center">
+                  <Wallet size={30} className="text-cyan-400" />
+                  <div>
+                    <h2 className="text-xl font-bold">${balance}</h2>
+                    <p className="text-sm text-gray-400">Acc No: {acc.accountNo}</p>
+                  </div>
                 </div>
+                <Button
+                  text="Request Withdrawal"
+                  onClick={() => {
+                    if (!isKycVerified) {
+                      setShowKycPopup(true);
+                      return;
+                    }
+                    handleAccountSelect(acc.accountNo.toString());
+                    setShowModal(true);
+                  }}
+                />
               </div>
-              <Button
-                text="Request Withdrawal"
-                onClick={() => {
-                  handleAccountSelect(acc.accountNo.toString());
-                  setShowModal(true);
-                }}
-              />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Withdrawal Modal */}
         {showModal && (
@@ -347,6 +351,21 @@ export default function Withdrawal() {
                         className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm text-gray-300 mb-3"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Mobile Number</label>
+                      <input
+                        type="tel"
+                        name="mobile"
+                        placeholder="10-digit mobile number"
+                        value={form.mobile}
+                        onChange={handleChange}
+                        required
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                        title="Enter a 10-digit mobile number"
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm text-gray-300 mb-3"
+                      />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs text-gray-400 mb-1">Bank Account Number</label>
@@ -432,8 +451,8 @@ export default function Withdrawal() {
                 {/* Common Inputs */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                    Amount (₹)
-                  </label>
+  Amount ({form.currency === "INR" ? "₹" : "$"})
+</label>
                   <input
                     type="number"
                     name="amount"
@@ -461,6 +480,21 @@ export default function Withdrawal() {
           </div>
         )}
       </div>
+
+      <RegisterModal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          refresh();
+        }}
+      />
+
+      <KycAlertModal
+        isOpen={showKycPopup}
+        onClose={() => setShowKycPopup(false)}
+        hasSubmittedDocuments={hasSubmittedDocuments}
+      />
+
       <Toaster />
     </div>
   );

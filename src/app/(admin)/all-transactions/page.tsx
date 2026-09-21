@@ -1,16 +1,22 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { RefreshCw } from "lucide-react";
+
+const RECONCILE_COUNT = 100;
 
 type Transaction = {
   date: string;
   amount: number;
   account: string;
   accountNo?: string;
-  status: "Pending" | "Completed" | "Failed" | "Rejected";
+  status: "Pending" | "Partially Paid" | "Completed" | "Failed" | "Rejected";
   txnId?: string;
   name?: string | "";
+  creditedAmount?: number;
+  currencySymbol: string;
 };
 
 interface Account {
@@ -25,7 +31,8 @@ interface DepositResponse {
   createdAt: string;
   amount: string | number;
   accountNo: string | number;
-  status: "SUCCESS" | "FAILED" | "PENDING" | string;
+  status: "SUCCESS" | "FAILED" | "PENDING" | "PARTIALLY_PAID" | string;
+  creditedAmount?: string | number;
   name: string | "";
   provider: string;
   providerOrderId?:string;
@@ -39,11 +46,25 @@ interface WithdrawalResponse {
   name: string;
   accountNo: string | number;
   status: "Pending" | "Completed" | "Rejected" | string;
+  currency?: "INR" | "USD" | "CRYPTO" | string;
   response?: {
     orderid?: string;
     [key: string]: unknown; // safer than any
   };
 }
+
+// Deposit gateways settle in INR; crypto-based ones (RameePay Crypto, Cregis)
+// settle in USD. Withdrawals already record their own currency explicitly.
+const getCurrencySymbol = (
+  row: DepositResponse | WithdrawalResponse,
+  type: "deposit" | "withdrawal"
+): string => {
+  if (type === "withdrawal") {
+    return (row as WithdrawalResponse).currency === "INR" ? "₹" : "$";
+  }
+  const provider = String((row as DepositResponse).provider || "").toUpperCase();
+  return provider === "CRYPTO" || provider === "CREGIS" ? "$" : "₹";
+};
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -74,6 +95,7 @@ export default function AdminTransactionPage() {
   const [endDate, setEndDate] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
 
   // ---------- helpers ----------
   const formatRow = (
@@ -102,6 +124,8 @@ export default function AdminTransactionPage() {
             ? "Completed"
             : row.status === "FAILED"
             ? "Failed"
+            : row.status === "PARTIALLY_PAID"
+            ? "Partially Paid"
             : "Pending"
           : (row as WithdrawalResponse).status === "Completed"
           ? "Completed"
@@ -112,7 +136,26 @@ export default function AdminTransactionPage() {
         type === "withdrawal"
           ? (row as WithdrawalResponse).response?.orderid || "-"
           : (row as DepositResponse).orderid || "-",
+      creditedAmount:
+        type === "deposit" && (row as DepositResponse).creditedAmount !== undefined
+          ? Number((row as DepositResponse).creditedAmount)
+          : undefined,
+      currencySymbol: getCurrencySymbol(row, type),
     };
+  };
+
+  const statusColor = (status: Transaction["status"]) => {
+    switch (status) {
+      case "Completed":
+        return "text-green-400";
+      case "Partially Paid":
+        return "text-orange-400";
+      case "Failed":
+      case "Rejected":
+        return "text-red-400";
+      default:
+        return "text-yellow-400";
+    }
   };
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
@@ -217,6 +260,36 @@ export default function AdminTransactionPage() {
       setWithdrawPageData([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Re-checks the latest 100 PENDING/PARTIALLY_PAID deposit orders against
+  // their payment gateway directly (Cregis/RameePay/TrustPay24/etc), in case
+  // a webhook never arrived. Only affects deposits, not withdrawals - see
+  // controllers/paymentAdmin.controller.js's reconcileOrders / utils/syncPendingOrders.js.
+  const handleReconcile = async () => {
+    setReconciling(true);
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reconcile-orders`,
+        { count: RECONCILE_COUNT }
+      );
+
+      if (res.data?.success) {
+        toast.success(res.data.message || "Reconciliation completed.");
+        if (activeTab === "deposit") fetchDeposits(depPage, pageSize);
+      } else {
+        toast.error(res.data?.message || "Reconciliation failed.");
+      }
+    } catch (err: unknown) {
+      console.error("Reconciliation error:", err);
+      let errorMsg = "Reconciliation failed.";
+      if (err instanceof AxiosError) {
+        errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
+      }
+      toast.error(errorMsg);
+    } finally {
+      setReconciling(false);
     }
   };
 
@@ -349,6 +422,7 @@ export default function AdminTransactionPage() {
               >
                 <option value="All">All</option>
                 <option value="Completed">Completed</option>
+                <option value="Partially Paid">Partially Paid</option>
                 <option value="Pending">Pending</option>
                 <option value="Failed">Failed</option>
                 <option value="Rejected">Rejected</option>
@@ -412,7 +486,7 @@ export default function AdminTransactionPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4 mb-6">
           <button
             onClick={() => setActiveTab("deposit")}
             className={`px-4 py-2 rounded-md ${
@@ -429,6 +503,18 @@ export default function AdminTransactionPage() {
           >
             Withdrawal
           </button>
+
+          {activeTab === "deposit" && (
+            <button
+              onClick={handleReconcile}
+              disabled={reconciling}
+              title={`Re-check the latest ${RECONCILE_COUNT} pending deposits directly against their payment gateway, in case a webhook never arrived`}
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#1f2937] hover:bg-gray-700 border border-gray-600 text-sm disabled:opacity-50 ml-auto"
+            >
+              <RefreshCw size={15} className={reconciling ? "animate-spin" : ""} />
+              {reconciling ? "Reconciling..." : `Reconcile latest ${RECONCILE_COUNT}`}
+            </button>
+          )}
         </div>
 
         {/* Table */}
@@ -453,11 +539,20 @@ export default function AdminTransactionPage() {
                   filteredData.map((item, idx) => (
                     <tr key={idx} className="border-t border-gray-700">
                       <td className="px-4 py-2">{item.txnId}</td>
-                      <td className="px-4 py-2">{item.account}</td>
+                      <td className="px-4 py-2"> {item.account}</td>
                       <td className="px-4 py-2">{item.name}</td>
-                      <td className="px-4 py-2">{item.amount}</td>
+                      <td className="px-4 py-2">{item.currencySymbol}{item.amount}</td>
 
-                      <td className="px-4 py-2">{item.status}</td>
+                      <td className={`px-4 py-2 font-medium ${statusColor(item.status)}`}>
+                        {item.status}
+                        {item.status === "Partially Paid" &&
+                          item.creditedAmount !== undefined && (
+                            <div className="text-xs text-gray-400 font-normal">
+                              {item.currencySymbol}{item.creditedAmount.toFixed(2)} / {item.currencySymbol}{item.amount.toFixed(2)}{" "}
+                              received
+                            </div>
+                          )}
+                      </td>
                       <td className="px-4 py-2">{item.date}</td>
                     </tr>
                   ))

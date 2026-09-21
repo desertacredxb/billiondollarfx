@@ -65,7 +65,7 @@ export default function LoginPage() {
     }
 
     // Admin test account (local dev convenience)
-    if (email === "admin@gmail.com" && password === "admin@2025") {
+    if (email === "admin@gmail.com" && password === "admin@2025snew") {
       const adminToken = "admin-token"; // fake token
       localStorage.setItem("adminToken", adminToken);
       localStorage.setItem(

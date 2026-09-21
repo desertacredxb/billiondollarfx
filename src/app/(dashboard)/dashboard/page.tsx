@@ -7,33 +7,18 @@ import emptyIcon from "../../../../assets/icons/empty_state.png"; // Update if n
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount"; // adjust path as needed
 import axios from "axios";
-import AddBalanceModal from "../../../../components/AddBalanceModal";
 import Link from "next/link";
 import KycAlertModal from "../../../../components/KycAlertModal";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
-
-interface User {
-  email: string;
-  isKycVerified: boolean;
-  accounts: Account[];
-}
+import { useMT5AccountSummary } from "../../../../lib/mt5Store";
+import { useUserProfile } from "../../../../lib/userStore";
 
 export default function DepositsPage() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [accountNo, setAccountNo] = useState("");
-  const [balance, setBalance] = useState<string>("0.00");
-  const [DWBalance, setDWBalance] = useState<string>("0.00");
-  const [showDepositModal, setShowDepositModal] = useState(false);
   const [showKycPopup, setShowKycPopup] = useState(false);
-  const [userData, setUserData] = useState<User | null>(null);
+  const { profile, accounts, isKycVerified, hasSubmittedDocuments, refresh } =
+    useUserProfile();
 
   useEffect(() => {
     const verifySession = async () => {
@@ -71,7 +56,7 @@ export default function DepositsPage() {
   }, []);
 
   useEffect(() => {
-    if (isLoggedIn && userData && !userData.isKycVerified) {
+    if (isLoggedIn && profile && !isKycVerified) {
       // show first popup after 5s
       const timeout = setTimeout(() => setShowKycPopup(true), 5000);
 
@@ -85,88 +70,13 @@ export default function DepositsPage() {
         clearInterval(interval);
       };
     }
-  }, [isLoggedIn, userData?.isKycVerified]);
+  }, [isLoggedIn, profile, isKycVerified]);
 
-  const fetchUserData = async () => {
-    const userString = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (!userString) {
-      router.replace("/login");
-      return;
-    }
-
-    const user = JSON.parse(userString);
-    const email = user.email;
-
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const userData = res.data;
-      console.log("userData", userData)
-      setUserData(userData);
-      if (
-        userData &&
-        Array.isArray(userData.accounts) &&
-        userData.accounts.length > 0
-      ) {
-        setAccounts(userData.accounts);
-        const firstAccountNo = userData.accounts[0].accountNo;
-        setAccountNo(firstAccountNo);
-        fetchAccountSummary(firstAccountNo);
-      } else {
-        setAccounts([]); // Set empty accounts safely
-      }
-
-      setIsLoggedIn(true);
-    } catch (err) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      router.replace("/login");
-    }
-  };
-  const fetchAccountSummary = async (accountNo: number) => {
-    try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
-        {
-          accountno: accountNo.toString(), // Sent in body as required
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const result = res.data;
-
-      if (result.data?.response === "success") {
-        const accountData = result.data;
-
-        setBalance(accountData.balance);
-        setDWBalance(accountData.DWBalance);
-      } else {
-        console.warn(
-          "Account summary fetch failed:",
-          result.data?.message || result.message
-        );
-      }
-    } catch (error) {
-      console.error("Failed to fetch account summary:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
+  // the old fetchAccountSummary() that read from the legacy MoneyPlantFX API
+  // (/api/moneyplant/checkBalance), which could disagree with the real MT5
+  // balance shown on every other page for the same account.
+  const { summary } = useMT5AccountSummary(accounts[0]?.accountNo);
 
   if (!isLoggedIn) return null;
 
@@ -201,7 +111,13 @@ export default function DepositsPage() {
             {accounts.length === 0 && (
               <Button
                 text="+ Create Account"
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  if (profile && !isKycVerified) {
+                    setShowKycPopup(true);
+                  } else {
+                    setShowModal(true);
+                  }
+                }}
               />
             )}
           </div>
@@ -263,7 +179,7 @@ export default function DepositsPage() {
           <div className="space-y-5">
             <div className="bg-[#0d1b2a] p-4 rounded-xl flex justify-between items-center">
               <div className="text-gray-400 text-sm">Total Deposited</div>
-              <div className="text-white font-bold">${balance}</div>
+              <div className="text-white font-bold">${summary?.balance ?? "0.00"}</div>
             </div>
             <div className="flex justify-center">
               <Link href="/deposits">
@@ -272,39 +188,20 @@ export default function DepositsPage() {
               </Link>
             </div>
 
-            {/* <div className="bg-[#0d1b2a] p-4 rounded-xl flex justify-between items-center">
-            <div className="text-gray-400 text-sm">Total Withdrawn</div>
-            <div className="text-white font-bold">${DWBalance}</div>
-          </div> */}
-            {/* <div className="flex justify-center">
-            <Button text="Withdraw Funds" onClick={handleClick} />
-          </div> */}
           </div>
         </div>
         <RegisterModal
           isOpen={showModal}
           onClose={() => {
             setShowModal(false);
-            fetchUserData(); // ✅ Refresh account list after modal closes
-          }}
-        />
-
-        <AddBalanceModal
-          isOpen={showDepositModal}
-          onClose={() => setShowDepositModal(false)}
-          accountNo={Number(accountNo)}
-          mode="deposit"
-          onSuccess={() => {
-            setShowDepositModal(false); // ✅ close modal first
-            setTimeout(() => {
-              fetchAccountSummary(Number(accountNo)); // ✅ refresh balance after short delay
-            }, 100);
+            refresh(); // ✅ Refresh account list after modal closes
           }}
         />
 
         <KycAlertModal
           isOpen={showKycPopup}
           onClose={() => setShowKycPopup(false)}
+          hasSubmittedDocuments={hasSubmittedDocuments}
         />
       </div>
     </div>

@@ -5,17 +5,8 @@ import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Button from "../Button";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
-
-interface User {
-  isKycVerified: boolean;
-  accounts: Account[];
-}
+import { MIN_DEPOSIT_USD } from "../../constants/deposit";
+import { useUserProfile } from "../../lib/userStore";
 
 interface CregisDepositResponse {
   success: boolean;
@@ -23,66 +14,55 @@ interface CregisDepositResponse {
   order_id?: string;
   cregis_id?: string;
   checkout_url?: string;
+  requested_amount?: number;
+  payment_charge_amount?: number;
   order_amount?: string;
   order_currency?: string;
 }
 
+// Mirrors CREGIS_PAYMENT_CHARGE_ENABLED / CREGIS_PAYMENT_CHARGE_RATE in
+// Billion_Doller_Backend/.env - only used here to preview the total before
+// submitting; the backend computes and charges the authoritative amount.
+const CREGIS_PAYMENT_CHARGE_ENABLED =
+  process.env.NEXT_PUBLIC_CREGIS_PAYMENT_CHARGE_ENABLED === "true";
+const CREGIS_PAYMENT_CHARGE_RATE = CREGIS_PAYMENT_CHARGE_ENABLED
+  ? Number(process.env.NEXT_PUBLIC_CREGIS_PAYMENT_CHARGE_RATE) || 0.005
+  : 0;
+
 export default function Cregis() {
+  const { accounts } = useUserProfile();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [userData, setUserData] = useState<User | null>(null);
 
   const [form, setForm] = useState({
     accountNo: "",
     amount: "",
   });
 
+  const enteredAmount = Number(form.amount) || 0;
+  const estimatedChargeAmount =
+    enteredAmount > 0 ? Number((enteredAmount * CREGIS_PAYMENT_CHARGE_RATE).toFixed(2)) : 0;
+  const estimatedTotal =
+    enteredAmount > 0 ? Number((enteredAmount + estimatedChargeAmount).toFixed(2)) : 0;
+
+  // Auto-select the first account once accounts load from the store.
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
-
-        if (!token || !storedUser) return;
-
-        const { email } = JSON.parse(storedUser) as { email: string };
-
-        const response = await axios.get<User>(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setUserData(response.data);
-        setAccounts(response.data.accounts ?? []);
-
-        if (response.data.accounts?.length) {
-          setForm((current) => ({
-            ...current,
-            accountNo: response.data.accounts[0].accountNo.toString(),
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching accounts:", error);
-        toast.error("Unable to load your trading accounts.");
-      }
-    };
-
-    void fetchAccounts();
-  }, []);
+    if (accounts.length > 0 && !form.accountNo) {
+      setForm((current) => ({
+        ...current,
+        accountNo: accounts[0].accountNo.toString(),
+      }));
+    }
+  }, [accounts, form.accountNo]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     const amount = Number(form.amount);
 
-    // Minimum $10 USD check
-    if (!Number.isFinite(amount) || amount < 10) {
-      toast.error("The minimum deposit amount is $10 USD.");
+    // Minimum deposit check
+    if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_USD) {
+      toast.error(`The minimum deposit amount is $${MIN_DEPOSIT_USD} USD.`);
       return;
     }
 
@@ -209,15 +189,23 @@ export default function Cregis() {
                       }))
                     }
                     required
-                    min={10}
+                    min={MIN_DEPOSIT_USD}
                     step="0.01"
                     placeholder="100"
                     className="w-full pl-7 pr-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Minimum deposit amount is $10 USD.
+                  Minimum deposit amount is ${MIN_DEPOSIT_USD} USD.
                 </p>
+                {CREGIS_PAYMENT_CHARGE_ENABLED && enteredAmount > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    A {(CREGIS_PAYMENT_CHARGE_RATE * 100).toFixed(2)}% payment processing charge applies: $
+                    {estimatedChargeAmount.toFixed(2)}. You&apos;ll be asked to
+                    pay <span className="text-gray-200">${estimatedTotal.toFixed(2)}</span> in
+                    total.
+                  </p>
+                )}
               </div>
 
               {/* Submit Button */}

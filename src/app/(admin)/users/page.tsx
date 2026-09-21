@@ -6,7 +6,35 @@ import axios from "axios";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 import { useRouter } from "next/navigation";
+import { X, ShieldCheck, ShieldAlert } from "lucide-react";
 import Button from "../../../../components/Button";
+
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div className="flex justify-between gap-4 py-1.5 text-sm border-b border-gray-800 last:border-0">
+      <span className="text-gray-500">{label}</span>
+      <span className="text-gray-200 text-right break-all">{value}</span>
+    </div>
+  );
+}
+
+function InfoCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-[#161f2e] border border-gray-800 rounded-xl p-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+        {title}
+      </h3>
+      <div>{children}</div>
+    </div>
+  );
+}
 
 interface User {
   referredByName?: string;
@@ -31,12 +59,11 @@ interface User {
   iban?: string;
   bankName: string;
   bankAddress: string;
+  hasSubmittedDocuments?:boolean;
 
   // Documents
-  identityFront?: string;
-  identityBack?: string;
-  addressProof?: string;
-  selfieProof?: string;
+  idProof1?: { docType?: string; docNumber?: string; image?: string };
+  idProof2?: { docType?: string; docNumber?: string; image?: string };
 }
 
 export default function UsersPage() {
@@ -51,7 +78,7 @@ export default function UsersPage() {
 
   // ✅ Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage, setUsersPerPage] = useState(5);
+  const [usersPerPage, setUsersPerPage] = useState(10);
 
   // ✅ For document preview modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -290,9 +317,8 @@ export default function UsersPage() {
                     {/* <td className="px-4 py-3">{user.nationality || "N/A"}</td> */}
                     <td className="px-4 py-3">
                       {user.referredByName
-                        ? `${user.referredByName}${
-                            user.referralCode ? ` (${user.referralCode})` : ""
-                          }`
+                        ? `${user.referredByName}${user.referralCode ? ` (${user.referralCode})` : ""
+                        }`
                         : "—"}
                     </td>
 
@@ -348,185 +374,186 @@ export default function UsersPage() {
 
       {/* ✅ User Details Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-[#1f2937] rounded-lg p-6 w-11/12 md:w-2/3 max-h-[90vh] overflow-y-auto no-scrollbar relative">
-            <button
-              onClick={() => setSelectedUser(null)}
-              className="absolute top-3 right-5 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-              {selectedUser.profileImage && (
-                <img
-                  src={selectedUser.profileImage}
-                  alt={selectedUser.fullName}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              )}
-              {selectedUser.fullName}
-            </h2>
-
-            {/* Two-column layout: user + bank info */}
-            <div className="flex justify-between gap-10 mb-10">
-              {/* Left: User Info */}
-              <div className="space-y-2 text-sm text-gray-300 w-1/2">
-                <p>
-                  <b>Email:</b> {selectedUser.email}
-                </p>
-                <p>
-                  <b>Phone:</b> {selectedUser.phone}
-                </p>
-                <p>
-                  <b>Gender:</b> {selectedUser.gender}
-                </p>
-                <p>
-                  <b>Nationality:</b> {selectedUser.nationality}
-                </p>
-                <p>
-                  <b>State:</b> {selectedUser.state}
-                </p>
-                <p>
-                  <b>City:</b> {selectedUser.city}
-                </p>
-                <p>
-                  <b>Address:</b> {selectedUser.address}
-                </p>
-                <p>
-                  <b>Account Type:</b> {selectedUser.accountType}
-                </p>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1f2937] rounded-2xl w-full md:w-2/3 max-h-[90vh] overflow-y-auto no-scrollbar relative shadow-2xl">
+            {/* Header */}
+            <div className="sticky top-0 bg-[#1f2937] border-b border-gray-800 px-6 py-5 flex items-start justify-between gap-4 z-10">
+              <div className="flex items-center gap-4 min-w-0">
+                {selectedUser.profileImage ? (
+                  <img
+                    src={selectedUser.profileImage}
+                    alt={selectedUser.fullName}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-gray-700 shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-[#2c3e50] flex items-center justify-center text-lg font-bold border-2 border-gray-700 shrink-0">
+                    {selectedUser.fullName?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold truncate">
+                    {selectedUser.fullName}
+                  </h2>
+                  <p className="text-sm text-gray-400 truncate">
+                    {selectedUser.email}
+                  </p>
+                  <span
+                    className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedUser.isKycVerified
+                        ? "bg-green-600/20 text-green-400"
+                        : "bg-yellow-600/20 text-yellow-400"
+                      }`}
+                  >
+                    {selectedUser.isKycVerified ? (
+                      <ShieldCheck size={12} />
+                    ) : (
+                      <ShieldAlert size={12} />
+                    )}
+                    {selectedUser.isKycVerified
+                      ? "KYC Verified"
+                      : "KYC Pending"}
+                  </span>
+                </div>
               </div>
-
-              {/* Right: Bank Info */}
-              <div className="space-y-2 text-sm text-gray-300 w-1/2">
-                {selectedUser.accountHolderName && (
-                  <p>
-                    <b>Account Holder:</b> {selectedUser.accountHolderName}
-                  </p>
-                )}
-                {selectedUser.accountNumber && (
-                  <p>
-                    <b>Account Number:</b> {selectedUser.accountNumber}
-                  </p>
-                )}
-                {selectedUser.ifscCode && (
-                  <p>
-                    <b>IFSC:</b> {selectedUser.ifscCode}
-                  </p>
-                )}
-                {selectedUser.iban && (
-                  <p>
-                    <b>IBAN:</b> {selectedUser.iban}
-                  </p>
-                )}
-                {selectedUser.bankName && (
-                  <p>
-                    <b>Bank Name:</b> {selectedUser.bankName}
-                  </p>
-                )}
-                {selectedUser.bankAddress && (
-                  <p>
-                    <b>Bank Address:</b> {selectedUser.bankAddress}
-                  </p>
-                )}
-                {selectedUser.referredByName && (
-                  <p>
-                    <b>Referred By:</b>{" "}
-                    {selectedUser.referredByName
-                      ? `${selectedUser.referredByName}${
-                          selectedUser.referralCode
-                            ? ` (${selectedUser.referralCode})`
-                            : ""
-                        }`
-                      : "—"}
-                  </p>
-                )}
-              </div>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition shrink-0"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <p>
-              <b>KYC Status:</b>{" "}
-              {selectedUser.isKycVerified ? (
-                <span className="text-green-400">Verified</span>
-              ) : (
-                <span className="text-yellow-400">Pending</span>
-              )}
-            </p>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              {/* Info cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoCard title="Personal Info">
+                  <InfoRow label="Phone" value={selectedUser.phone} />
+                  <InfoRow label="Gender" value={selectedUser.gender} />
+                  <InfoRow
+                    label="Nationality"
+                    value={selectedUser.nationality}
+                  />
+                  <InfoRow label="State" value={selectedUser.state} />
+                  <InfoRow label="City" value={selectedUser.city} />
+                  <InfoRow label="Address" value={selectedUser.address} />
+                  <InfoRow
+                    label="Account Type"
+                    value={selectedUser.accountType}
+                  />
+                  <InfoRow
+                    label="Referred By"
+                    value={
+                      selectedUser.referredByName
+                        ? `${selectedUser.referredByName}${selectedUser.referralCode
+                          ? ` (${selectedUser.referralCode})`
+                          : ""
+                        }`
+                        : undefined
+                    }
+                  />
+                </InfoCard>
 
-            {/* Documents */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-2">Documents</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {selectedUser.identityFront && (
-                  <div>
-                    <p className="mb-1 text-sm">ID Card (Front)</p>
-                    <Zoom>
-                      <img
-                        src={selectedUser.identityFront}
-                        alt="Identity Front"
-                        className="rounded border border-gray-600 cursor-pointer hover:scale-105 transition"
-                      />
-                    </Zoom>
-                  </div>
-                )}
-                {selectedUser.identityBack && (
-                  <div>
-                    <p className="mb-1 text-sm">ID Card (Back)</p>
-                    <Zoom>
-                      <img
-                        src={selectedUser.identityBack}
-                        alt="Identity Back"
-                        className="rounded border border-gray-600 cursor-pointer hover:scale-105 transition"
-                      />
-                    </Zoom>
-                  </div>
-                )}
-                {selectedUser.addressProof && (
-                  <div>
-                    <p className="mb-1 text-sm">Address Proof</p>
-                    <Zoom>
-                      <img
-                        src={selectedUser.addressProof}
-                        alt="Address Proof"
-                        className="rounded border border-gray-600 cursor-pointer hover:scale-105 transition"
-                      />
-                    </Zoom>
-                  </div>
-                )}
-                {selectedUser.selfieProof && (
-                  <div>
-                    <p className="mb-1 text-sm">Selfie Proof</p>
-                    <Zoom>
-                      <img
-                        src={selectedUser.selfieProof}
-                        alt="Selfie Proof"
-                        className="rounded border border-gray-600 cursor-pointer hover:scale-105 transition"
-                      />
-                    </Zoom>
+                <InfoCard title="Bank Details">
+                  <InfoRow
+                    label="Account Holder"
+                    value={selectedUser.accountHolderName}
+                  />
+                  <InfoRow
+                    label="Account Number"
+                    value={selectedUser.accountNumber}
+                  />
+                  <InfoRow label="IFSC" value={selectedUser.ifscCode} />
+                  <InfoRow label="IBAN" value={selectedUser.iban} />
+                  <InfoRow label="Bank Name" value={selectedUser.bankName} />
+                  <InfoRow
+                    label="Bank Address"
+                    value={selectedUser.bankAddress}
+                  />
+                  {!selectedUser.accountHolderName &&
+                    !selectedUser.accountNumber &&
+                    !selectedUser.bankName && (
+                      <p className="text-sm text-gray-500">
+                        No bank details submitted yet.
+                      </p>
+                    )}
+                </InfoCard>
+              </div>
+
+              {/* Documents */}
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                  Documents
+                </h3>
+                {!selectedUser.idProof1?.image &&
+                  !selectedUser.idProof2?.image ? (
+                  <p className="text-sm text-gray-500 bg-[#161f2e] border border-gray-800 rounded-xl p-4">
+                    No documents submitted yet.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[selectedUser.idProof1, selectedUser.idProof2].map(
+                      (doc, i) =>
+                        doc?.image && (
+                          <div
+                            key={i}
+                            className="bg-[#161f2e] border border-gray-800 rounded-xl overflow-hidden"
+                          >
+                            <Zoom>
+                              <img
+                                src={doc.image}
+                                alt={`ID Proof ${i + 1}`}
+                                className="w-full h-44 object-cover cursor-pointer hover:opacity-90 transition"
+                              />
+                            </Zoom>
+                            <div className="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-lg border border-white/10">
+                              {/* Document Type Field */}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs font-medium text-gray-400 shrink-0">Doc Type:</span>
+                                <span className="text-xs font-mono font-semibold capitalize tracking-wide text-gray-100 truncate">
+                                  {doc.docType || `ID Proof ${i + 1}`}
+                                </span>
+                              </div>
+
+                              {/* Document Number Field */}
+                              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                                <span className="text-xs font-medium text-gray-400 shrink-0">Doc No:</span>
+                                <span className="text-xs font-mono font-semibold tracking-wide text-gray-100 truncate">
+                                  {doc.docNumber || "—"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                    )}
                   </div>
                 )}
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 mt-6">
-              {!selectedUser.isKycVerified && (
-                <Button
+            <div className="sticky bottom-0 bg-[#1f2937] border-t border-gray-800 px-6 py-4 flex flex-wrap justify-end gap-3">
+              {!selectedUser.isKycVerified && selectedUser.hasSubmittedDocuments && (
+                <button
                   onClick={() => handleVerifyKyc(selectedUser.email)}
                   disabled={verifying}
-                  className="bg-[var(--primary)] hover:bg-[#f3d089] text-black"
-                  text={verifying ? "Verifying..." : "Verify KYC"}
-                />
+                  className="px-4 py-2 rounded-full text-sm font-semibold text-white bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {verifying ? "Verifying..." : "Verify KYC"}
+                </button>
               )}
 
-              <Button
+              <button
                 onClick={() => handleRejectKyc(selectedUser.email)}
-                text="Reject KYC"
-              />
-              <Button
+                className="px-4 py-2 rounded-full text-sm font-semibold text-yellow-400 border border-yellow-600/40 hover:bg-yellow-600/10 transition"
+              >
+                Reject KYC
+              </button>
+              <button
                 onClick={() => handleDeleteUser(selectedUser.email)}
-                text="Delete User"
-              />
+                className="px-4 py-2 rounded-full text-sm font-semibold text-red-400 border border-red-600/40 hover:bg-red-600/10 transition"
+              >
+                Delete User
+              </button>
             </div>
           </div>
         </div>

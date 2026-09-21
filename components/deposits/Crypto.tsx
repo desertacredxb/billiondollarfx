@@ -3,64 +3,28 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { CreditCard, X } from "lucide-react";
 import Button from "../../components/Button"; // ✅ import your Button
-import KycAlertModal from "../../components/KycAlertModal";
 import toast, { Toaster } from "react-hot-toast";
-
-interface Account {
-  _id: string;
-  accountNo: number;
-  currency: string;
-}
-
-interface User {
-  email: string;
-  isKycVerified: boolean;
-  accounts: Account[];
-}
+import { MIN_DEPOSIT_USD } from "../../constants/deposit";
+import { useUserProfile } from "../../lib/userStore";
 
 function CryptoPay() {
+  const { accounts } = useUserProfile();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     accountNo: "",
     amount: "",
   });
-  const [showKycPopup, setShowKycPopup] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [userData, setUserData] = useState<User | null>(null);
 
-  // ✅ Fetch accounts from backend
-  const fetchAccounts = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userString = localStorage.getItem("user");
-
-      if (!token || !userString) return;
-
-      const user = JSON.parse(userString);
-      const email = user.email;
-
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-      );
-      if (res.data) setUserData(res.data);
-
-      if (res.data?.accounts?.length > 0) {
-        setAccounts(res.data.accounts);
-        // Auto-select first account
-        setForm((prev) => ({
-          ...prev,
-          accountNo: res.data.accounts[0].accountNo.toString(),
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching accounts:", err);
-    }
-  };
-
+  // Auto-select the first account once accounts load from the store.
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    if (accounts.length > 0 && !form.accountNo) {
+      setForm((prev) => ({
+        ...prev,
+        accountNo: accounts[0].accountNo.toString(),
+      }));
+    }
+  }, [accounts, form.accountNo]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -73,9 +37,9 @@ function CryptoPay() {
 
     const amount = Number(form.amount);
 
-    // ✅ Validate minimum 1000
-    if (amount < 10) {
-      alert("The minimum deposit amount is $10 USD.");
+    // ✅ Validate minimum deposit
+    if (amount < MIN_DEPOSIT_USD) {
+      alert(`The minimum deposit amount is $${MIN_DEPOSIT_USD} USD.`);
       return;
     }
 
@@ -120,13 +84,7 @@ function CryptoPay() {
         {/* ✅ Use Button instead of <button> */}
         <Button
           text="Deposit"
-          onClick={() => {
-            if (userData?.isKycVerified === false) {
-              setShowKycPopup(true); // show KYC popup
-            } else {
-              setShowModal(true); // open deposit modal
-            }
-          }}
+          onClick={() => setShowModal(true)}
           className="w-fit"
         />
       </div>
@@ -184,13 +142,13 @@ function CryptoPay() {
                     value={form.amount}
                     onChange={handleChange}
                     required
-                    min={10} // E.g., $10 USDT minimum
+                    min={MIN_DEPOSIT_USD} // E.g., $10 USDT minimum
                     placeholder="100"
                     className="w-full pl-7 pr-3 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Minimum deposit amount is $10 USDT.
+                  Minimum deposit amount is ${MIN_DEPOSIT_USD} USDT.
                 </p>
               </div>
 
@@ -213,10 +171,6 @@ function CryptoPay() {
             color: "#fff",
           },
         }}
-      />
-      <KycAlertModal
-        isOpen={showKycPopup}
-        onClose={() => setShowKycPopup(false)}
       />
     </div>
   );

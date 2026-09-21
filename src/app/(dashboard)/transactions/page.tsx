@@ -6,8 +6,9 @@ type Transaction = {
   date: string;
   amount: number;
   account: string;
-  status: "Pending" | "Completed" | "Failed" | "Rejected";
+  status: "Pending" | "Partially Paid" | "Completed" | "Failed" | "Rejected";
   txnId?: string;
+  creditedAmount?: number;
 };
 
 interface Account {
@@ -21,7 +22,8 @@ interface DepositResponse {
   createdAt: string;
   amount: string | number;
   accountNo: string | number;
-  status: "SUCCESS" | "FAILED" | "PENDING" | string;
+  status: "SUCCESS" | "FAILED" | "PENDING" | "PARTIALLY_PAID" | string;
+  creditedAmount?: string | number;
   orderid: string;
 }
 
@@ -80,6 +82,8 @@ export default function TransactionPage() {
           ? "Completed"
           : row.status === "FAILED"
           ? "Failed"
+          : row.status === "PARTIALLY_PAID"
+          ? "Partially Paid"
           : "Pending"
         : (row as WithdrawalResponse).status === "Completed"
         ? "Completed"
@@ -90,7 +94,25 @@ export default function TransactionPage() {
       type === "deposit"
         ? (row as DepositResponse).orderid || "-"
         : (row as WithdrawalResponse).response?.orderid || "-",
+    creditedAmount:
+      type === "deposit" && (row as DepositResponse).creditedAmount !== undefined
+        ? Number((row as DepositResponse).creditedAmount)
+        : undefined,
   });
+
+  const statusColor = (status: Transaction["status"]) => {
+    switch (status) {
+      case "Completed":
+        return "text-green-400";
+      case "Partially Paid":
+        return "text-orange-400";
+      case "Failed":
+      case "Rejected":
+        return "text-red-400";
+      default:
+        return "text-yellow-400";
+    }
+  };
 
   const sliceForPage = (rows: Transaction[], page: number, limit: number) => {
     const start = (page - 1) * limit;
@@ -394,6 +416,7 @@ export default function TransactionPage() {
             >
               <option value="All">All</option>
               <option value="Completed">Completed</option>
+              <option value="Partially Paid">Partially Paid</option>
               <option value="Pending">Pending</option>
               <option value="Failed">Failed</option>
             </select>
@@ -479,7 +502,16 @@ export default function TransactionPage() {
                       <td className="px-4 py-2">{item.account}</td>
                       <td className="px-4 py-2">{item.amount}</td>
 
-                      <td className="px-4 py-2">{item.status}</td>
+                      <td className={`px-4 py-2 font-medium ${statusColor(item.status)}`}>
+                        {item.status}
+                        {item.status === "Partially Paid" &&
+                          item.creditedAmount !== undefined && (
+                            <div className="text-xs text-gray-400 font-normal">
+                              ${item.creditedAmount.toFixed(2)} / ${item.amount.toFixed(2)}{" "}
+                              received
+                            </div>
+                          )}
+                      </td>
                       <td className="px-4 py-2">{item.date}</td>
                     </tr>
                   ))
