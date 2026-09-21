@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AOSWrapper from "../../components/AOSWrapper";
-import Script from "next/script";
 import WhatsAppButton from "../../components/WhatsappButton";
+import { AIChat } from "../../components/chat/AIChat";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -73,7 +73,8 @@ export default function RootLayout({
 
         </AOSWrapper>
 
-        <WhatsAppButton />
+        {/* <WhatsAppButton /> */}
+        <AIChat />
 
         {/* Meta Pixel Noscript */}
         <noscript>

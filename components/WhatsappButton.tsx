@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 
 export default function WhatsAppButton() {
   const phoneNumber = "447593611999";
-  const message = encodeURIComponent("Hello! I visited your website and would like to get in touch.");
+  const message = encodeURIComponent(
+    "Hello! I visited your website and would like to get in touch.",
+  );
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 
   return (
