@@ -73,7 +73,7 @@ export default function RootLayout({
 
         </AOSWrapper>
 
-        {/* <WhatsAppButton /> */}
+        <WhatsAppButton />
         <AIChat />
 
         {/* Meta Pixel Noscript */}

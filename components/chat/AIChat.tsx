@@ -84,7 +84,8 @@ export const AIChat: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#927948]  to-[#43340c]  hover:from-[#43340c] hover:to-[#927948] text-white shadow-2xl hover:scale-105 transition transform duration-200 focus:outline-none cursor-pointer"
+          title='BDFX AI Assistant'
+          className="flex h-12 w-12 md:w-16 md:h-16 items-center justify-center rounded-full bg-gradient-to-r from-[#927948]  to-[#43340c]  hover:from-[#43340c] hover:to-[#927948] text-white shadow-2xl hover:scale-105 transition transform duration-200 focus:outline-none cursor-pointer"
         >
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         </button>
