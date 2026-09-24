@@ -12,6 +12,7 @@ const QUICK_ACTIONS = [
 
 export const AIChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -82,13 +83,24 @@ export const AIChat: React.FC = () => {
     <div className="fixed bottom-6 right-6 z-50 font-sans antialiased text-gray-200">
       {/* Floating Entry Button Trigger */}
       {!isOpen && (
+        <div className="flex flex-col items-end gap-3">
+          {showWelcome && (
+            <div className="relative max-w-[260px] rounded-xl border border-[#927948] bg-[#0a0f1c] p-3 text-sm text-white shadow-xl" role="status">
+              <button className="absolute right-2 top-1 text-gray-400 hover:text-white" aria-label="Dismiss welcome message" onClick={() => setShowWelcome(false)}>×</button>
+              <p className="pr-4 font-semibold text-[#d6b877]">Welcome to Billion Dollar FX 👋</p>
+              <p className="mt-1 text-gray-200">How can we assist you today?</p>
+              <p className="mt-1 text-xs text-gray-300">We don't accept clients from the UAE.</p>
+              <button className="mt-2 text-xs font-semibold text-[#d6b877] underline" onClick={() => { setShowWelcome(false); setIsOpen(true); }}>Chat with us</button>
+            </div>
+          )}
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => { setShowWelcome(false); setIsOpen(true); }}
           title='BDFX AI Assistant'
           className="flex h-12 w-12 md:w-16 md:h-16 items-center justify-center rounded-full bg-gradient-to-r from-[#927948]  to-[#43340c]  hover:from-[#43340c] hover:to-[#927948] text-white shadow-2xl hover:scale-105 transition transform duration-200 focus:outline-none cursor-pointer"
         >
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         </button>
+        </div>
       )}
 
       {/* Main Container interface shell context */}
@@ -122,6 +134,7 @@ export const AIChat: React.FC = () => {
               <p className="text-sm text-gray-200">Hello 👋</p>
               <p className="text-sm font-medium text-[#927948]">Welcome to BillionDollerFX.</p>
               <p className="text-sm text-gray-400">I'm your AI Support Assistant. How can I help you today?</p>
+              <p className="text-xs text-gray-400">We don't accept clients from the UAE.</p>
             </div>
 
             {/* Render loop sequence targeting current context logs array structure */}
@@ -169,6 +182,11 @@ export const AIChat: React.FC = () => {
 
           {/* User Console Input Dock System */}
           <div className="border-t border-gray-800 bg-[#0a0f1c] p-3">
+            <a href="https://wa.me/441157911131?text=Hello%20BDFX%2C%20I%20need%20support"
+              target="_blank" rel="noopener noreferrer"
+              className="mb-2 inline-block text-xs font-medium text-[#d6b877] underline">
+              Continue on WhatsApp (+44 115 791 1131)
+            </a>
             <div className="flex items-center space-x-2 rounded-xl border border-gray-800 px-3 py-1.5 bg-[#0d1527] focus-within:ring-2 focus-within:ring-[#927948] focus-within:border-transparent transition">
               <textarea
                 value={input}

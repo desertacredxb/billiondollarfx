@@ -245,10 +245,8 @@ export default function SignUpPage() {
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       setLoading(true);
-      // Calls your updated backend endpoint passing email and otp string tokens
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-otp`,
         {
@@ -257,14 +255,15 @@ export default function SignUpPage() {
           body: JSON.stringify({ email: formData.email, otp }),
         },
       );
-
       const data = await res.json();
       if (!res.ok) return alert(data.message || "OTP verification failed.");
 
-      alert(
-        `Registration successful! Please log in to continue.`,
-      );
-      router.push("/login");
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      document.cookie = `token=${data.token}; Path=/; SameSite=Lax;${
+        location.protocol === "https:" ? " Secure;" : ""
+      }`;
+      router.replace("/dashboard");
     } catch (error) {
       console.error(error);
       alert("OTP verification failed.");
@@ -302,6 +301,7 @@ export default function SignUpPage() {
             />
           </Link>
           <h1 className="text-2xl font-semibold">Sign Up</h1>
+          <p className="mt-2 text-center text-sm font-medium text-amber-200">We don't accept clients from the UAE.</p>
           <p className="text-sm mt-2">
             Already have an account?{" "}
             <Link href="/login" className="text-[#00CFFF] cursor-pointer">
@@ -336,15 +336,12 @@ export default function SignUpPage() {
             <input
               name="phone"
               type="tel"
-              placeholder="Phone Number*"
+              autoComplete="tel"
+              placeholder="Phone with country code, e.g. +919876543210"
               className="input"
               value={formData.phone}
               onChange={handleChange}
               required
-              maxLength={10}
-              minLength={10}
-              pattern="[0-9]{10}"
-              title="Please enter a valid 10-digit phone number"
             />
             <select
               name="nationality"
@@ -354,7 +351,7 @@ export default function SignUpPage() {
               required
             >
               <option value="">Select Country*</option>
-              {countriesData.map((data:any) => (
+              {countriesData.filter((data:any) => !/^(uae|united arab emirates)$/i.test(data.country)).map((data:any) => (
                 <option key={data.country} value={data.country}>
                   {data.country}
                 </option>
@@ -453,6 +450,7 @@ export default function SignUpPage() {
             </div>
             <button
               type="submit"
+              disabled={loading}
               className="md:col-span-2 bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 rounded-full cursor-pointer"
             >
               {loading ? "Processing..." : "SIGN UP"}
@@ -469,11 +467,15 @@ export default function SignUpPage() {
             className="grid grid-cols-1 gap-4 max-w-lg mx-auto"
           >
             <p className="text-white text-sm mb-2">
-              Enter the OTP sent to your email/phone
+              Enter the OTP sent to {formData.email}.
             </p>
             <input
               type="text"
-              placeholder="Enter OTP"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              placeholder="6-digit email OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               className="input mb-5"
@@ -482,6 +484,7 @@ export default function SignUpPage() {
             <div className="flex justify-center">
               <button
                 type="submit"
+                disabled={loading}
                 className="bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 px-4 rounded-full w-fit cursor-pointer"
               >
                 {loading ? "Verifying..." : "VERIFY OTP"}

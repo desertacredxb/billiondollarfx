@@ -54,7 +54,7 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
       await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
         ...formData,
         email: user.email,
-      });
+      }, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
 
       alert("✅ IB Request Submitted!");
       setShowForm(false);

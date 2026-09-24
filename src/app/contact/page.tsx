@@ -151,9 +151,9 @@ export default function ContactPage() {
 
         {/* Contact Info */}
         <div className="flex flex-col md:flex-row justify-center items-center gap-8 text-center mt-12 text-gray-300">
-          <div>whatsapp - +447999283366</div>
+          <div>whatsapp - +44 115 791 1131</div>
           <div>info@billiondollarfx.com</div>
-          <div>+447999283366</div>
+          <div>+44 115 791 1131</div>
           <div>P.O Box 838 Castries, Saint Lucia.</div>
         </div>
 

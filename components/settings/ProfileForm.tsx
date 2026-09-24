@@ -72,7 +72,17 @@ export default function ProfileForm() {
     try {
       const res = await axios.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/update-profile/${email}`,
-        formData
+        {
+          fullName: formData.fullName,
+          phone: formData.phone,
+          gender: formData.gender,
+          accountType: formData.accountType,
+          address: formData.address,
+          state: formData.state,
+          city: formData.city,
+          postalCode: formData.postalCode,
+        },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
 
       if (res.data?.success && res.data?.user) {
