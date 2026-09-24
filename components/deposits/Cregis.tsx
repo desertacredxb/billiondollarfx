@@ -1,5 +1,7 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import axios from "axios";
 import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -74,7 +76,7 @@ export default function Cregis() {
     try {
       setLoading(true);
 
-      const response = await axios.post<CregisDepositResponse>(
+      const response = await api.post<CregisDepositResponse>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/cregis/deposit`,
         {
           accountNo: form.accountNo,

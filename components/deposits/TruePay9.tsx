@@ -1,6 +1,7 @@
 "use client";
 
-import axios from "axios";
+import { api } from "@/lib/api";
+
 import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -48,7 +49,7 @@ export default function TruePay9() {
 
     try {
       setLoading(true);
-      const response = await axios.post<TruePay9DepositResponse>(
+      const response = await api.post<TruePay9DepositResponse>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/truepay9/deposit`,
         { accountNo: form.accountNo, amount },
       );

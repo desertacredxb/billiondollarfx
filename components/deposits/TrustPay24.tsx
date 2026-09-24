@@ -1,5 +1,7 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import axios from "axios";
 import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -59,7 +61,7 @@ export default function TrustPay24() {
     try {
       setLoading(true);
 
-      const response = await axios.post<TrustPay24DepositResponse>(
+      const response = await api.post<TrustPay24DepositResponse>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/trustpay24/deposit`,
         {
           accountNo: form.accountNo,

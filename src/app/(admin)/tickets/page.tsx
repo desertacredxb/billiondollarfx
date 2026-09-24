@@ -1,8 +1,7 @@
 "use client";
 
+import { adminApi } from "@/lib/api";
 import { useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
 import { Delete, Trash2 } from "lucide-react";
 
 interface User {
@@ -26,7 +25,6 @@ interface Ticket {
 }
 
 export default function AdminTicketsPage() {
-  const router = useRouter();
   const [allTickets, setAllTickets] = useState<Ticket[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
@@ -39,13 +37,6 @@ export default function AdminTicketsPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-
-    // 🔐 Redirect to login if no token
-    if (!token || token !== "admin-token") {
-      router.push("/login");
-      return;
-    }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -53,7 +44,7 @@ export default function AdminTicketsPage() {
 
   const fetchTickets = useCallback(async () => {
     try {
-      const res = await axios.get<Ticket[]>(
+      const res = await adminApi.get<Ticket[]>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/admin`
       );
       setAllTickets(res.data);
@@ -76,12 +67,12 @@ export default function AdminTicketsPage() {
     if (!activeTicket) return;
 
     try {
-      await axios.put(
+      await adminApi.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${activeTicket._id}/status`,
         { status }
       );
 
-      const res = await axios.get<{ messages: Message[] }>(
+      const res = await adminApi.get<{ messages: Message[] }>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/one/${activeTicket._id}`
       );
 
@@ -100,7 +91,7 @@ export default function AdminTicketsPage() {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(
+      await adminApi.delete(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${_id}`
       );
 
@@ -121,7 +112,7 @@ export default function AdminTicketsPage() {
     setActiveTicket(ticket);
     setShowModal(true);
     try {
-      const res = await axios.get<{ messages: Message[] }>(
+      const res = await adminApi.get<{ messages: Message[] }>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/one/${ticket._id}?viewer=Admin`
       );
       setMessages(res.data.messages);
@@ -146,7 +137,7 @@ export default function AdminTicketsPage() {
     if (!newMessage.trim() || !activeTicket) return;
 
     try {
-      await axios.post(
+      await adminApi.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${activeTicket._id}/messages`,
         {
           senderType: "Admin",
@@ -155,7 +146,7 @@ export default function AdminTicketsPage() {
       );
       setNewMessage("");
 
-      const res = await axios.get<{ messages: Message[] }>(
+      const res = await adminApi.get<{ messages: Message[] }>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/one/${activeTicket._id}?viewer=Admin`
       );
       setMessages(res.data.messages);

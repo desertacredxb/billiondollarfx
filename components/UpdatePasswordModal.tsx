@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
+
 import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
@@ -84,7 +86,7 @@ const UpdatePasswordModal = ({ isOpen, onClose, accountNo }: Props) => {
         payload.password = investorPassword;
       }
 
-      const res = await fetch(
+      const res = await apiFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/change_password`,
         {
           method: "POST",
@@ -106,9 +108,9 @@ const UpdatePasswordModal = ({ isOpen, onClose, accountNo }: Props) => {
         setIsSuccess(false);
         setResponse(data.message || "Failed to update password.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsSuccess(false);
-      setResponse("Network error: Unable to update password.");
+      setResponse(err instanceof Error ? err.message : "Unable to update password.");
     } finally {
       setLoading(false);
     }

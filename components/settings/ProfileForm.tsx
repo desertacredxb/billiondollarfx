@@ -1,7 +1,8 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import { useEffect, useState } from "react";
-import axios from "axios";
 import ProfileImage from "./ProfileImage";
 
 export default function ProfileForm() {
@@ -29,7 +30,7 @@ export default function ProfileForm() {
         setEmail(userEmail);
 
         // Fetch full profile from backend
-        axios
+        api
           .get(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${userEmail}`)
           .then((res) => {
             const user = res.data;
@@ -70,9 +71,18 @@ export default function ProfileForm() {
     e.preventDefault();
 
     try {
-      const res = await axios.put(
+      const res = await api.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/update-profile/${email}`,
-        formData
+        {
+          fullName: formData.fullName,
+          phone: formData.phone,
+          gender: formData.gender,
+          accountType: formData.accountType,
+          address: formData.address,
+          state: formData.state,
+          city: formData.city,
+          postalCode: formData.postalCode,
+        }
       );
 
       if (res.data?.success && res.data?.user) {

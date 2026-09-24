@@ -1,7 +1,7 @@
 "use client";
 
+import { adminApi, clearAdminSession } from "@/lib/api";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -37,13 +37,13 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         // first 15 rows) - .data.length would silently cap this badge at 15
         // regardless of the real count. Use the endpoint's own `total` field,
         // which reflects the full collection count.
-        const payoutRes = await axios.get(
+        const payoutRes = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`
         );
         setPayoutCount(payoutRes.data?.total ?? payoutRes.data?.data?.length ?? 0);
 
         // ✅ Fetch Bank Approvals
-        const bankRes = await axios.get(
+        const bankRes = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         const pendingBankUpdates = bankRes.data.filter(
@@ -53,7 +53,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         setBankApprovalCount(pendingBankUpdates.length || 0);
 
         // ✅ Fetch IB Requests
-        const ibRes = await axios.get(
+        const ibRes = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/ib`
         );
         const pendingIbRequests = ibRes.data.filter(
@@ -62,7 +62,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         setIbCount(pendingIbRequests.length || 0);
 
         // ✅ Fetch KYC Pending
-        const userRes = await axios.get(
+        const userRes = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         const pendingKyc = userRes.data.filter(
@@ -71,7 +71,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         setKycCount(pendingKyc.length || 0);
 
         // ✅ Fetch Open Tickets
-        const ticketRes = await axios.get(
+        const ticketRes = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/admin`
         );
         const openTickets = ticketRes.data.filter(
@@ -87,8 +87,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("admin");
+    clearAdminSession();
     router.push("/login");
   };
 

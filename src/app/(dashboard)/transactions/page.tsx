@@ -1,6 +1,7 @@
 "use client";
+
+import { api } from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
-import axios from "axios";
 
 type Transaction = {
   date: string;
@@ -143,7 +144,7 @@ export default function TransactionPage() {
       if (!token || !userString) return;
 
       const email = JSON.parse(userString).email;
-      const res = await axios.get(
+      const res = await api.get(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
 
@@ -162,7 +163,7 @@ export default function TransactionPage() {
     try {
       setLoading(true);
       const url = `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${accNo}?page=${page}&limit=${limit}`;
-      const res = await axios.get(url);
+      const res = await api.get(url);
       // console.log(res);
 
       // If API returns paginated structure
@@ -202,7 +203,7 @@ export default function TransactionPage() {
     try {
       setLoading(true);
       const url = `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${accNo}?page=${page}&limit=${limit}`;
-      const res = await axios.get(url);
+      const res = await api.get(url);
 
       if (
         Array.isArray(res.data?.withdrawals) &&

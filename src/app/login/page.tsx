@@ -7,6 +7,49 @@ import Button from "../../../components/Button";
 import Logo from "../../../assets/BDFX Logo Animition.gif";
 import Link from "next/link";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
+import { api, clearAdminSession, clearUserSession } from "@/lib/api";
+
+interface SessionUser {
+  id?: string;
+  _id?: string;
+  email: string;
+  fullName?: string;
+}
+
+interface AdminSession {
+  isAdmin: true;
+  user: SessionUser;
+}
+
+async function getAdminSession(token: string): Promise<AdminSession | null> {
+  try {
+    const response = await api.get<AdminSession>("/api/auth/admin/session", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (response.data.isAdmin !== true || !response.data.user?.email) {
+      throw new Error("Could not verify administrator access.");
+    }
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) return null;
+    throw error;
+  }
+}
+
+function saveSession(token: string, user: SessionUser, admin?: AdminSession | null) {
+  clearAdminSession();
+  clearUserSession();
+  localStorage.setItem("token", token);
+  localStorage.setItem("user", JSON.stringify(user));
+  if (admin) {
+    localStorage.setItem("adminToken", token);
+    localStorage.setItem("adminUser", JSON.stringify(admin.user));
+  }
+  document.cookie = `token=${token}; Path=/; SameSite=Lax;${
+    location.protocol === "https:" ? " Secure;" : ""
+  }`;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,103 +65,72 @@ export default function LoginPage() {
   const [resetOtp, setResetOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
+    let active = true;
     const checkExistingSession = async () => {
-      const token = localStorage.getItem("token");
-      const user = localStorage.getItem("user");
-
-      if (!token || !user) return;
-
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
+      if (!token) {
+        setCheckingSession(false);
+        return;
+      }
       try {
-        // 🔥 Verify token with server
-        await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${
-            JSON.parse(user).email
-          }`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        // ✅ Token valid → auto login
+        const admin = await getAdminSession(token);
+        if (!active) return;
+        if (admin) {
+          saveSession(token, admin.user, admin);
+          router.replace("/adminDashboard");
+          return;
+        }
+        const stored = localStorage.getItem("user") || localStorage.getItem("adminUser");
+        const savedUser = stored ? JSON.parse(stored) as SessionUser : null;
+        if (!savedUser?.email) {
+          clearAdminSession();
+          clearUserSession();
+          return;
+        }
+        const response = await api.get<SessionUser>(`/api/auth/user/${encodeURIComponent(savedUser.email)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!active) return;
+        saveSession(token, response.data);
         router.replace("/dashboard");
-      } catch (err) {
-        // ❌ Token invalid → clean silently
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+      } catch (error) {
+        if (!active) return;
+        if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status || 0)) {
+          clearAdminSession();
+          clearUserSession();
+        } else {
+          setError("Could not check your saved session. Please sign in again.");
+        }
+      } finally {
+        if (active) setCheckingSession(false);
       }
     };
-
     checkExistingSession();
-  }, []);
+    return () => { active = false; };
+  }, [router]);
 
   const handleSignIn = async () => {
+    if (loading || checkingSession) return;
     setError("");
-    setLoading(true);
-
     if (!email || !password) {
-      setLoading(false);
-      return setError("Please fill in all fields.");
-    }
-
-    // Admin test account (local dev convenience)
-    if (email === "admin@gmail.com" && password === "admin@2025snew") {
-      const adminToken = "admin-token"; // fake token
-      localStorage.setItem("adminToken", adminToken);
-      localStorage.setItem(
-        "admin",
-        JSON.stringify({ email: "admin@gmail.com", role: "admin" })
-      );
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      if (typeof window !== "undefined") {
-        // set a non-httpOnly cookie (quick test; change to httpOnly on server for production)
-        document.cookie = `token=${adminToken}; Path=/; SameSite=Lax;${
-          location.protocol === "https:" ? " Secure;" : ""
-        }`;
-      }
-
-      router.replace("/adminDashboard");
-      setLoading(false);
+      setError("Please enter your email and password.");
       return;
     }
-
+    setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setLoading(false);
-        return setError(data.message || "Login failed.");
-      }
-
-      // Save token + user to localStorage
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // Also set a cookie so server/middleware can read authentication on next request.
-      if (typeof window !== "undefined") {
-        document.cookie = `token=${data.token}; Path=/; SameSite=Lax;${
-          location.protocol === "https:" ? " Secure;" : ""
-        }`;
-      }
-
-      router.replace("/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
+      const response = await api.post<{ token: string; user: SessionUser }>("/api/auth/login", { email, password });
+      const { token, user } = response.data;
+      if (!token || !user?.email) throw new Error("The login response was incomplete.");
+      const admin = await getAdminSession(token);
+      saveSession(token, user, admin);
+      router.replace(admin ? "/adminDashboard" : "/dashboard");
+    } catch (error) {
+      setError(axios.isAxiosError(error)
+        ? error.response?.data?.message || "Could not sign in. Please try again."
+        : "Could not sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -279,11 +291,11 @@ export default function LoginPage() {
                     Signing In...
                   </div>
                 ) : (
-                  "SIGN IN"
+                  checkingSession ? "Checking session..." : "SIGN IN"
                 )
               }
               onClick={handleSignIn}
-              disabled={loading}
+              disabled={loading || checkingSession}
               className={`w-full bg-[var(--primary)] text-white py-2 rounded-full ${
                 loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
               }`}

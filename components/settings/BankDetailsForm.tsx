@@ -1,8 +1,9 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import { useState, useEffect } from "react";
 import ProfileImage from "./ProfileImage";
-import axios from "axios";
 import { FiEdit } from "react-icons/fi";
 
 type BankDetailsFormFields = {
@@ -44,7 +45,7 @@ export default function BankDetailsForm() {
       if (!email) return;
 
       try {
-        const res = await axios.get(
+        const res = await api.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
         );
         const userData = res.data;
@@ -117,7 +118,7 @@ export default function BankDetailsForm() {
 
     setLoading(true);
     try {
-      await axios.put(
+      await api.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/bank/${email}`,
         form
       );

@@ -1,12 +1,13 @@
 "use client";
 
+import { api, clearUserSession } from "@/lib/api";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import emptyIcon from "../../../../assets/icons/empty_state.png"; // Update if needed
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount"; // adjust path as needed
-import axios from "axios";
 import Link from "next/link";
 import KycAlertModal from "../../../../components/KycAlertModal";
 import { useMT5AccountSummary } from "../../../../lib/mt5Store";
@@ -31,23 +32,17 @@ export default function DepositsPage() {
 
       try {
         // 🔥 hit ANY protected API
-        await axios.get(
+        await api.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${
             JSON.parse(localStorage.getItem("user") || "{}")?.email
-          }`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          }`
         );
 
         // ✅ If success → user valid
         setIsLoggedIn(true);
       } catch (err) {
         // ❌ Token invalid / expired
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearUserSession();
         router.replace("/login");
       }
     };

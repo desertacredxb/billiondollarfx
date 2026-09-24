@@ -1,7 +1,9 @@
 "use client";
+
+import { api } from "@/lib/api";
 import { useState } from "react";
 import Button from "./Button";
-import axios, { AxiosError } from "axios";
+import type { AxiosError } from "axios";
 
 interface IBRequestProps {
   user: {
@@ -51,7 +53,7 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
+      await api.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
         ...formData,
         email: user.email,
       });

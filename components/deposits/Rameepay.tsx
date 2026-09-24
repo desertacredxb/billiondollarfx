@@ -1,6 +1,7 @@
 "use client";
+
+import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { CreditCard, X } from "lucide-react";
 import Button from "../../components/Button"; // ✅ import your Button
 import toast, { Toaster } from "react-hot-toast";
@@ -46,7 +47,7 @@ function RameePay() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
+      const res = await api.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/ramee/deposit`,
         {
           accountNo: form.accountNo,

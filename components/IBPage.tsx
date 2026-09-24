@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios, { AxiosError } from "axios";
+import { api } from "@/lib/api";
 import Button from "./Button";
 import { Plus } from "lucide-react";
 
 interface User {
-  totalCommission: number;
-  symbolLots: { [key: string]: number };
-  totalLots: number;
-  totalDeposit: number;
-  totalWithdrawal: number;
-  totalAccounts: number;
+  totalCommission: number | null;
+  symbolLots: { [key: string]: number } | null;
+  totalLots: number | null;
+  totalDeposit: number | null;
+  totalWithdrawal: number | null;
   accounts?: { accountNo: string | number }[]; // Add this
   createdAt: string;
   email: string;
@@ -27,20 +26,6 @@ interface IBPageProps {
   };
 }
 
-interface Deposit {
-  amount: string | number;
-  status: "SUCCESS" | "FAILED" | "PENDING" | string;
-}
-
-interface Withdrawal {
-  amount: string | number;
-  status: "SUCCESS" | "FAILED" | "PENDING" | string;
-}
-
-interface Deal {
-  Symbol: string;
-  Qty: string | number;
-}
 interface Account {
   accountNo: string | number;
 }
@@ -54,7 +39,7 @@ function IBPage({ user }: IBPageProps) {
   const [searchName, setSearchName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [ibCommission, setIbCommission] = useState(0); // IB's own total commission
+  const [ibCommission, setIbCommission] = useState<number | null>(null); // IB's own total commission
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -73,7 +58,7 @@ function IBPage({ user }: IBPageProps) {
       const user = JSON.parse(userString);
       const email = user.email;
 
-      const res = await axios.post(
+      const res = await api.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/withdrawalIBamount`,
         {
           email,
@@ -99,188 +84,32 @@ function IBPage({ user }: IBPageProps) {
     }
   };
 
-  const COMMISSION_RATES: { [key: string]: number } = {
-    EURUSD: 4.5,
-    GBPUSD: 4.5,
-    USDJPY: 4.5,
-    USDCHF: 4.5,
-    AUDUSD: 4.5,
-    USDCAD: 4.5,
-    NZDUSD: 4.5,
-    EURGBP: 4.5,
-    EURJPY: 4.5,
-    EURAUD: 4.5,
-    EURCAD: 4.5,
-    EURNZD: 4.5,
-    GBPJPY: 4.5,
-    GBPAUD: 4.5,
-    GBPCAD: 4.5,
-    GBPNZD: 4.5,
-    AUDJPY: 4.5,
-    AUDNZD: 4.5,
-    AUDCAD: 4.5,
-    AUDCHF: 4.5,
-    CADJPY: 4.5,
-    CADCHF: 4.5,
-    NZDJPY: 4.5,
-    NZDCAD: 4.5,
-    NZDCHF: 4.5,
-    CHFJPY: 4.5,
-    XAUUSD: 12,
-    XAGUSD: 45,
-  };
-
-  const IB_SHARE_PERCENTAGE = 0.33;
-
-  // ✅ Fetch deposits for a user (all accounts)
-  const fetchUserStats = async (email: string, createdAt: string) => {
-    try {
-      const userRes = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
-      );
-      const accounts = userRes.data?.accounts || [];
-      const lastWithdrawalDate = userRes.data?.lastWithdrawalDate;
-      let totalDeposit = 0;
-      let totalWithdrawal = 0;
-      let totalLots = 0;
-      let totalCommission = 0;
-
-      const symbolLots: { [key: string]: number } = {}; // lots per symbol
-
-      const sdate = lastWithdrawalDate
-        ? new Date(lastWithdrawalDate).toISOString().split("T")[0]
-        : new Date(createdAt).toISOString().split("T")[0];
-      const edate = new Date().toISOString().split("T")[0];
-      // console.log(edate);
-
-      for (const acc of accounts) {
-        try {
-          // deposits
-          const depRes = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
-          );
-          const INR_TO_USD = 1 / 88.76; // ≈ 0.01126
-
-          const deposits: Deposit[] = depRes.data?.deposits || [];
-          totalDeposit += deposits
-            .filter((d) => d.status === "SUCCESS")
-            .reduce((sum, d) => sum + Number(d.amount) * INR_TO_USD, 0);
-
-          // withdrawals
-          const wdRes = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
-          );
-
-          const withdrawals: Withdrawal[] = wdRes.data?.withdrawals || [];
-          totalWithdrawal += withdrawals
-            .filter((w) => w.status === "SUCCESS" || w.status === "Completed")
-            .reduce((sum, w) => sum + Number(w.amount) * INR_TO_USD, 0);
-          // console.log(totalWithdrawal);
-          // deals
-          const dealsRes = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
-            { accountno: acc.accountNo, sdate, edate }
-          );
-          const dealsData: Deal[] = dealsRes.data?.data || [];
-          for (const deal of dealsData) {
-            const symbol = deal.Symbol;
-            const lots = Number(deal.Qty || 0);
-
-            totalLots += lots;
-
-            if (!symbolLots[symbol]) symbolLots[symbol] = 0;
-            symbolLots[symbol] += lots;
-
-            if (COMMISSION_RATES[symbol]) {
-              totalCommission +=
-                lots * COMMISSION_RATES[symbol] * IB_SHARE_PERCENTAGE;
-            }
-          }
-        } catch (err) {
-          console.error(
-            `Error fetching data for account ${acc.accountNo}:`,
-            err
-          );
-        }
-      }
-
-      return {
-        totalDeposit,
-        totalWithdrawal,
-        totalLots,
-        totalCommission,
-        symbolLots,
-      };
-    } catch (err) {
-      console.error(`Error fetching user stats for ${email}:`, err);
-      return {
-        totalDeposit: 0,
-        totalWithdrawal: 0,
-        totalLots: 0,
-        totalCommission: 0,
-        symbolLots: {},
-      };
-    }
-  };
+  const formatStatistic = (value: number | null | undefined, currency = false) =>
+    typeof value === "number" && Number.isFinite(value)
+      ? `${currency ? "$" : ""}${value.toFixed(2)}`
+      : "Unavailable";
 
   useEffect(() => {
+    let active = true;
     const fetchReferralAndConnections = async () => {
       try {
-        // 1. Fetch IB referral code
-        const ibRes = await axios.get<{ referralCode: string }>(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${user.email}`
-        );
-        const code = ibRes.data.referralCode;
-
-        setReferralCode(code);
-
-        // 2. Fetch all users
-        const usersRes = await axios.get<User[]>(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
-        );
-        const allUsers = usersRes.data;
-
-        // 3. Filter connections by referral code
-        const matchedUsers = allUsers.filter((u) => u.referralCode === code);
-
-        // 4. Fetch stats for each connection
-        const enrichedUsers = await Promise.all(
-          matchedUsers.map(async (u) => {
-            const {
-              totalDeposit,
-              totalWithdrawal,
-              totalLots,
-              totalCommission,
-              symbolLots,
-            } = await fetchUserStats(u.email, u.createdAt);
-
-            // Fetch user's accounts
-            const userRes = await axios.get(
-              `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${u.email}`
-            );
-            const accounts = userRes.data?.accounts || [];
-
-            return {
-              ...u,
-              totalDeposit,
-              totalWithdrawal,
-              totalLots,
-              totalCommission,
-              symbolLots,
-              accounts,
-            };
-          })
-        );
-
-        setConnections(enrichedUsers);
-      } catch (err) {
-        console.error("Error fetching IB data:", err);
+        const [ibRes, clientsRes] = await Promise.all([
+          api.get<{ referralCode: string }>(`/api/ib/${encodeURIComponent(user.email)}`),
+          api.get<{ clients: User[] }>("/api/ib/clients"),
+        ]);
+        if (!active) return;
+        if (!Array.isArray(clientsRes.data.clients)) throw new Error("Could not load your client list.");
+        setReferralCode(ibRes.data.referralCode);
+        setConnections(clientsRes.data.clients);
+      } catch (error) {
+        if (active) setMessage("Could not load your IB clients. Please refresh or sign in again.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     if (user?.email) fetchReferralAndConnections();
+    return () => { active = false; };
   }, [user?.email]);
 
   useEffect(() => {
@@ -294,44 +123,15 @@ function IBPage({ user }: IBPageProps) {
         const user = JSON.parse(userString);
         const email = user.email;
 
-        // 2️⃣ Fetch user with updated commission
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        // console.log(res.data.accounts);
-        setAccounts(res.data.accounts || []);
-        // console.log(res.data.accounts);
-        // ✅ set first account as default if exists
-        if (res.data.accounts.length > 0) {
-          setSelectedAccount(res.data.accounts[0].accountNo.toString());
-        }
-
-        const lastWithdrawalDate = res.data?.lastWithdrawalDate;
-        const createdAt = res.data?.createdAt; // ✅ safely fetch createdAt from backend response
-
-        // 1️⃣ Call update commission first
-        const updateRes = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/update-commission`,
-          {
-            email,
-            sdate: lastWithdrawalDate
-              ? new Date(lastWithdrawalDate).toISOString().split("T")[0]
-              : new Date(createdAt).toISOString().split("T")[0], // ✅ fallback to createdAt
-            edate: new Date().toISOString().split("T")[0], // today
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        // console.log("Commission updated:", updateRes.data);
-
-        setIbCommission(res.data.commission);
+        // Read the stored commission; recalculation is an administrative operation.
+        const res = await api.get(`/api/auth/user/${encodeURIComponent(email)}`);
+        const ownAccounts: Account[] = Array.isArray(res.data.accounts) ? res.data.accounts : [];
+        setAccounts(ownAccounts);
+        setSelectedAccount(ownAccounts[0]?.accountNo?.toString() || "");
+        setIbCommission(typeof res.data.commission === "number" && Number.isFinite(res.data.commission)
+          ? res.data.commission : null);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        setMessage("Could not load your commission balance. Please refresh or sign in again.");
       }
     };
 
@@ -367,6 +167,7 @@ function IBPage({ user }: IBPageProps) {
       <h1 className="text-3xl font-bold mb-8 text-center">
         Welcome, IB Partner 🎉
       </h1>
+      {message && <p role="status" className="mb-4 text-center text-gray-300">{message}</p>}
 
       {/* Referral Code Panel */}
       <div className="w-full max-w-2xl mx-auto bg-[#111a2e] p-6 rounded-2xl shadow-lg mb-10 flex flex-col items-center">
@@ -393,7 +194,7 @@ function IBPage({ user }: IBPageProps) {
 
           <div className="bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center gap-3 shadow-md">
             <span className="text-lg font-semibold">
-              Total Commission: ${ibCommission.toFixed(2)}
+              Total Commission: {formatStatistic(ibCommission, true)}
             </span>
             <button
               onClick={handleOpenWithdraw}
@@ -479,22 +280,22 @@ function IBPage({ user }: IBPageProps) {
                       {c.fullName || "Unnamed User"}
                     </td>
                     <td className="py-3 px-4">
-                      ${c.totalWithdrawal?.toFixed(2) ?? "0.00"}
+                      {formatStatistic(c.totalWithdrawal, true)}
                     </td>
                     <td className="py-3 px-4">
-                      ${c.totalDeposit?.toFixed(2) ?? "0.00"}
+                      {formatStatistic(c.totalDeposit, true)}
                     </td>
-                    <td className="py-3 px-4">{c.totalLots.toFixed(2) ?? 0}</td>
+                    <td className="py-3 px-4">{formatStatistic(c.totalLots)}</td>
                     <td className="py-3 px-4">
-                      ${c.totalCommission?.toFixed(2) ?? "0.00"}
+                      {formatStatistic(c.totalCommission, true)}
                     </td>
                     <td className="py-3 px-4">
                       {c.symbolLots
                         ? Object.entries(c.symbolLots)
                             .filter(([_, lots]) => lots > 0)
                             .map(([sym]) => sym)
-                            .join(", ")
-                        : "—"}
+                            .join(", ") || "—"
+                        : "Unavailable"}
                     </td>
                     {/* Desktop Table */}
                     <td className="py-3 px-4">
@@ -532,20 +333,20 @@ function IBPage({ user }: IBPageProps) {
                   {c.fullName || "Unnamed User"}
                 </p>
                 <p>
-                  <span className="text-gray-400">Total Withdrawal:</span> $
-                  {c.totalWithdrawal?.toFixed(2) ?? "0.00"}
+                  <span className="text-gray-400">Total Withdrawal:</span>{" "}
+                  {formatStatistic(c.totalWithdrawal, true)}
                 </p>
                 <p>
-                  <span className="text-gray-400">Total Deposit:</span> $
-                  {c.totalDeposit?.toFixed(2) ?? "0.00"}
+                  <span className="text-gray-400">Total Deposit:</span>{" "}
+                  {formatStatistic(c.totalDeposit, true)}
                 </p>
                 <p>
                   <span className="text-gray-400">Total Lots:</span>
-                  {c.totalLots.toFixed(2) ?? 0}
+                  {formatStatistic(c.totalLots)}
                 </p>
                 <p>
-                  <span className="text-gray-400">Commission:</span> $
-                  {c.totalCommission?.toFixed(2) ?? "0.00"}
+                  <span className="text-gray-400">Commission:</span>{" "}
+                  {formatStatistic(c.totalCommission, true)}
                 </p>
                 <p>
                   <span className="text-gray-400">Account Number(s):</span>{" "}
