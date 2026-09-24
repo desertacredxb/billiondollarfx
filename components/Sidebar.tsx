@@ -1,9 +1,10 @@
 "use client";
 
+import { api, clearUserSession } from "@/lib/api";
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
 
 import {
@@ -54,9 +55,7 @@ export default function Sidebar({
     setOpen((prev) => ({ ...prev, [section]: !prev[section] }));
 
   const handleSignOut = () => {
-    // Remove localStorage items
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearUserSession();
 
     // Redirect to login page
     router.replace("/login");
@@ -175,7 +174,7 @@ export default function Sidebar({
                 // });
 
                 // ✅ Fetch user data
-                const res = await axios.get(
+                const res = await api.get(
                   `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
                 );
 
@@ -195,7 +194,7 @@ export default function Sidebar({
                 // // console.log("User AccountNo:", accountNo);
 
                 // // ✅ Check MoneyPlant balance
-                // const balanceRes = await axios.post(
+                // const balanceRes = await api.post(
                 //   `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/checkBalance`,
                 //   { accountno: accountNo.toString() },
                 //   { headers: { "Content-Type": "application/json" } }
@@ -242,8 +241,6 @@ export default function Sidebar({
                   confirmButtonColor: "#d33",
                 });
               }
-                              router.push("/withdrawals");
-
             }}
             className={clsx(
               "flex items-center gap-2 px-4 py-2 rounded hover:text-[var(--primary)] transition-all text-sm w-full text-left cursor-pointer",

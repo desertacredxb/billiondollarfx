@@ -1,11 +1,10 @@
 "use client";
 
+import { adminApi } from "@/lib/api";
 import Fuse from "fuse.js";
 import { useEffect, useState, useMemo } from "react";
-import axios from "axios";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
-import { useRouter } from "next/navigation";
 import { X, ShieldCheck, ShieldAlert } from "lucide-react";
 import Button from "../../../../components/Button";
 
@@ -67,7 +66,6 @@ interface User {
 }
 
 export default function UsersPage() {
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -87,16 +85,9 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-
-    if (!token || token !== "admin-token") {
-      router.push("/login");
-      return;
-    }
-
     const fetchUsersWithReferrers = async () => {
       try {
-        const res = await axios.get(
+        const res = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         const usersData = res.data;
@@ -108,7 +99,7 @@ export default function UsersPage() {
             if (!user.referralCode) return user;
 
             try {
-              const refRes = await axios.get(
+              const refRes = await adminApi.get(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/userByRef/${user.referralCode}`
               );
               // console.log(refRes.data.user?.fullName);
@@ -156,7 +147,7 @@ export default function UsersPage() {
   const handleVerifyKyc = async (email: string) => {
     try {
       setVerifying(true);
-      await axios.put(
+      await adminApi.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/${email}/verify-kyc`,
         { status: true }
       );
@@ -191,7 +182,7 @@ export default function UsersPage() {
     }
 
     try {
-      await axios.delete(
+      await adminApi.delete(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/delete/${email}`
       );
       setUsers((prev) => prev.filter((u) => u.email !== email));
@@ -214,7 +205,7 @@ export default function UsersPage() {
 
     try {
       // Call backend API to reject KYC
-      await axios.post(
+      await adminApi.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/reject/${email}`
       );
 

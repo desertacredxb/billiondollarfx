@@ -1,4 +1,6 @@
 "use client";
+
+import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import axios from "axios";
@@ -146,7 +148,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   try {
     setLoading(true);
-    const res = await axios.post(
+    const res = await api.post(
       `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/request`,
       form
     );

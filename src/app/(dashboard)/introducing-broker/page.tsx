@@ -1,6 +1,7 @@
 "use client";
+
+import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import IBRequest from "../../../../components/IBRequest";
 import IBPage from "../../../../components/IBPage";
 
@@ -25,7 +26,7 @@ function IntroducingBroker() {
     const email = parsedUser.email;
 
     try {
-      const res = await axios.get<User>(
+      const res = await api.get<User>(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
       setUser(res.data);

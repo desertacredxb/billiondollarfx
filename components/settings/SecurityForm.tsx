@@ -1,5 +1,7 @@
 "use client";
 
+import { api, clearUserSession } from "@/lib/api";
+
 import { useState } from "react";
 import ProfileImage from "./ProfileImage";
 import axios from "axios";
@@ -78,7 +80,7 @@ export default function SecurityForm() {
 
     setLoading(true);
     try {
-      await axios.put(
+      await api.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/change-password/${email}`,
         {
           oldPassword: form.oldPassword,
@@ -90,6 +92,7 @@ export default function SecurityForm() {
       alert("Password updated successfully!");
       setForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
       setTouched({ newPassword: false, confirmPassword: false });
+      clearUserSession();
       router.push("/login");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

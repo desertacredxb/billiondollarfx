@@ -1,7 +1,7 @@
 "use client";
 
+import { adminApi } from "@/lib/api";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Button from "../../../../components/Button";
 
 interface User {
@@ -35,7 +35,7 @@ export default function BankUpdateApprovals() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get(
+        const res = await adminApi.get(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
         );
         // Only show users who have pending bank updates
@@ -65,7 +65,7 @@ export default function BankUpdateApprovals() {
 
     try {
       setProcessing(true);
-      const res = await axios.patch(
+      const res = await adminApi.patch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/bank-approve/${email}`,
         { approve }
       );

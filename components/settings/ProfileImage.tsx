@@ -1,5 +1,7 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Camera, ShieldCheck } from "lucide-react";
@@ -23,7 +25,7 @@ function ProfileImage() {
     formData.append("profileImage", file);
 
     try {
-      const res = await axios.put(
+      const res = await api.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/profile-image/${email}`,
         formData,
         {

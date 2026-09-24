@@ -1,5 +1,7 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import ProfileImage from "./ProfileImage";
@@ -74,9 +76,8 @@ export default function KycVerification() {
       setEmail(storedEmail);
 
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/kyc/status`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        const response = await api.get(
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/kyc/status`
         );
         if (!active) return;
         setCountry(response.data.country || response.data.nationality || "");
@@ -158,10 +159,9 @@ export default function KycVerification() {
 
     setLoading(true);
     try {
-      await axios.put(
+      await api.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/documents/${email}`,
-        formData,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        formData
       );
       alert("Documents submitted successfully!");
       window.location.reload();
@@ -181,10 +181,7 @@ export default function KycVerification() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/kyc/start`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/kyc/start`, {});
       window.location.assign(response.data.url);
     } catch (err) {
       setError(axios.isAxiosError(err) ? err.response?.data?.message || "Could not start verification." : "Could not start verification.");

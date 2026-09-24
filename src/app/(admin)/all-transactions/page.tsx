@@ -1,7 +1,7 @@
 "use client";
+import { adminApi } from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
-import axios, { AxiosError } from "axios";
-import { useRouter } from "next/navigation";
+import { AxiosError } from "axios";
 import toast from "react-hot-toast";
 import { RefreshCw } from "lucide-react";
 
@@ -69,7 +69,6 @@ const getCurrencySymbol = (
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function AdminTransactionPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"deposit" | "withdrawal">(
     "deposit"
   );
@@ -182,13 +181,6 @@ export default function AdminTransactionPage() {
   // ---------- fetch accounts ----------
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-
-    // 🔐 Redirect to login if no token
-    if (!token || token !== "admin-token") {
-      router.push("/login");
-      return;
-    }
   }, []);
 
   // ---------- fetch transactions (server first, fallback client) ----------
@@ -196,7 +188,7 @@ export default function AdminTransactionPage() {
     try {
       setLoading(true);
       const url = `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit?page=${page}&limit=${limit}`;
-      const res = await axios.get(url);
+      const res = await adminApi.get(url);
       // console.log(res.data);
 
       // If API returns paginated structure
@@ -232,7 +224,7 @@ export default function AdminTransactionPage() {
     try {
       setLoading(true);
       const url = `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal?page=${page}&limit=${limit}`;
-      const res = await axios.get(url);
+      const res = await adminApi.get(url);
 
       if (
         Array.isArray(res.data?.withdrawals) &&
@@ -270,7 +262,7 @@ export default function AdminTransactionPage() {
   const handleReconcile = async () => {
     setReconciling(true);
     try {
-      const res = await axios.post(
+      const res = await adminApi.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reconcile-orders`,
         { count: RECONCILE_COUNT }
       );

@@ -4,6 +4,7 @@ import Sidebar from "../../../components/Sidebar";
 import Topbar from "../../../components/Topbar";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SESSION_EXPIRED_EVENT } from "@/lib/api";
 
 export default function DashboardLayout({
   children,
@@ -14,10 +15,21 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
+    const handleSessionExpired = (event: Event) => {
+      if ((event as CustomEvent<{ scope?: string }>).detail?.scope === "user") {
+        router.replace("/login");
+      }
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+
     const token = localStorage.getItem("token"); // 👈 check token from localStorage
     if (!token) {
       router.replace("/login"); // 👈 redirect to landing page if no token
     }
+
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
   }, [router]);
 
   return (

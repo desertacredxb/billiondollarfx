@@ -1,7 +1,7 @@
 "use client";
 
+import { adminApi } from "@/lib/api";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import { X, Copy, Wallet, Landmark, Clock3 } from "lucide-react";
 import { Withdrawal } from "./page";
@@ -92,7 +92,7 @@ export default function WithdrawalApprovalModal({
                 adminNote,
             };
 
-            const res = await axios.post(
+            const res = await adminApi.post(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/approve/${selectedWithdrawal._id}`,
                 payload
             );

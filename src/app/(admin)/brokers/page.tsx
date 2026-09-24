@@ -1,8 +1,7 @@
 "use client";
 
+import { adminApi } from "@/lib/api";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
 
 interface Broker {
   _id: string;
@@ -15,25 +14,16 @@ interface Broker {
 }
 
 export default function UsersPage() {
-  const router = useRouter();
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-
-    // 🔐 Redirect to login if no token
-    if (!token || token !== "admin-token") {
-      router.push("/login");
-      return;
-    }
-
     fetchBrokers();
   }, []);
 
   const fetchBrokers = async () => {
     try {
-      const res = await axios.get(
+      const res = await adminApi.get(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/brokers`
       );
       setBrokers(res.data);
@@ -47,7 +37,7 @@ export default function UsersPage() {
   // ✅ Toggle marked status
   const handleToggleMarked = async (id: string) => {
     try {
-      const res = await axios.patch(
+      const res = await adminApi.patch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/brokers/${id}/mark`
       );
 

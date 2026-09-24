@@ -1,7 +1,8 @@
 "use client";
 
+import { adminApi } from "@/lib/api";
 import { useEffect, useState } from "react";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import { RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import Button from "../../../../components/Button";
@@ -54,7 +55,7 @@ export default function AdminWithdrawals() {
     else setLoading(true);
 
     try {
-      const res = await axios.get(
+      const res = await adminApi.get(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`,
         { params: { page: targetPage, limit: PAGE_SIZE } }
       );
@@ -103,7 +104,7 @@ export default function AdminWithdrawals() {
 
     setRejectingId(w._id);
     try {
-      const res = await axios.post(
+      const res = await adminApi.post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/reject/${w._id}`
       );
 

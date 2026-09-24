@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
+
 import { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
 import PhoneInput from "react-phone-input-2";
@@ -83,7 +85,7 @@ export default function RegisterModal({
     // }
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/register`,
         {
           method: "POST",
@@ -106,7 +108,7 @@ export default function RegisterModal({
         setResponseMsg(`❌ ${result.message || "Registration failed"}`);
       }
     } catch (error) {
-      setResponseMsg("❌ API Error. Try again later.");
+      setResponseMsg(`❌ ${error instanceof Error ? error.message : "Registration failed. Try again later."}`);
     } finally {
       setLoading(false);
     }

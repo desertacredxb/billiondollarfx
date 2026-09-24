@@ -1,7 +1,8 @@
 "use client";
 
+import { api } from "@/lib/api";
+
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
 import Button from "../../../../components/Button";
 
 interface Ticket {
@@ -58,7 +59,7 @@ export default function Support() {
 
   useEffect(() => {
     if (!email) return;
-    axios
+    api
       .get(`${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${email}`)
       .then((res) => {
         const sorted = res.data.sort(
@@ -77,7 +78,7 @@ export default function Support() {
       return;
     }
     setLoading(true);
-    axios
+    api
       .post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${email}`,
         newTicket
@@ -106,9 +107,9 @@ export default function Support() {
   };
 
   const fetchMessages = (ticketId: string) => {
-    axios
+    api
       .get(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/one/${ticketId}?viewer=User`
+        `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/one/${ticketId}`
       )
       .then((res) => {
         setMessages(res.data.messages);
@@ -122,11 +123,10 @@ export default function Support() {
   const sendMessage = () => {
     if (!newMessage.trim() || !activeTicket) return;
 
-    axios
+    api
       .post(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/${activeTicket._id}/messages`,
         {
-          senderType: "User",
           message: newMessage,
         }
       )
