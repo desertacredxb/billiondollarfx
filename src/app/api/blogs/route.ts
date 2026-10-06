@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/app/lib/db";
 import Blog from "@/app/models/Blogs";
 import { NextResponse } from "next/server";
+import { applyPublishFields, livePublishedFilter } from "@/app/lib/blogPublishing";
 
 // GET: Fetch all records (supports dynamic querying by status, category, or search keywords)
 export async function GET(request: Request) {
@@ -13,13 +14,19 @@ export async function GET(request: Request) {
     const search = searchParams.get("search");
     
     // Construct robust query object matrix
-    const query: any = {};
-    if (status) query.status = status;
+    // Public "published" listing hides posts scheduled for the future
+    const query: any = status === "published" ? livePublishedFilter() : {};
+    if (status && status !== "published") query.status = status;
     if (category) query.category = category;
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { shortDescription: { $regex: search, $options: "i" } }
+      // $and so this doesn't overwrite the publish-date $or above
+      query.$and = [
+        {
+          $or: [
+            { title: { $regex: search, $options: "i" } },
+            { shortDescription: { $regex: search, $options: "i" } },
+          ],
+        },
       ];
     }
 
@@ -44,7 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const newBlog = await Blog.create(body);
+    const newBlog = await Blog.create(applyPublishFields(body));
     return NextResponse.json({ success: true, data: newBlog }, { status: 201 });
   } catch (error: any) {
     // Catch duplicate slug warnings from MongoDB engine

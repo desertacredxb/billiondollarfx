@@ -1,6 +1,7 @@
 import Blog from "@/app/models/Blogs";
 import { connectToDatabase } from "@/app/lib/db";
 import { NextResponse } from "next/server";
+import { applyPublishFields } from "@/app/lib/blogPublishing";
 
 // Define the parameters as a Promise
 interface RouteParams {
@@ -33,6 +34,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const resolvedParams = await params;
     const body = await request.json();
 
+    // findByIdAndUpdate skips the schema's pre("validate") hook, so publishedAt
+    // has to be set here — keep the original publish date on later edits.
+    const existing = await Blog.findById(resolvedParams.id).select("publishedAt").lean();
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Target document could not be found." }, { status: 404 });
+    }
+    applyPublishFields(body, existing.publishedAt);
+
     const updatedBlog = await Blog.findByIdAndUpdate(
       resolvedParams.id,
       { ...body, updatedAt: new Date() },
@@ -61,7 +70,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const updatePayload: any = { status };
-    if (status === "published") updatePayload.publishedAt = new Date();
+    if (status === "published") {
+      // Keep the original publish date when re-publishing
+      const existing = await Blog.findById(resolvedParams.id).select("publishedAt").lean();
+      updatePayload.publishedAt = existing?.publishedAt || new Date();
+    }
 
     const updatedBlog = await Blog.findByIdAndUpdate(
       resolvedParams.id,

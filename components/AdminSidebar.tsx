@@ -15,6 +15,7 @@ import {
   Briefcase,
   Landmark,
   Wallet,
+  Newspaper,
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -169,6 +170,12 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             pathname={pathname}
             count={payoutCount} // ✅ Pass badge count
           />
+          <NavLink
+            href="/blog-management"
+            label="Blogs"
+            icon={Newspaper}
+            pathname={pathname}
+          />
         </Section>
 
         <Section title="Account">
@@ -217,7 +224,8 @@ function NavLink({
   pathname: string;
   count?: number;
 }) {
-  const isActive = pathname === href;
+  // Also highlight on nested routes (e.g. /blog-management/add)
+  const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <Link

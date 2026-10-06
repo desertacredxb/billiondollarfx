@@ -199,103 +199,128 @@ export default function AdminBlogManagement() {
         </div>
       </div>
 
-      {/* Blog Grid Content */}
+      {/* Blog Table Content */}
       {loading ? (
         <div className="max-w-7xl mx-auto py-24 flex flex-col items-center justify-center gap-3 text-xs font-bold tracking-widest text-slate-500 uppercase">
           <Loader2 className="w-8 h-8 text-[#927948] animate-spin" />
           <span>Synchronizing records archive...</span>
         </div>
+      ) : filteredBlogs.length > 0 ? (
+        <div className="max-w-7xl mx-auto bg-[#121829] border border-[#1e293b] rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[860px] text-left">
+              <thead className="bg-[#0a0f1c] border-b border-[#1e293b]">
+                <tr className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <th className="px-4 py-3">Post</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Author</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e293b]">
+                {filteredBlogs.map((blog) => {
+                  const currentId = blog.id || blog._id;
+                  return (
+                    <tr
+                      key={currentId}
+                      className="hover:bg-[#0a0f1c]/60 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3 max-w-md">
+                          <img
+                            src={blog.coverImage || "/placeholder-image.jpg"}
+                            alt={blog.coverAlt || blog.title}
+                            className="w-16 h-11 rounded-lg object-cover border border-[#1e293b] bg-[#0a0f1c] shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-slate-100 leading-snug line-clamp-1">
+                              {blog.title}
+                            </p>
+                            <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mt-0.5">
+                              {blog.shortDescription}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md text-slate-200 bg-[#0a0f1c] border border-[#1e293b] whitespace-nowrap">
+                          {blog.category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-300 font-medium whitespace-nowrap">
+                        {blog.author || "Admin Panel"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              blog.status === "published"
+                                ? "bg-emerald-500"
+                                : blog.status === "archived"
+                                  ? "bg-slate-500"
+                                  : "bg-amber-500"
+                            }`}
+                          />
+                          <select
+                            value={blog.status}
+                            onChange={(e) =>
+                              handleUpdateStatus(blog, e.target.value as any)
+                            }
+                            className="text-[10px] font-bold bg-[#0a0f1c] border border-[#1e293b] rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-[#927948] cursor-pointer"
+                          >
+                            <option value="draft">Draft</option>
+                            <option value="published">Published</option>
+                            <option value="archived">Archived</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-400 font-medium whitespace-nowrap">
+                        {blog.createdAt
+                          ? new Date(blog.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() =>
+                              router.push(`/blog-management/${blog._id}/edit`)
+                            }
+                            title="Edit"
+                            className="p-2 text-slate-400 hover:text-[#927948] hover:bg-[#1e293b]/50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setBlogToDelete(blog);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            title="Delete"
+                            className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBlogs.length > 0 ? (
-            filteredBlogs.map((blog) => {
-              const currentId = blog.id || blog._id;
-              return (
-                <div
-                  key={currentId}
-                  className="bg-[#121829] border border-[#1e293b] rounded-2xl overflow-hidden shadow-sm hover:border-[#927948]/50 transition-all flex flex-col group relative"
-                >
-                  <div className="w-full h-44 bg-[#0a0f1c] relative overflow-hidden border-b border-[#1e293b]">
-                    <img
-                      src={blog.coverImage || "/placeholder-image.jpg"}
-                      alt={blog.coverAlt || blog.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                      <span
-                        className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-inner ${
-                          blog.status === "published"
-                            ? "bg-emerald-600/90"
-                            : blog.status === "archived"
-                              ? "bg-slate-700/90"
-                              : "bg-amber-600/90"
-                        }`}
-                      >
-                        {blog.status}
-                      </span>
-                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md text-slate-200 bg-[#0a0f1c]/80 border border-[#1e293b]">
-                        {blog.category}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-black text-slate-100 tracking-tight leading-snug line-clamp-2">
-                        {blog.title}
-                      </h3>
-                      <p className="text-xs text-slate-400 font-medium line-clamp-2 leading-relaxed">
-                        {blog.shortDescription}
-                      </p>
-                    </div>
-
-                    <div className="pt-4 border-t border-[#1e293b] flex items-center justify-between gap-2">
-                      <select
-                        value={blog.status}
-                        onChange={(e) =>
-                          handleUpdateStatus(blog, e.target.value as any)
-                        }
-                        className="text-[10px] font-bold bg-[#0a0f1c] border border-[#1e293b] rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-[#927948] cursor-pointer"
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Publish</option>
-                        <option value="archived">Archive</option>
-                      </select>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/blog-management/${blog._id}/edit`,
-                            )
-                          }
-                          className="p-2 text-slate-400 hover:text-[#927948] hover:bg-[#1e293b]/50 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setBlogToDelete(blog);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full bg-[#121829] border border-[#1e293b] border-dashed rounded-2xl p-16 text-center">
-              <FileText className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                No matching articles found
-              </p>
-            </div>
-          )}
+        <div className="max-w-7xl mx-auto bg-[#121829] border border-[#1e293b] border-dashed rounded-2xl p-16 text-center">
+          <FileText className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            No matching articles found
+          </p>
         </div>
       )}
 
