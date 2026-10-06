@@ -6,7 +6,7 @@ export const SITE_URL = (
 
 export const SITE_NAME = "BillionDollarFX";
 
-/** Absolute canonical URL for a post: the editor override, or /blog/<slug>. */
+/** Absolute canonical URL for a post: the editor override, or /blogs/<slug>. */
 export function blogCanonicalUrl(slug: string, override?: string | null) {
   const custom = override?.trim();
   if (custom) {
@@ -14,7 +14,7 @@ export function blogCanonicalUrl(slug: string, override?: string | null) {
       ? custom
       : `${SITE_URL}/${custom.replace(/^\/+/, "")}`;
   }
-  return `${SITE_URL}/blog/${slug}`;
+  return `${SITE_URL}/blogs/${slug}`;
 }
 
 /** Mongo filter for posts that are published and whose publish time has arrived. */

@@ -402,7 +402,7 @@ export default async function BlogDetails({ params }: PageProps) {
                 {relatedBlogs.map((post) => (
                   <li key={post._id}>
                     <Link
-                      href={`/blog/${post.slug}`}
+                      href={`/blogs/${post.slug}`}
                       className="group flex gap-4 p-2 -m-2 rounded-2xl hover:bg-[#0a0f1c] transition-colors"
                     >
                       <div className="relative w-24 h-20 shrink-0 rounded-xl overflow-hidden border border-[#1e293b] bg-[#0a0f1c]">

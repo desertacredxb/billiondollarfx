@@ -1415,7 +1415,7 @@ export default function BlogEditorWorkspace({
       published: {
         title: "Publish Article?",
         message: `This article will be live on the website${
-          formData.slug ? ` at /blog/${formData.slug}` : ""
+          formData.slug ? ` at /blogs/${formData.slug}` : ""
         } and visible to all visitors.`,
         label: "Publish",
       },
@@ -2291,7 +2291,7 @@ export default function BlogEditorWorkspace({
                 name="canonicalUrl"
                 value={formData.canonicalUrl}
                 onChange={handleInputChange}
-                placeholder="https://example.com/blog/original-post"
+                placeholder="https://example.com/blogs/original-post"
                 className={`${INPUT} px-4 py-3`}
               />
             </div>

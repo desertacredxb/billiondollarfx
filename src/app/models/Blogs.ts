@@ -58,7 +58,7 @@ const BlogSchema = new Schema<IBlog>(
     metaTitle: { type: String, trim: true },
     metaDescription: { type: String, trim: true },
     metaKeywords: [{ type: String, trim: true }],
-    // Optional override; when empty the page uses its own /blog/<slug> URL
+    // Optional override; when empty the page uses its own /blogs/<slug> URL
     canonicalUrl: { type: String, trim: true, default: "" },
     scheduledAt: { type: Date, default: null },
     featured: { type: Boolean, default: false },

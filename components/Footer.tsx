@@ -2,12 +2,8 @@ import Image from "next/image";
 import {
   FaWhatsapp,
   FaEnvelope,
-  FaPhone,
   FaFacebookF,
   FaInstagram,
-  FaLinkedinIn,
-  FaYoutube,
-  FaPhoneAlt,
 } from "react-icons/fa";
 import logo from "../assets/bdfx.gif";
 import Link from "next/link";
@@ -27,7 +23,8 @@ const navLinks = [
   { label: "About Us", href: "/about" },
   { label: "Our IB", href: "/ib-broker" },
   { label: "Education", href: "/education" },
-  { label: "News & Insights", href: "/news" }, // or use "/insights" if that's your route
+  { label: "Blogs", href: "/blogs" }, // or use "/insights" if that's your route
+  { label: "News", href: "/news" }, // or use "/insights" if that's your route
   { label: "Join Our Team", href: "/career" },
   { label: "Contact Us", href: "/contact" },
 ];
@@ -38,7 +35,6 @@ const footerLinks = [
   { label: "Deposit & Withdrawal Policy", path: "/Deposit&Withdrawal" },
   { label: "Restricted Countries", path: "/Restricted-Countries" },
   { label: "Risk Disclosure", path: "/risk-discloser" },
-  // { label: "Client Services Agreement", path: "/client-services-agreement" },
 ];
 
 export default function Footer() {

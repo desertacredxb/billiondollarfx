@@ -70,10 +70,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // A post whose canonical points elsewhere shouldn't be listed as its own URL
       .filter((p) => {
         const canonical = blogCanonicalUrl(p.slug, p.canonicalUrl);
-        return canonical === `${SITE_URL}/blog/${p.slug}`;
+        return canonical === `${SITE_URL}/blogs/${p.slug}`;
       })
       .map((p) => ({
-        url: xmlSafe(`${SITE_URL}/blog/${p.slug}`),
+        url: xmlSafe(`${SITE_URL}/blogs/${p.slug}`),
         lastModified: p.updatedAt || p.publishedAt || p.createdAt,
         changeFrequency: "weekly" as const,
         priority: 0.7,

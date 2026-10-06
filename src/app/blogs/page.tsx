@@ -1,50 +1,3 @@
-// "use client";
-
-// import Link from "next/link";
-// import Navbar from "../../../components/Navbar";
-// import Footer from "../../../components/Footer";
-// import Image from "next/image";
-// import { blogData } from "@/data/blogData";
-
-// export default function Blog() {
-//   return (
-//     <div className="bg-[var(--bg)] min-h-screen text-white">
-//       <Navbar />
-//       <section className="text-center pt-36 pb-12">
-//         <div className="text-sm text-gray-400 mb-4">
-//           <Link href="/" className="text-white font-medium">
-//             Home
-//           </Link>{" "}
-//           / Blog
-//         </div>
-//         <h1 className="text-3xl font-bold mb-6">Our Latest Blogs</h1>
-
-//         <div className="w-11/12 md:w-4/5 mx-auto grid md:grid-cols-3 gap-6">
-//           {blogData.map((blog) => (
-//             <Link key={blog.slug} href={`/blog/${blog.slug}`}>
-//               <div className="bg-[#1f2d3d] rounded-lg p-4 overflow-hidden shadow-md hover:scale-105 transition">
-//                 <Image
-//                   src={blog.image}
-//                   alt={blog.title}
-//                   width={500}
-//                   height={300}
-//                   className="w-full rounded-lg h-48 object-cover"
-//                 />
-//                 <div className="p-4 text-left">
-//                   <h2 className="text-lg font-semibold">{blog.title}</h2>
-//                   <p className="text-xs text-gray-400 mt-1">{blog.date}</p>
-//                 </div>
-//               </div>
-//             </Link>
-//           ))}
-//         </div>
-//       </section>
-//       <Footer />
-//     </div>
-//   );
-// }
-
-
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -137,7 +90,7 @@ export default function BlogPage() {
         headline: blog.title,
         description: blog.shortDescription,
         image: blog.coverImage,
-        url: `/blog/${blog.slug}`,
+        url: `/blogs/${blog.slug}`,
         datePublished: blog.publishedAt || blog.createdAt,
         author: {
           "@type": "Person",
@@ -233,7 +186,7 @@ export default function BlogPage() {
                   className="bg-[#121829] border border-[#1e293b] rounded-2xl overflow-hidden shadow-lg hover:border-[#927948]/50 hover:shadow-2xl transition-all duration-300 flex flex-col group"
                 >
                   {/* Article Thumbnail */}
-                  <Link href={`/blog/${blog.slug}`} className="relative block h-52 bg-[#0a0f1c] overflow-hidden border-b border-[#1e293b]">
+                  <Link href={`/blogs/${blog.slug}`} className="relative block h-52 bg-[#0a0f1c] overflow-hidden border-b border-[#1e293b]">
                     <Image
                       src={blog.coverImage || "/placeholder.jpg"}
                       alt={blog.coverAlt || blog.title}
@@ -263,7 +216,7 @@ export default function BlogPage() {
                       </div>
 
                       <h2 className="text-lg font-bold text-slate-100 leading-snug group-hover:text-[#927948] transition-colors line-clamp-2">
-                        <Link href={`/blog/${blog.slug}`}>{blog.title}</Link>
+                        <Link href={`/blogs/${blog.slug}`}>{blog.title}</Link>
                       </h2>
 
                       <p className="text-xs text-slate-400 leading-relaxed line-clamp-3 font-normal">
@@ -286,7 +239,7 @@ export default function BlogPage() {
                       </div>
 
                       <Link
-                        href={`/blog/${blog.slug}`}
+                        href={`/blogs/${blog.slug}`}
                         className="text-xs font-bold text-[#927948] hover:text-[#a68c56] flex items-center gap-1 transition-all group-hover:translate-x-0.5"
                       >
                         Read More <ArrowRight className="w-3.5 h-3.5" />
