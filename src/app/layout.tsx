@@ -86,20 +86,6 @@ export default function RootLayout({
           />
         </noscript>
 
-        {/* Zoho SalesIQ Script */}
-        {/* <Script id="zoho-init" strategy="afterInteractive">
-          {`
-            window.$zoho=window.$zoho || {};
-            $zoho.salesiq=$zoho.salesiq||{ready:function(){}};
-          `}
-        </Script>
-
-        <Script
-          id="zsiqscript"
-          src="https://salesiq.zohopublic.com/widget?wc=siq386b399ecc65c2474fa386c88a997404"
-          strategy="afterInteractive"
-          defer
-        /> */}
       </body>
     </html>
   );
