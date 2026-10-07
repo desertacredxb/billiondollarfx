@@ -307,9 +307,9 @@ export default function PrivacyPolicy() {
             at:
           </p>
           <p className="text-[var(--primary)] font-semibold">
-            <a href="mailto:info@billiondollarfx.com">
+            <a href="mailto:support@billiondollarfx.com">
               {" "}
-              info@billiondollarfx.com
+              support@billiondollarfx.com
             </a>
           </p>
         </div>

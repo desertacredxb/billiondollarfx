@@ -98,7 +98,9 @@ export default function Footer() {
               <FaWhatsapp className="text-green-400" /> +447999283366
             </li>
             <li className="flex items-center gap-2">
-              <FaEnvelope className="text-blue-400" /> info@billiondollarfx.com
+              <a href="mailto:support@billiondollarfx.com" className="flex items-center gap-2 hover:text-white transition-colors">
+                <FaEnvelope className="text-blue-400" /> support@billiondollarfx.com
+              </a>
             </li>
 
           </ul>

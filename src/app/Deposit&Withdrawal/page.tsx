@@ -178,7 +178,7 @@ export default function DepositWithdrawalPolicy() {
             pertaining to deposit or withdrawal terms. Written complaints should
             be sent to{" "}
             <span className="text-[var(--primary)] font-semibold">
-              info@billiondollarfx.com
+              support@billiondollarfx.com
             </span>
             .
           </p>

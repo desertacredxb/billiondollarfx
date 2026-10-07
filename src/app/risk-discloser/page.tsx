@@ -88,7 +88,7 @@ const riskDisclosureData = {
     },
   ],
   contact:
-    "You can reach us at info@billiondollarfx.com for additional information",
+    "You can reach us at support@billiondollarfx.com for additional information",
 };
 
 export default function RiskDisclosurePage() {
