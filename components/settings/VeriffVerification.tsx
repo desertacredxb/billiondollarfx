@@ -10,6 +10,8 @@ interface VerificationStatus {
   status: string;
   message: string;
   residenceCountry: string;
+  managedByVeriff?: boolean;
+  ibApproved?: boolean;
 }
 
 const labels: Record<string, string> = {
@@ -25,7 +27,7 @@ function isUae(country: string) {
   return ["AE", "ARE", "UAE", "UNITEDARABEMIRATES"].includes(country.toUpperCase().replace(/[^A-Z]/g, ""));
 }
 
-export default function VeriffVerification() {
+export default function VeriffVerification({ forIb = false }: { forIb?: boolean }) {
   const [status, setStatus] = useState<VerificationStatus | null>(null);
   const [country, setCountry] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,7 +67,7 @@ export default function VeriffVerification() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
-        body: JSON.stringify({ residenceCountry: country }),
+        body: JSON.stringify({ residenceCountry: country, purpose: forIb ? "ib" : "client" }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to start verification.");
@@ -82,18 +84,22 @@ export default function VeriffVerification() {
   };
 
   const needsSupport = status && ["declined", "review", "test_approved"].includes(status.status);
-  const canStart = status?.enabled && !status.approved && !needsSupport;
+  const identityApproved = status?.approved && (!forIb || status.managedByVeriff);
+  const needsIbVerification = forIb && status?.approved && !status.managedByVeriff;
+  const canStart = status?.enabled && !identityApproved && !needsSupport;
 
   return (
     <section className="rounded-2xl border border-[#c6a15b]/30 bg-[#0f172a] p-6 md:p-10 text-white max-w-2xl mx-auto space-y-5">
       <p className="text-xs uppercase tracking-widest text-[#c6a15b]">Billion Dollar FX · Identity verification</p>
-      <h1 className="text-2xl font-semibold">{status ? labels[status.status] || "Identity verification" : "Identity verification"}</h1>
-      {status && <p role="status" className="text-gray-300">{status.message}</p>}
+      <h1 className="text-2xl font-semibold">{needsIbVerification ? "Verify identity for your IB application" : status ? labels[status.status] || "Identity verification" : "Identity verification"}</h1>
+      {status && <p role="status" className="text-gray-300">{needsIbVerification ? "Your IB application requires a Veriff identity check." : status.message}</p>}
+      {forIb && identityApproved && <p className="text-gray-300">{status?.ibApproved ? "Your IB application is approved. Your referral code is available in your IB dashboard." : "Your identity is verified. Your IB application is being processed."}</p>}
       {error && <p role="alert" className="text-red-300">{error}</p>}
       {!status && !error && <p className="text-gray-400">Loading your verification status…</p>}
       {status && !status.enabled && !status.approved && <p className="text-amber-200">Identity verification is temporarily unavailable. Please contact support.</p>}
       {canStart && <>
         <p className="text-sm leading-6 text-gray-400">Continue to Veriff to verify your identity using a supported government-issued ID and selfie. Your account will be approved automatically after a successful verification and BDFX eligibility checks.</p>
+        {needsIbVerification && <p className="text-sm text-amber-200">Starting this new check will put your identity verification status back into pending until it completes.</p>}
         <div>
           <label htmlFor="residence-country" className="block text-sm mb-2">Country of residence</label>
           <select id="residence-country" value={country} onChange={event => setCountry(event.target.value)} disabled={!!status.residenceCountry}
@@ -108,7 +114,7 @@ export default function VeriffVerification() {
           {busy ? "Opening verification…" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Veriff"}
         </button>
       </>}
-      {status?.approved && <Link href="/dashboard" className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">Continue to dashboard</Link>}
+      {identityApproved && <Link href={forIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{forIb ? "View IB application" : "Continue to dashboard"}</Link>}
       <div className="flex flex-wrap gap-5 text-sm">
         <button type="button" onClick={() => void refresh()} disabled={busy} className="text-[#00cfff]">Check status</button>
         <Link href="/login" className="text-[#00cfff]">Sign in</Link>

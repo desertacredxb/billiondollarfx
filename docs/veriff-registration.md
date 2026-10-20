@@ -12,4 +12,8 @@ The login screen sends a Veriff-managed, unapproved client back to verification.
 
 No Veriff API key or shared secret belongs in a `NEXT_PUBLIC_` variable. Configure those only in the backend. The expected production callback is `https://billiondollarfx.com/verify-identity`. Test staging with its own test integration, environment settings, and URLs before switching production to live verification.
 
-This branch adds no independent identity-document support promise, verification-time guarantee, MT5 provisioning, IB business approval, bank approval, or WhatsApp OTP. Document choices and selfie requirements are controlled by the selected Veriff product. API failures leave the client unapproved and show a retry/support action.
+IB applications send their bearer token and follow the backend's `verificationRequired` result. If needed they continue to `/verify-identity?returnTo=ib`, then return to their IB application after verification. An already live-Veriff-verified client can receive automatic IB approval on application submission. An existing manual-verified client can explicitly start a new Veriff identity check for their IB application; the page explains the pending identity state before they continue.
+
+Automatic IB activation requires backend `VERIFF_IB_AUTO_APPROVAL=true` and an eligible live verification. The identity page distinguishes verified identity from an IB role that is still processing. It never grants a role or referral code in browser storage.
+
+Document choices and selfie requirements are controlled by the selected Veriff product. API failures leave the application pending and show a retry/support action. Verification-time guarantees, MT5 provisioning, bank approval, and WhatsApp OTP are separate from this change.

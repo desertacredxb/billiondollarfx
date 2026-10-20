@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Button from "./Button";
 import axios, { AxiosError } from "axios";
+import { useRouter } from "next/navigation";
 
 interface IBRequestProps {
   user: {
@@ -23,6 +24,7 @@ interface FormData {
 }
 
 function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     existingClientBase: "",
@@ -51,23 +53,23 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
         ...formData,
         email: user.email,
-      });
+      }, { headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } });
 
-      alert("✅ IB Request Submitted!");
+      alert(response.data.message || "IB Request Submitted!");
       setShowForm(false);
 
       // mark request as pending instantly
-      setUser?.({ ...user, ibRequestPending: true });
+      setUser?.({ ...user, ibRequestPending: response.data.newIB?.status !== "approved" });
 
       // refresh user from backend
       refreshUser?.();
+      if (response.data.verificationRequired) router.push("/verify-identity?returnTo=ib");
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       if (
-        axiosErr.response?.status === 400 &&
         axiosErr.response?.data?.message
       ) {
         alert(`⚠️ ${axiosErr.response.data.message}`);
