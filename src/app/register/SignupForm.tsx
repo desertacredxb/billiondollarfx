@@ -508,6 +508,7 @@
 // }
 
 "use client";
+import MarketingVideo from "../../../components/MarketingVideo";
 
 import { authenticatedFetch } from "../../../lib/apiClient";
 
@@ -692,15 +693,7 @@ export default function SignUpPage() {
         <title>Sign Up | Billion Dollar FX</title>
       </Head>
 
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute w-auto min-w-full min-h-full max-w-none z-0 object-cover"
-      >
-        <source src="/signup.mp4" type="video/mp4" />
-      </video>
+      <MarketingVideo src="/media/signup.mp4" poster="/media/signup-poster.jpg" className="absolute inset-0 h-full w-full object-cover z-0" />
 
       <div className="relative z-10 bg-black/30 opacity-85 max-w-3xl w-full mx-4 md:mx-auto rounded-xl p-8 md:p-12 text-white">
         <div className="flex flex-col items-center mb-6">

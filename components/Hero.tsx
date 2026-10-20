@@ -102,7 +102,7 @@
 //               />
 //               <h3 className="text-lg font-semibold mb-2">Open An Account</h3>
 //               <p className="text-sm text-gray-300 leading-relaxed">
-//                 Create your account quickly and access 300+ trading instruments
+//                 Register your BDFX profile and complete identity verification before opening an MT5 account
 //                 worldwide.
 //               </p>
 //             </div>
@@ -203,8 +203,7 @@ export default function Hero() {
             </span>
           </h1>
           <p className="text-sm sm:text-base md:text-lg max-w-2xl mb-8 text-gray-300 px-2 leading-relaxed">
-            Access lightning-speed execution, 300+ tradable assets, and elite
-            trading conditions trusted by professionals worldwide.
+            Explore forex and CFD markets on MetaTrader 5 with the BDFX Liquid account. Review account terms and complete identity verification to get started.
           </p>
           <div>
             <Button text="Create Account" onClick={handleClick} />
@@ -257,7 +256,7 @@ export default function Hero() {
                 Open An Account
               </h3>
               <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                Create your account quickly and access 300+ trading instruments
+                Register your BDFX profile and complete identity verification before opening an MT5 account
                 worldwide.
               </p>
             </div>

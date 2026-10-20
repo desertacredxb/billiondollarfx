@@ -27,6 +27,7 @@ const navLinks = [
   { label: "News", href: "/news" }, // or use "/insights" if that's your route
   { label: "Join Our Team", href: "/career" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Help Centre", href: "/help-centre" },
 ];
 const footerLinks = [
   { label: "Privacy Policy", path: "/Privacy-Policy" },
@@ -45,7 +46,7 @@ export default function Footer() {
         <div>
           <Image
             src={logo}
-            alt="Billio Dollar FX"
+            alt="Billion Dollar FX"
             width={240}
             className="mb-4"
           />

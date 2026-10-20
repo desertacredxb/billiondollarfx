@@ -1,6 +1,6 @@
 import type { IBlog } from "@/app/models/Blogs";
 
-export const BLOG_API_BASE = `${(process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "https://billion-doller-backend.onrender.com").replace(/\/+$/, "")}/api/blogs`;
+export const BLOG_API_BASE = `${(process.env.NEXT_PUBLIC_API_BASE || "https://billion-doller-backend.onrender.com").replace(/\/+$/, "")}/api/blogs`;
 
 export async function publishedBlogs(params: Record<string, string> = {}): Promise<{ data: IBlog[]; pages: number }> {
   const query = new URLSearchParams({ status: "published", limit: "200", ...params });

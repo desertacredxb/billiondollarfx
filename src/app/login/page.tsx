@@ -1,4 +1,5 @@
 "use client";
+import MarketingVideo from "../../../components/MarketingVideo";
 
 import { authenticatedFetch } from "../../../lib/apiClient";
 
@@ -162,14 +163,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-black">
-      <video
-        autoPlay
-        loop
-        muted
-        className="absolute w-full h-full object-cover z-0"
-      >
-        <source src="/signup.mp4" type="video/mp4" />
-      </video>
+      <MarketingVideo src="/media/signup.mp4" poster="/media/signup-poster.jpg" className="absolute inset-0 h-full w-full object-cover z-0" />
 
       <div className="z-20 w-full max-w-md p-8 rounded-xl bg-black/30 backdrop-blur border border-white/10 text-white">
         <div className="text-center mb-6">

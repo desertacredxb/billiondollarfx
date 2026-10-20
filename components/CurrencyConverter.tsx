@@ -1,0 +1,19 @@
+"use client";
+import { FormEvent, useEffect, useState } from "react";
+const fallback = ["USD", "EUR", "GBP", "INR", "PKR", "BDT", "THB", "VND", "GEL", "JPY", "CHF", "AUD", "CAD"];
+interface Rate { base: string; quote: string; rate: number; date: string | null; source: string }
+export default function CurrencyConverter() {
+  const [currencies, setCurrencies] = useState(fallback.map(code => ({ code, name: code }))), [base, setBase] = useState("USD"), [quote, setQuote] = useState("INR"), [amount, setAmount] = useState("100");
+  const [result, setResult] = useState<{ data: Rate; amount: number } | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState("");
+  useEffect(() => { const controller = new AbortController(); fetch("/api/reference-rates?currencies=1", { signal: controller.signal }).then(response => response.ok ? response.json() : null).then(data => { if (data?.data?.length) setCurrencies(data.data); }).catch(() => {}); return () => controller.abort(); }, []);
+  async function convert(event: FormEvent) {
+    event.preventDefault(); if (busy) return;
+    setResult(null); setError(""); const value = Number(amount);
+    if (!amount.trim() || !Number.isFinite(value) || value < 0 || value > 1e12) return setError("Enter an amount between 0 and 1 trillion.");
+    setBusy(true);
+    try { const response = await fetch(`/api/reference-rates?${new URLSearchParams({ base, quote })}`); const data = await response.json(); if (!response.ok) throw new Error(data.message); setResult({ data, amount: value }); }
+    catch (err) { setError(err instanceof Error ? err.message : "Unable to load this rate. Please try again."); }
+    finally { setBusy(false); }
+  }
+  return <section className="rounded-2xl border border-slate-700 bg-[#101827] p-6 md:p-8"><form onSubmit={convert} className="grid items-end gap-5 md:grid-cols-4"><label className="text-sm">Amount<input type="number" inputMode="decimal" required min="0" max="1000000000000" step="any" value={amount} onChange={event => { setAmount(event.target.value); setResult(null); }} className="mt-2 w-full rounded-lg border border-slate-600 bg-[#080f1c] p-3" /></label>{[["From", base, setBase], ["To", quote, setQuote]].map(([label, value, setter]) => <label key={label as string} className="text-sm">{label as string}<select value={value as string} onChange={event => { (setter as (value: string) => void)(event.target.value); setResult(null); }} className="mt-2 w-full rounded-lg border border-slate-600 bg-[#080f1c] p-3">{currencies.map(currency => <option key={currency.code} value={currency.code}>{currency.code} — {currency.name}</option>)}</select></label>)}<button disabled={busy} className="rounded-lg bg-[#d6b659] px-5 py-3 font-semibold text-black disabled:opacity-50">{busy ? "Loading rate…" : "Convert"}</button></form>{error && <p role="alert" className="mt-5 text-sm text-red-300">{error}</p>}{result && <div role="status" className="mt-7 rounded-xl bg-[#080f1c] p-6"><p className="text-sm text-slate-400">{result.amount.toLocaleString("en-US", { maximumFractionDigits: 4 })} {result.data.base}</p><p className="mt-2 break-words text-3xl font-semibold">{(result.amount * result.data.rate).toLocaleString("en-US", { maximumFractionDigits: 4 })} {result.data.quote}</p><p className="mt-3 text-sm text-slate-400">1 {result.data.base} = {result.data.rate.toLocaleString("en-US", { maximumSignificantDigits: 8 })} {result.data.quote}{result.data.date ? ` · Reference date: ${result.data.date}` : ""}</p></div>}<p className="mt-6 text-xs leading-6 text-slate-400">Daily reference rates from <a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer" className="underline">Frankfurter</a>. Rates may reflect the previous business day. This comparison is not a broker execution price, USDT exchange rate or payment quote.</p></section>;
+}
