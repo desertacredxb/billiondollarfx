@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
+import { trackConversion } from "../../../lib/analytics";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import { authenticatedFetch } from "../../../lib/apiClient";
@@ -14,11 +15,13 @@ export default function ContactPage() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; success: boolean } | null>(null);
   const requestId = useRef("");
+  const submitting = useRef(false);
   const input = "mt-2 w-full rounded-lg border border-slate-500 bg-[#0b1423] px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]";
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (submitting.current) return;
+    submitting.current = true;
     setBusy(true);
     setFeedback(null);
     try {
@@ -30,11 +33,12 @@ export default function ContactPage() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "Unable to send your enquiry. Please try again.");
+      trackConversion("generate_lead");
       setFeedback({ success: true, text: `${result.message} Reference: ${result.reference}` });
       setForm(empty);
       requestId.current = "";
     } catch (error) { setFeedback({ success: false, text: error instanceof Error ? error.message : "Unable to send your enquiry. Please try again." }); }
-    finally { setBusy(false); }
+    finally { submitting.current = false; setBusy(false); }
   }
 
   return <><Navbar /><main className="bg-[#0a0f1c] text-white px-5 pt-32 pb-20">

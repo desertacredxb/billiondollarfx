@@ -4,6 +4,7 @@ import { div } from "framer-motion/client";
 import Image from "next/image";
 import { useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
+import MarketOverview from "../../../components/MarketOverview";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import Button from "../../../components/Button";
@@ -22,56 +23,7 @@ export default function Indices() {
     // router.push("https://crm.billiondollarfx.com/#/client/signup");
   };
 
-  const chartItems = [
-    {
-      id: 1,
-      label: "100",
-      labelBg: "bg-red-600",
-      title: "UK 100",
-      subtitle: "FTSE 100 Index",
-      price: "1.0932",
-      currency: "USD",
-      change: "-0.00072 -0.07%",
-      changeColor: "text-red-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 2,
-      label: "30",
-      labelBg: "bg-cyan-500",
-      title: "DJI",
-      subtitle: "Dow Jones Industrial",
-      price: "1.0932",
-      currency: "USD",
-      change: "+0.00072 +0.07%",
-      changeColor: "text-green-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 3,
-      label: "100",
-      labelBg: "bg-cyan-500",
-      title: "Nasdaq 100 Index",
-      subtitle: "NASDAQ, INC.",
-      price: "1.0932",
-      currency: "USD",
-      change: "+0.00072 +0.07%",
-      changeColor: "text-green-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 4,
-      label: "500",
-      labelBg: "bg-red-600",
-      title: "US500",
-      subtitle: "US500",
-      price: "1.0932",
-      currency: "USD",
-      change: "-0.00072 -0.07%",
-      changeColor: "text-red-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-  ];
+
 
   const accordionItems = [
     {
@@ -114,54 +66,7 @@ export default function Indices() {
           />
         </section>
 
-        {/* Chart Section */}
-        <section className=" py-10">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 px-4">
-            {chartItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-[#0b1e26] p-5 rounded-2xl shadow-md text-white"
-              >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`text-xs text-white font-bold w-9 h-9 flex items-center justify-center rounded-full ${item.labelBg}`}
-                    >
-                      {item.label}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold">{item.title}</h3>
-                      <p className="text-xs text-gray-400">{item.subtitle}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-xs text-gray-300">{item.currency}</p>
-                    <p className="text-xl font-semibold">{item.price}</p>
-                    <p className={`text-xs ${item.changeColor}`}>
-                      {item.change}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Chart */}
-                <Image
-                  src={item.chart}
-                  alt="chart"
-                  width={400}
-                  height={100}
-                  className="w-full"
-                />
-
-                {/* Footer */}
-                <p className="text-xs text-gray-400 mt-4 flex items-center gap-1">
-                  <span>©</span> Data Provider
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <MarketOverview />
 
         {/* Accordion Section */}
         <section className="max-w-4xl mx-auto px-4 py-10">

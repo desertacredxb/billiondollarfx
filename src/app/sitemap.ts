@@ -31,6 +31,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: ChangeFr
   { path: "/ib-broker", priority: 0.7, changeFrequency: "monthly" },
   { path: "/cashback", priority: 0.6, changeFrequency: "monthly" },
   { path: "/about", priority: 0.6, changeFrequency: "yearly" },
+  { path: "/help-centre", priority: 0.7, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.6, changeFrequency: "yearly" },
   { path: "/career", priority: 0.5, changeFrequency: "monthly" },
   { path: "/Deposit&Withdrawal", priority: 0.5, changeFrequency: "yearly" },

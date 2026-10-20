@@ -20,7 +20,7 @@ const originalItems = [
     title: "Forex",
     image: forex,
     description:
-      "Access non-stop trading of major, minor, and exotic currencies in the global forex market.",
+      "Explore currency pairs and review their trading sessions and contract specifications in MT5.",
     link: "/forex",
   },
   {
@@ -34,14 +34,14 @@ const originalItems = [
     title: "Crypto Currency",
     image: crypto,
     description:
-      "Trade the future of finance. Access top digital currencies with ultra-fast execution.",
+      "Explore digital-asset CFDs and their volatility, spreads and contract specifications.",
     link: "/crypto",
   },
   {
     title: "Metals",
     image: metals,
     description:
-      "Tap into the value of gold and silver, ideal for both safety and strategy.",
+      "Explore gold and silver instruments and review leverage, margin requirements and price risk.",
     link: "/metals",
   },
 ];
