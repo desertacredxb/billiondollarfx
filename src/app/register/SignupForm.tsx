@@ -519,6 +519,8 @@ import Link from "next/link";
 import { countriesData } from "@/data/IsoCode";
 import { Eye, EyeOff } from "lucide-react";
 
+const automaticKyc = process.env.NEXT_PUBLIC_VERIFF_ENABLED === "true";
+
 export default function SignUpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -529,6 +531,7 @@ export default function SignUpPage() {
     countryCode: "", // Store active country calling code (e.g., "+93")
     phone: "",
     nationality: "",
+    residenceCountry: "",
     state: "",
     city: "",
     password: "",
@@ -592,6 +595,11 @@ export default function SignUpPage() {
       return alert("Please accept the terms and conditions.");
     if (formData.password !== formData.confirmPassword)
       return alert("Passwords do not match.");
+    if (automaticKyc && !formData.residenceCountry) return alert("Please select your country of residence.");
+    if (automaticKyc && [formData.nationality, formData.residenceCountry].some(value =>
+      ["AE", "ARE", "UAE", "UNITEDARABEMIRATES"].includes(value.toUpperCase().replace(/[^A-Z]/g, "")))) {
+      return alert("We don't accept UAE clients.");
+    }
 
     // Validate MetaTrader password rules: length 8-16 with character type complexity
     const passwordRegex =
@@ -654,8 +662,15 @@ export default function SignUpPage() {
       const data = await res.json();
       if (!res.ok) return alert(data.message || "OTP verification failed.");
 
-      alert(`Registration successful! Please log in to continue.`);
-      router.push("/login");
+      if (data.kycRequired) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify({ ...data.user, kycProvider: "veriff" }));
+        document.cookie = `token=${data.token}; Path=/; SameSite=Lax;${location.protocol === "https:" ? " Secure;" : ""}`;
+        router.push("/verify-identity");
+      } else {
+        alert(`Registration successful! Please log in to continue.`);
+        router.push("/login");
+      }
     } catch (error) {
       console.error(error);
       alert("OTP verification failed.");
@@ -732,13 +747,19 @@ export default function SignUpPage() {
               onChange={handleChange}
               required
             >
-              <option value="">Select Country*</option>
+              <option value="">{automaticKyc ? "Select Nationality*" : "Select Country*"}</option>
               {countriesData.map((data: any) => (
                 <option key={data.country} value={data.country}>
                   {data.country} (+{data.code})
                 </option>
               ))}
             </select>
+
+            {automaticKyc && <select name="residenceCountry" aria-label="Country of residence" className="input"
+              value={formData.residenceCountry} onChange={handleChange} required>
+              <option value="">Country of Residence*</option>
+              {countriesData.map(data => <option key={data.country} value={data.country}>{data.country}</option>)}
+            </select>}
 
             {/* In-place Country Code prefix container */}
             {/* <div className="relative flex items-center">
@@ -763,7 +784,11 @@ export default function SignUpPage() {
             </div> */}
 
             <div className="flex items-center rounded-lg bg-[#0f172a] border border-[#1e293b] focus-within:border-[#00cfff] overflow-hidden">
-              {formData.countryCode && (
+              {automaticKyc ? <select name="countryCode" aria-label="Mobile country calling code" value={formData.countryCode}
+                onChange={handleChange} required className="max-w-40 bg-[#1e293b] px-2 py-3 text-sm text-gray-300">
+                <option value="">Calling code</option>
+                {countriesData.map(data => <option key={data.country} value={`+${data.code}`}>{data.country} (+{data.code})</option>)}
+              </select> : formData.countryCode && (
                 <span className="px-3 py-3 bg-[#1e293b] text-gray-300 font-medium text-sm select-none border-r border-[#334155]">
                   {formData.countryCode}
                 </span>
@@ -776,10 +801,10 @@ export default function SignUpPage() {
                 value={formData.phone}
                 onChange={handleChange}
                 required
-                maxLength={10}
-                minLength={10}
-                pattern="[0-9]{10}"
-                title="Please enter a valid 10-digit phone number"
+                maxLength={automaticKyc ? 14 : 10}
+                minLength={automaticKyc ? 4 : 10}
+                pattern={automaticKyc ? "[0-9]{4,14}" : "[0-9]{10}"}
+                title={automaticKyc ? "Enter your mobile number without the country code" : "Please enter a valid 10-digit phone number"}
               />
             </div>
 

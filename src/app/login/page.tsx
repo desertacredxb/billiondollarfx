@@ -115,7 +115,7 @@ export default function LoginPage() {
         }`;
       }
 
-      router.replace("/dashboard");
+      router.replace(data.user?.kycProvider === "veriff" && !data.user?.isKycVerified ? "/verify-identity" : "/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       setError("Something went wrong. Please try again.");
