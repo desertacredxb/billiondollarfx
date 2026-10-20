@@ -2,23 +2,26 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
-## Current review and deployment state
+## Current production state — user-approved release
+
+The user approved merging both prepared PRs and deploying to Render/Vercel on 21 October 2026 (Dubai time). The earlier automatic-review rejection is resolved by that approval; both merges succeeded. No production publication approval is outstanding for this release.
 
 - Frontend repository: `desertacredxb/billiondollarfx`.
-- Frontend implementation commit: `1d29fe8acd407b16ee6bfeb381b5041761747054`.
-- Frontend draft PR: https://github.com/desertacredxb/billiondollarfx/pull/4.
-- Vercel reported a successful preview build for that implementation commit. Preview: https://billiondollarfx-git-codex-bdfx-improvements-b2ad28-mondusgroup.vercel.app.
-- Preview browser navigation redirects to Vercel sign-in/access request. UI verification is not complete. The Vercel connector returned 403 for team `mondusgroup`; no local CLI credential or development OIDC token was available. Do not disable deployment protection or request secrets in chat.
-- Frontend production main remains `43046cc22132cbbfa639ad03e26b346357eed6bb`.
+- Frontend production main: `24867e80cdfaf51912869183940777216915f479`.
+- Frontend PR: https://github.com/desertacredxb/billiondollarfx/pull/4 — merged.
+- Vercel production deployment `EtaVKXg6uJeLMYCyZ3iciEuSDJ6V` reported success for that main commit.
+- Live site: https://www.billiondollarfx.com.
 - Backend repository: `desertacredxb/Billion_Doller_Backend`.
-- Backend implementation commit: `1cd8b9b8aab146a3003f5e7a21ec8268df6602f3`.
-- Backend branch uses the same improvement branch name. Draft PR: https://github.com/desertacredxb/Billion_Doller_Backend/pull/4.
-- Backend production main remains `015c31726c8005b2def61409534cd72e184a9f60`; Render deploy `dep-dbbv0fjncjis73fe5fag` remains live.
-- **Production publication is blocked pending explicit approval.** Automatic approval review rejected advancing backend main because the user's current request specified a feature branch and did not clearly authorize replacing production/default refs. Do not retry production ref updates, merge PRs or trigger an equivalent production deployment to work around that rejection. The next user approval should explicitly cover merging both PRs to main and their Render/Vercel production deployments. Continue read-only checks and feature-branch corrections as needed.
+- Backend production main: `a8ee4b725d8ce72a34a39b1fbdeb92d6a199f930`.
+- Backend PR: https://github.com/desertacredxb/Billion_Doller_Backend/pull/4 — merged.
+- Render deployment `dep-dbbvjv49v7es73a1hpa0` is live for that main commit. Post-release application-error log queries returned no entries in the inspected initial window.
+- Both deployments were triggered automatically by their main-branch merges. No redundant deploy was triggered.
+- Production public UI verification is complete for Help Centre interaction, calculator calculation/validation, currency conversion and economic calendar loading. Anonymous support redirects to `/login`; no signed-in customer journey was exercised.
+- The separate feature preview remains protected by Vercel sign-in. Vercel account API access to team `mondusgroup` remains unavailable through the connected Vercel app, but GitHub commit status and public production verification established the release outcome. Do not disable deployment protection or request secrets in chat.
 
-## Implemented in the pending release
+## Implemented in the live release
 
-The candidate adds the Help Centre, payment-delay escalation guide, account onboarding checklist, input-based Forex calculator, daily currency reference proxy/converter, TradingView calendar, original market information cards, useful Education/News pages and homepage claims cleanup. It removes unverified rankings/counts, guaranteed rewards language and misleading always-instant claims from the updated homepage sections.
+The release adds the Help Centre, payment-delay escalation guide, account onboarding checklist, input-based Forex calculator, daily currency reference proxy/converter, TradingView calendar, original market information cards, useful Education/News pages and homepage claims cleanup. It removes unverified rankings/counts, guaranteed rewards language and misleading always-instant claims from the updated homepage sections.
 
 Registration and contact forms prevent repeated submissions and show inline confirmation/error feedback. The support page adds field validation, ticket references, keyboard-accessible conversations, original descriptions, reply refresh, retained text after failures and loading states. Backend ticket/reply request IDs have partial unique indexes; retries reuse saved records rather than re-creating them. New replies to closed tickets are rejected and authenticated account-based rate limits protect writes. Existing ownership and staff permission middleware remains in place.
 
@@ -45,11 +48,12 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 - `npx tsc --noEmit` passes.
 - Frontend: `node --test test/*.test.cjs` — 18/18 pass, including calculation math, reference API failures, form validation and consent/no-private-data events.
 - Backend: `npm test` — 88/88 pass, including Veriff/UAE restrictions, scoped staff access, duplicate-index recovery, session-derived reply sender, closed tickets and safe mail failures.
-- Local production-server HTTP checks returned 200 for Help Centre, Forex calculator, Education, News and both optimized MP4s. Same-currency conversion returned rate 1; the external USD/INR request returned the explicit unavailable 503 response. Browser UI verification remains separate and incomplete.
-- Candidate Git trees exactly match tested local indexes: frontend `f8dc06296d095aa31db064331802c0afef84c125`; backend `1d052b757fd624542755c8700e8624b38aae7d62`.
+- Live HTTP checks returned 200 for homepage, Help Centre, calculator, Education, News, sitemap and optimized media. The new Help Centre is in the sitemap; inspected unverified homepage claims are absent. Media Content-Length matches the optimized asset sizes.
+- Browser checks: Help Centre answer expands; a 0.2-lot sell example produces 20,000 units, margin 220, pip value 2 and estimated loss -200. Leverage 501 displays validation instead of a result. TradingView iframe displays scheduled events. These calculator values are test examples, not trading recommendations.
+- Implementation Git trees exactly matched tested local indexes. Production trees: frontend `4acd1a3b236274385eea2e913a18a2f914076156` (includes continuation documentation); backend `1d052b757fd624542755c8700e8624b38aae7d62`.
 - Live `/admin` resolves to `/admin-login`; live `/health` returns 200 with database connected. Anonymous `/api/staff`, `/api/operations/report` and `/api/tickets/admin` return 401.
 - No real OTP, ticket, enquiry, customer email, financial account, deposit, withdrawal or trade was created by tests. No global customer list was retrieved.
-- A sandbox request to Frankfurter returned 403; the proxy's explicit unavailable state is covered by tests. Do not claim live currency conversion until the deployed proxy returns a valid provider-dated rate.
+- Production reference proxy returned HTTP 200 for USD/INR and 165 currencies. Browser conversion displayed 100 USD = 9,484 INR with provider reference date 2026-10-20. These are dated reference rates, not broker execution quotes. Sandbox direct upstream requests still return 403; proxy failure states are covered by mocks.
 - Provider WebTrader sandbox request returned 503. This does not establish a global outage; the configured URL remains https://webterminal.ascendsmarkets.com/terminal.
 
 ## Remaining provider/configuration dependencies
@@ -62,9 +66,9 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 6. **Payment callbacks:** source review found no visible provider-signature verification before state mutation in the inspected Cregis/Truepay9 handlers. Ramee/crypto encryption must not be assumed to authenticate every callback. No forged callback was sent and payment code was not changed. Provider specs and a mocked/sandbox financial reconciliation review are required. See `docs/operations-readiness.md`.
 7. **Country eligibility:** preserve legacy rules, including the existing Pakistan restriction, until business review. Do not add UAE marketing pages or invent country-specific legal availability.
 
-## Next actions after production approval and access
+## Next actions for remaining setup
 
-Re-read current main refs before release; preserve any intervening live work. Review/merge the backend PR first, monitor its Render deployment until live, then release the frontend and wait for Vercel success. Avoid redundant deploy triggers when auto-deploy is already running. Verify public Help Centre, calculator, converter success/error states, media, registration entry and anonymous API protection. Test signed-in support/onboarding only in an authorized non-production test session without contacting real clients or moving money.
+Continue the provider/configuration dependencies above. Re-read current main refs before any code changes and preserve intervening live work. Do not repeat completed merges or deployments. Test signed-in support/onboarding only in an authorized non-production test session without contacting real clients or moving money. Any future publication must be scoped to the next requested change; the current release is already live.
 
 For publication, Git CLI read access works but CLI push credentials are unavailable. Use Git Data tools: create blobs/tree, require tree equality with `git write-tree`, create commit, and use `update_ref` with the observed expected SHA. For a new branch, use `create_branch`; `update_ref` cannot create a missing ref in this integration.
 
