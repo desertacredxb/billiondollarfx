@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "../../../../lib/apiClient";
 import IBRequest from "../../../../components/IBRequest";
 import IBPage from "../../../../components/IBPage";
+import Link from "next/link";
 
 // 👤 User type used in this page
 interface User {
@@ -29,6 +30,7 @@ function IntroducingBroker() {
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${email}`
       );
       setUser(res.data);
+      if (res.data.isApprovedIB) localStorage.removeItem("bdfx_onboarding_intent");
       // console.log("IB approved:", res.data.isApprovedIB);
     } catch (err) {
       console.error("❌ Error fetching user:", err);
@@ -42,6 +44,7 @@ function IntroducingBroker() {
   }, []);
 
   if (loading) return <p className="text-white">Loading...</p>;
+  if (!user) return <p className="text-white">Unable to load your IB profile. <Link href="/login" className="text-[#ffd700] underline">Sign in again</Link>.</p>;
 
   return (
     <div>

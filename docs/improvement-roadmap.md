@@ -5,18 +5,18 @@ Requested implementation order: complete and verify each item before continuing 
 | Item | Work | Status |
 | --- | --- | --- |
 | 1 | Client/account access and administrator authentication | Live; build, automated checks and anonymous access checks passed |
-| 2 | Public Open Account actions | Connected to registration; release verification pending |
-| 3 | Contact enquiries and CRM visibility | Implemented with persisted records, reference IDs, team notes and retrying email notifications; release verification pending |
+| 2 | Public Open Account actions | Live; browser navigation to registration verified |
+| 3 | Contact enquiries and CRM visibility | Live with persisted records, reference IDs, team notes and retrying email notifications; validation/access checks passed without sending a live test email |
 | 4 | MT5 downloads, WebTrader and setup instructions | Official mobile/store/download links and connection guide implemented; existing provider WebTrader URL needs availability confirmation |
-| 5 | Consistent account offering and pricing | Pending; use verified business settings |
-| 6 | Unified IB application and referral journey | Limited referral report secured; onboarding pending |
+| 5 | Consistent account offering and pricing | Supplied Liquid/$50/1:500/commission-free/swap-free terms implemented; release verification pending |
+| 6 | Unified IB application and referral journey | Public entry and post-verification IB navigation connected; limited referral report secured; release verification pending |
 | 7 | OTP email delivery | Pending; SMTP/domain alignment needs verification |
-| 8 | UAE restriction content | Pending |
-| 9 | Withdrawal information and support escalation | Pending |
+| 8 | UAE restriction content | Public eligibility and footer updated; other existing country restrictions need business review |
+| 9 | Withdrawal information and support escalation | Supplied USDT 1–4 hour timing aligned in public summaries; help/escalation content pending |
 | 10 | Blog, sitemap and page SEO | Pending |
 | 11 | GA4/Search Console and conversion tracking | Pending; account/property access must be verified |
-| 12 | Mobile media performance and expired promotions | Pending |
-| 13 | Calculators and calendar tools | Pending |
+| 12 | Mobile media performance and expired promotions | Expired 2025 trading/IB offers archived; media optimization pending |
+| 13 | Calculators and calendar tools | IB earnings estimate implemented using the client's agreed inputs; other tools pending |
 | 14 | Client onboarding checklist | Pending |
 | 15 | Transactional notifications and consented WhatsApp updates | Pending; provider setup must be verified |
 | 16 | Support ticket experience | Access secured; usability review pending |

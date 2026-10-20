@@ -168,18 +168,19 @@ export default function Footer() {
           <h4 className="font-semibold text-white mb-2">Restricted Regions</h4>
           <p className="text-gray-400 text-sm">
             Billion Dollar FX Limited does not provide services for
-            citizens/residents of the USA, Cuba, Iraq, Myanmar, North Korea,
+            citizens/residents of the UAE, USA, Cuba, Iraq, Myanmar, North Korea,
             Sudan. The services of Billion Dollar FX Limited are not intended
             for distribution to, or use by, any person in any country or
             jurisdiction where such distribution or use would be contrary to
-            local law or regulation.
+            local law or regulation. UAE-issued identity documents are not accepted.
+            See the <Link href="/Restricted-Countries" className="underline">restricted countries policy</Link> for further eligibility information.
           </p>
         </div>
       </div>
 
       {/* Footer Bottom */}
       <div className="mt-10 border-t border-gray-700 pt-6 text-center text-gray-400 text-xs flex flex-col md:flex-row md:justify-between items-center gap-2">
-        <p>© 2025 All Rights Reserved By Billion Dollar FX</p>
+        <p>© {new Date().getFullYear()} All Rights Reserved By Billion Dollar FX</p>
         <div className="flex flex-wrap justify-center gap-4">
           {footerLinks.map((item, idx) => (
             <Link

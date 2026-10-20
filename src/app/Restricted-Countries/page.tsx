@@ -5,6 +5,7 @@ import Footer from "../../../components/Footer";
 
 export default function RestrictedCountries() {
   const countries = [
+    "United Arab Emirates (UAE)",
     "Afghanistan",
     "Albania",
     "Angola",
@@ -59,14 +60,14 @@ export default function RestrictedCountries() {
         <div className="space-y-4">
           <p className="text-gray-300 leading-relaxed">
             <strong className="text-white">
-              European Union (EU) Member Countries
+              Client eligibility
             </strong>
           </p>
           <p className="text-gray-300 leading-relaxed">
-            We have decided not to provide account facilities to residents of
-            sanctioned countries due to the continuous and significant money
-            laundering and financing of terrorism (ML/FT) risks and the lack of
-            transparency in the international financial system.
+            We do not accept UAE clients, including UAE nationality or residence,
+            or UAE-issued identity cards and passports. Additional country
+            restrictions are listed below. Contact support if you need to check
+            your eligibility before registering.
           </p>
         </div>
 

@@ -34,6 +34,9 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
   const [country, setCountry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [ibIntent, setIbIntent] = useState(false);
+  useEffect(() => { setIbIntent(localStorage.getItem("bdfx_onboarding_intent") === "ib"); }, []);
+  const returnToIb = forIb || ibIntent;
 
   const refresh = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -95,7 +98,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
       <p className="text-xs uppercase tracking-widest text-[#c6a15b]">Billion Dollar FX · Identity verification</p>
       <h1 className="text-2xl font-semibold">{needsIbVerification ? "Verify identity for your IB application" : status ? labels[status.status] || "Identity verification" : "Identity verification"}</h1>
       {status && <p role="status" className="text-gray-300">{needsIbVerification ? "Your IB application requires a Veriff identity check." : status.message}</p>}
-      {forIb && identityApproved && <p className="text-gray-300">{status?.ibApproved ? "Your IB application is approved. Your referral code is available in your IB dashboard." : "Your identity is verified. Your IB application is being processed."}</p>}
+      {returnToIb && identityApproved && <p className="text-gray-300">{status?.ibApproved ? "Your IB application is approved. Your referral code is available in your IB dashboard." : "Your identity is verified. Continue to the IB application to complete or check your details."}</p>}
       {error && <p role="alert" className="text-red-300">{error}</p>}
       {!status && !error && <p className="text-gray-400">Loading your verification status…</p>}
       {status && !status.enabled && !status.approved && <p className="text-amber-200">Identity verification is temporarily unavailable. Please contact support.</p>}
@@ -116,7 +119,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
           {busy ? "Opening verification…" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Verify"}
         </button>
       </>}
-      {identityApproved && <Link href={forIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{forIb ? "View IB application" : "Continue to dashboard"}</Link>}
+      {identityApproved && <Link href={returnToIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{returnToIb ? "Continue to IB application" : "Continue to dashboard"}</Link>}
       <div className="flex flex-wrap gap-5 text-sm">
         <button type="button" onClick={() => void refresh()} disabled={busy} className="text-[#00cfff]">Check status</button>
         <Link href="/login" className="text-[#00cfff]">Sign in</Link>

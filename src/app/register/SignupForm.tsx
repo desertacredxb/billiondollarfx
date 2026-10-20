@@ -667,6 +667,7 @@ export default function SignUpPage() {
       if (!res.ok) return alert(data.message || "OTP verification failed.");
 
       if (data.kycRequired) {
+        localStorage.setItem("bdfx_onboarding_intent", searchParams?.get("intent") === "ib" ? "ib" : "client");
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify({ ...data.user, kycProvider: "veriff" }));
         document.cookie = `token=${data.token}; Path=/; SameSite=Lax;${location.protocol === "https:" ? " Secure;" : ""}`;

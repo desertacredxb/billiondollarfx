@@ -264,7 +264,7 @@ export default function LoginPage() {
                   "SIGN IN"
                 )
               }
-              onClick={handleSignIn}
+              type="submit"
               disabled={loading}
               className={`w-full bg-[var(--primary)] text-white py-2 rounded-full ${
                 loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
