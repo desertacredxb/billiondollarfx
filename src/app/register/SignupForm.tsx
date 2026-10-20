@@ -519,7 +519,9 @@ import Link from "next/link";
 import { countriesData } from "@/data/IsoCode";
 import { Eye, EyeOff } from "lucide-react";
 
-const automaticKyc = process.env.NEXT_PUBLIC_VERIFF_ENABLED === "true";
+// Production onboarding collects the details required by the backend's Veriff policy.
+// The backend remains authoritative for enrollment and every approval decision.
+const automaticKyc = process.env.NEXT_PUBLIC_VERIFF_ENABLED !== "false";
 
 export default function SignUpPage() {
   const router = useRouter();
