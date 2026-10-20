@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      { source: "/admin", destination: "/admin-login", permanent: false },
+      { source: "/admin/login", destination: "/admin-login", permanent: false },
+      { source: "/admin/dashboard", destination: "/adminDashboard", permanent: false },
+      { source: "/admin-dashboard", destination: "/adminDashboard", permanent: false },
       {
         source: "/mt5-download-secure",
         destination:
