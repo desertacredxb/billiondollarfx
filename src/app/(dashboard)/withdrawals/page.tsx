@@ -483,6 +483,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       <RegisterModal
         isOpen={showCreateModal}
+        profile={profile}
         onClose={() => {
           setShowCreateModal(false);
           refresh();

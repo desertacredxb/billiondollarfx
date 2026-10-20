@@ -192,6 +192,7 @@ export default function DepositsPage() {
         </div>
         <RegisterModal
           isOpen={showModal}
+          profile={profile}
           onClose={() => {
             setShowModal(false);
             refresh(); // ✅ Refresh account list after modal closes
