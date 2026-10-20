@@ -1,12 +1,13 @@
 "use client";
-import { div } from "framer-motion/client";
+import { useRouter } from "next/navigation";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import InsightsSection from "../../../components/Inside_Contact";
 
 const TradingAccounts = () => {
-  const handleClick = () => alert("Account Opening Started!");
+  const router = useRouter();
+  const handleClick = () => router.push("/register");
 
   return (
     <div>

@@ -4,10 +4,10 @@ Requested implementation order: complete and verify each item before continuing 
 
 | Item | Work | Status |
 | --- | --- | --- |
-| 1 | Client/account access and administrator authentication | Implemented; release verification in progress |
-| 2 | Public Open Account actions | Pending |
-| 3 | Contact enquiries and CRM visibility | Pending |
-| 4 | MT5 downloads, WebTrader and setup instructions | Pending |
+| 1 | Client/account access and administrator authentication | Live; build, automated checks and anonymous access checks passed |
+| 2 | Public Open Account actions | Connected to registration; release verification pending |
+| 3 | Contact enquiries and CRM visibility | Implemented with persisted records, reference IDs, team notes and retrying email notifications; release verification pending |
+| 4 | MT5 downloads, WebTrader and setup instructions | Official mobile/store/download links and connection guide implemented; existing provider WebTrader URL needs availability confirmation |
 | 5 | Consistent account offering and pricing | Pending; use verified business settings |
 | 6 | Unified IB application and referral journey | Limited referral report secured; onboarding pending |
 | 7 | OTP email delivery | Pending; SMTP/domain alignment needs verification |

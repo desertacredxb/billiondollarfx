@@ -10,8 +10,8 @@ const nextConfig: NextConfig = {
       {
         source: "/mt5-download-secure",
         destination:
-          "https://download.mql5.com/cdn/web/ascends.global.markets/mt5/ascendsglobalmarkets5setup.exe",
-        permanent: true,
+          "https://www.metatrader5.com/en/download",
+        permanent: false,
       },
     ];
   },
