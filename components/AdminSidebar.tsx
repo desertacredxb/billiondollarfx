@@ -1,5 +1,7 @@
 "use client";
 
+import { useAdminSession } from "../lib/adminSession";
+import { canAccessAdminPath } from "../lib/adminAccess";
 import { useEffect, useState } from "react";
 import axios from "../lib/apiClient";
 import Link from "next/link";
@@ -22,6 +24,7 @@ import Image from "next/image";
 import logo from "../assets/bdfx.gif";
 
 export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
+  const session = useAdminSession();
   const router = useRouter();
   const pathname = usePathname();
   const [payoutCount, setPayoutCount] = useState<number>(0);
@@ -33,47 +36,12 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const payoutRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawals`
-        );
-        setPayoutCount(payoutRes.data?.total ?? payoutRes.data?.data?.length ?? 0);
-
-        // ✅ Fetch Bank Approvals
-        const bankRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
-        );
-        const pendingBankUpdates = bankRes.data.filter(
-          (u: { pendingBankDetails?: Record<string, unknown> }) =>
-            u.pendingBankDetails && Object.keys(u.pendingBankDetails).length > 0
-        );
-        setBankApprovalCount(pendingBankUpdates.length || 0);
-
-        // ✅ Fetch IB Requests
-        const ibRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/ib`
-        );
-        const pendingIbRequests = ibRes.data.filter(
-          (u: { status: string }) => u.status === "pending"
-        );
-        setIbCount(pendingIbRequests.length || 0);
-
-        // ✅ Fetch KYC Pending
-        const userRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
-        );
-        const pendingKyc = userRes.data.filter(
-          (u: { isKycVerified: boolean }) => u.isKycVerified === false
-        );
-        setKycCount(pendingKyc.length || 0);
-
-        // ✅ Fetch Open Tickets
-        const ticketRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/tickets/admin`
-        );
-        const openTickets = ticketRes.data.filter(
-          (t: { status: string }) => t.status === "Open"
-        );
-        setTicketCount(openTickets.length || 0);
+        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE}/api/operations/overview`);
+        setPayoutCount(data.queues.pendingPayouts);
+        setBankApprovalCount(data.queues.pendingBank);
+        setIbCount(data.queues.pendingIb);
+        setKycCount(data.queues.pendingKyc);
+        setTicketCount(data.queues.openTickets);
       } catch (err) {
         console.error("Failed to fetch counts:", err);
       }
@@ -110,6 +78,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         <Image src={logo} alt="Admin Logo" width={160} className="h-auto" />
       </div>
 
+      <div className="px-4 py-3 text-xs text-slate-400 break-words"><p className="font-semibold text-slate-200">{session?.fullName}</p><p>{session?.email}</p><p className="mt-1 capitalize">{session?.role}</p></div>
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         <Section title="Navigation">
@@ -176,6 +145,11 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
           />
         </Section>
 
+        <Section title="Administration">
+          <NavLink href="/business-report" label="Business Report" icon={LayoutDashboard} pathname={pathname} />
+          <NavLink href="/staff-users" label="Staff Users" icon={Users} pathname={pathname} />
+          <NavLink href="/activity-log" label="Activity History" icon={Briefcase} pathname={pathname} />
+        </Section>
         <Section title="Account">
           <button
             onClick={handleSignOut}
@@ -222,6 +196,8 @@ function NavLink({
   pathname: string;
   count?: number;
 }) {
+  const session = useAdminSession();
+  if (session && !canAccessAdminPath(session, href)) return null;
   // Also highlight on nested routes (e.g. /blog-management/add)
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
 

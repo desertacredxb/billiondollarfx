@@ -1,48 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
+import { NextResponse } from "next/server";
 import { requireAdmin } from "@/app/lib/adminAuth";
+import { BLOG_API_BASE } from "@/app/lib/blogApi";
 
-// Configure your Cloudinary credentials (ensure these are in your .env file)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+  if (Number(request.headers.get("content-length")) > 5 * 1024 * 1024 + 10000) return NextResponse.json({ error: "Choose an image up to 5 MB." }, { status: 413 });
   try {
-    const denied = await requireAdmin(req);
-    if (denied) return denied;
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-
-    if (!file) {
-      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
-    }
-    if (!(file instanceof File) || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-      return NextResponse.json({ success: false, error: "Choose a JPEG, PNG, WebP or GIF image up to 5 MB." }, { status: 400 });
-    }
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Upload directly to Cloudinary via stream wrapper
-    const uploadResult = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: "blog_assets" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      ).end(buffer);
-    });
-
-    return NextResponse.json({
-      success: true,
-      url: (uploadResult as any).secure_url,
-    });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof File) || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) return NextResponse.json({ error: "Choose a JPEG, PNG, WebP or GIF image up to 5 MB." }, { status: 400 });
+    const body = new FormData(); body.set("file", file);
+    const response = await fetch(`${BLOG_API_BASE}/upload`, { method: "POST", headers: { Authorization: request.headers.get("authorization")! }, body, cache: "no-store", signal: AbortSignal.timeout(30000) });
+    return NextResponse.json(await response.json(), { status: response.status, headers: { "Cache-Control": "no-store" } });
+  } catch { return NextResponse.json({ error: "Unable to upload this image. Please try again." }, { status: 503 }); }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { adminHome } from "../../../lib/adminAccess";
 import { authenticatedFetch } from "../../../lib/apiClient";
 
 import { FormEvent, useState } from "react";
@@ -39,7 +40,7 @@ export default function AdminLogin() {
         localStorage.setItem("adminToken", data.token);
         localStorage.setItem("adminUser", JSON.stringify(data.user));
         document.cookie = `adminToken=${data.token}; Path=/; Max-Age=7200; SameSite=Strict;${location.protocol === "https:" ? " Secure;" : ""}`;
-        router.replace("/adminDashboard");
+        router.replace(adminHome(data.user));
       }
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to sign in."); }
     finally { setBusy(false); }
@@ -49,7 +50,7 @@ export default function AdminLogin() {
     <form onSubmit={submit} className="w-full max-w-md rounded-2xl border border-white/15 bg-[#101827] p-7 space-y-5">
       <Link href="/" className="text-[#ffd700] font-semibold">Billion Dollar FX</Link>
       <h1 className="text-2xl font-semibold">Administrator sign in</h1>
-      <p className="text-sm text-slate-300">{challengeId ? "Enter the six-digit code from the configured administrator mailbox. It expires in five minutes." : "Use your authorized administrator email. First-time setup and password recovery are confirmed by email."}</p>
+      <p className="text-sm text-slate-300">{challengeId ? "Enter the six-digit code sent to your authorized email address. It expires in five minutes." : "Use your authorized administrator email. First-time setup and password recovery are confirmed by email."}</p>
       {!challengeId ? <>
         <label className="block">Email<input required type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-600 bg-[#060b14] p-3" /></label>
         {!resetPassword && <label className="block">Password<input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-600 bg-[#060b14] p-3" /><span className="block mt-2 text-xs text-slate-400">Leave this blank for first-time setup.</span></label>}

@@ -3,7 +3,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AOSWrapper from "../../components/AOSWrapper";
 import WhatsAppButton from "../../components/WhatsappButton";
-import { AIChat } from "../../components/chat/AIChat";
+import { SITE_ORIGIN } from "../../lib/seo";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -13,8 +13,11 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "BillionDollarFX | Forex, CFD & Online Trading",
-  description: "Explore forex, metals, indices, commodities and crypto trading with BillionDollarFX. Discover trading platforms, instruments, account information and risk disclosures.",
+  metadataBase: new URL(SITE_ORIGIN),
+  title: "Billion Dollar FX | Forex, CFD & MT5 Trading",
+  description: "Explore forex and CFDs with Billion Dollar FX. Review the Liquid account, MT5 platform, verification and trading risks.",
+  openGraph: { siteName: "Billion Dollar FX", type: "website", images: [{ url: "/social-card.png", width: 1200, height: 630, alt: "Billion Dollar FX" }] },
+  twitter: { card: "summary_large_image", images: ["/social-card.png"] },
 };
 
 export default function RootLayout({
@@ -68,7 +71,9 @@ export default function RootLayout({
       </head>
 
       <body className={montserrat.className}>
-        <AOSWrapper>{children}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded focus:bg-white focus:p-3 focus:text-black">Skip to content</a>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "Billion Dollar FX", url: SITE_ORIGIN, email: "support@billiondollarfx.com", telephone: "+447999283366" }).replace(/</g, "\\u003c") }} />
+        <AOSWrapper><div id="main-content" tabIndex={-1}>{children}</div>
 
 
         </AOSWrapper>
@@ -76,15 +81,6 @@ export default function RootLayout({
         <WhatsAppButton />
         {/* <AIChat /> */}
 
-        {/* Meta Pixel Noscript */}
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=2525742971143286&ev=PageView&noscript=1"
-          />
-        </noscript>
 
       </body>
     </html>

@@ -1,8 +1,6 @@
 // Public site origin used for canonical / Open Graph URLs.
 // Set NEXT_PUBLIC_SITE_URL in each environment (no trailing slash).
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://billiondollarfx.com"
-).replace(/\/+$/, "");
+export const SITE_URL = "https://www.billiondollarfx.com";
 
 export const SITE_NAME = "BillionDollarFX";
 

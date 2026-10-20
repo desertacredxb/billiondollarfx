@@ -116,7 +116,7 @@ export default function AdminBlogManagement() {
         setIsDeleteModalOpen(false);
         fetchBlogs();
       } else {
-        throw new Error(data.error || "Failed to delete item.");
+        throw new Error(data.error || "Failed to archive article.");
       }
     } catch (err: any) {
       triggerAlert("error", err.message);
@@ -303,7 +303,7 @@ export default function AdminBlogManagement() {
                               setBlogToDelete(blog);
                               setIsDeleteModalOpen(true);
                             }}
-                            title="Delete"
+                            title="Archive"
                             className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -337,7 +337,7 @@ export default function AdminBlogManagement() {
               </h3>
             </div>
             <p className="text-xs text-slate-400 font-medium leading-relaxed">
-              Are you sure you want to permanently delete{" "}
+              Archive this article? You can restore it from the archived list.{" "}
               <span className="font-bold text-slate-200">
                 "{blogToDelete?.title}"
               </span>
@@ -360,7 +360,7 @@ export default function AdminBlogManagement() {
                 {actionLoading && (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 )}
-                <span>Delete</span>
+                <span>Archive</span>
               </button>
             </div>
           </div>
