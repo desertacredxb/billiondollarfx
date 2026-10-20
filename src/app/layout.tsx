@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Analytics from "../../components/Analytics";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AOSWrapper from "../../components/AOSWrapper";
@@ -79,6 +80,7 @@ export default function RootLayout({
         </AOSWrapper>
 
         <WhatsAppButton />
+        <Analytics />
         {/* <AIChat /> */}
 
 

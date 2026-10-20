@@ -63,12 +63,11 @@ export default function PaymentMethods() {
         {/* Text Section */}
         <div className="md:w-1/2 flex flex-col justify-between gap-8 ">
           <h2 className="text-2xl md:text-3xl font-bold mb-5 ">
-            Instant Deposits,
-            <span className="text-[var(--primary)]"> Smooth Withdrawals</span>
+            Account Funding,
+            <span className="text-[var(--primary)]"> Clear Instructions</span>
           </h2>
           <p className="text-gray-400 mx-auto md:mx-0 ">
-            Say goodbye to delays. Our deposit and withdrawal system is built
-            for speed, ease, and reliability.
+            Check the methods available to your account in the client dashboard. USDT withdrawals typically take 1–4 hours, subject to checks and network conditions. Availability and processing times vary by method.
           </p>
         </div>
       </div>
