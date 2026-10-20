@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../../../lib/apiClient";
+
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -42,7 +44,7 @@ export default function BlogPage() {
     try {
       setLoading(true);
       // Fetch only published blogs from your endpoint
-      const res = await fetch("/api/blogs?status=published");
+      const res = await authenticatedFetch("/api/blogs?status=published");
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setBlogs(data.data);

@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../../lib/apiClient";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { countriesData } from "@/data/IsoCode";
@@ -37,7 +39,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
     const token = localStorage.getItem("token");
     if (!token) { setError("Please sign in to continue identity verification."); return; }
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/status`, {
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/status`, {
         headers: { Authorization: `Bearer ${token}` }, cache: "no-store",
       });
       const data = await response.json();
@@ -64,7 +66,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/sessions`, {
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
         body: JSON.stringify({ residenceCountry: country, purpose: forIb ? "ib" : "client" }),

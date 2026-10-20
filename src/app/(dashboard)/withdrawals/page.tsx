@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount";

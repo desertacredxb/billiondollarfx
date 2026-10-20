@@ -2,7 +2,7 @@
 
 import Fuse from "fuse.js";
 import { useEffect, useState, useMemo } from "react";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 import { useRouter } from "next/navigation";
@@ -89,8 +89,8 @@ export default function UsersPage() {
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
 
-    if (!token || token !== "admin-token") {
-      router.push("/login");
+    if (!token) {
+      router.push("/admin-login");
       return;
     }
 

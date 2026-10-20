@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../lib/apiClient";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -85,7 +85,9 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const handleSignOut = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("admin");
-    router.push("/login");
+    localStorage.removeItem("adminUser");
+    document.cookie = "adminToken=; Path=/; Max-Age=0; SameSite=Strict";
+    router.push("/admin-login");
   };
 
   return (

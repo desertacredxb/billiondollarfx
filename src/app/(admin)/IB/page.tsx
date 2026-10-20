@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../../../../lib/apiClient";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Button from "../../../../components/Button";
@@ -112,7 +114,7 @@ export default function IBRequestsPage() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib`);
+      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib`);
       const data = await res.json();
       setRequests(data);
     } catch (err) {
@@ -124,8 +126,8 @@ export default function IBRequestsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
-    if (!token || token !== "admin-token") {
-      router.push("/login");
+    if (!token) {
+      router.push("/admin-login");
       return;
     }
     fetchRequests();
@@ -134,7 +136,7 @@ export default function IBRequestsPage() {
   const approve = async (email: string) => {
     setIsApprove(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/approve`,
         { method: "PUT" }
       );
@@ -151,7 +153,7 @@ export default function IBRequestsPage() {
   const reject = async (email: string) => {
     setIsReject(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/reject`,
         { method: "PUT" }
       );
@@ -175,7 +177,7 @@ export default function IBRequestsPage() {
       setLoadingClients(true);
       setClientConnections([]);
 
-      const usersRes = await fetch(
+      const usersRes = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
       );
 
@@ -196,7 +198,7 @@ export default function IBRequestsPage() {
           const symbolLots: { [key: string]: number } = {};
 
           try {
-            const accRes = await fetch(
+            const accRes = await authenticatedFetch(
               `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${u.email}`
             );
             const userData = await accRes.json();
@@ -204,7 +206,7 @@ export default function IBRequestsPage() {
 
             for (const acc of accounts as Account[]) {
               // Deposits
-              const depRes = await fetch(
+              const depRes = await authenticatedFetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
               );
               const deposits = await depRes.json();
@@ -218,7 +220,7 @@ export default function IBRequestsPage() {
                   ) || 0;
 
               // Withdrawals
-              const wdRes = await fetch(
+              const wdRes = await authenticatedFetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
               );
               const withdrawals = await wdRes.json();
@@ -245,7 +247,7 @@ export default function IBRequestsPage() {
                 .split("T")[0];
               const endDate = today.toISOString().split("T")[0];
 
-              const dealsRes = await fetch(
+              const dealsRes = await authenticatedFetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
                 {
                   method: "POST",

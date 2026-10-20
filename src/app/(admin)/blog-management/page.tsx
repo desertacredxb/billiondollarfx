@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../../../../lib/apiClient";
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -56,7 +58,7 @@ export default function AdminBlogManagement() {
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/blogs");
+      const res = await authenticatedFetch("/api/blogs");
       const data = await res.json();
       if (data.success && data.data) {
         setBlogs(data.data);
@@ -84,7 +86,7 @@ export default function AdminBlogManagement() {
     }
 
     try {
-      const res = await fetch(`/api/blogs/${targetId}`, {
+      const res = await authenticatedFetch(`/api/blogs/${targetId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -107,7 +109,7 @@ export default function AdminBlogManagement() {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/blogs/${targetId}`, { method: "DELETE" });
+      const res = await authenticatedFetch(`/api/blogs/${targetId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         triggerAlert("success", "Article directory item purged.");

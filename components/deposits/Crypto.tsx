@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import { CreditCard, X } from "lucide-react";
 import Button from "../../components/Button"; // ✅ import your Button
 import toast, { Toaster } from "react-hot-toast";

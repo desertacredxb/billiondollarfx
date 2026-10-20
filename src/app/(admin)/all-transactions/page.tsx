@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError } from "../../../../lib/apiClient";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { RefreshCw } from "lucide-react";
@@ -185,8 +185,8 @@ export default function AdminTransactionPage() {
     const token = localStorage.getItem("adminToken");
 
     // 🔐 Redirect to login if no token
-    if (!token || token !== "admin-token") {
-      router.push("/login");
+    if (!token) {
+      router.push("/admin-login");
       return;
     }
   }, []);

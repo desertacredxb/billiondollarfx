@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../../../../../lib/apiClient";
+
 import React, {
   useState,
   useEffect,
@@ -684,7 +686,7 @@ export default function BlogEditorWorkspace({
 
   const fetchBlogDetails = async () => {
     try {
-      const res = await fetch(`/api/blogs/${blogId}`);
+      const res = await authenticatedFetch(`/api/blogs/${blogId}`);
       const data = await res.json();
       if (data.success) {
         const blog = data.data || data;
@@ -1227,7 +1229,7 @@ export default function BlogEditorWorkspace({
       const data = new FormData();
       data.append("file", selectedFile);
       try {
-        const res = await fetch("/api/blogs/upload", {
+        const res = await authenticatedFetch("/api/blogs/upload", {
           method: "POST",
           body: data,
         });
@@ -1284,7 +1286,7 @@ export default function BlogEditorWorkspace({
     data.append("file", file);
 
     try {
-      const res = await fetch("/api/blogs/upload", {
+      const res = await authenticatedFetch("/api/blogs/upload", {
         method: "POST",
         body: data,
       });
@@ -1470,7 +1472,7 @@ export default function BlogEditorWorkspace({
       const url = blogId ? `/api/blogs/${blogId}` : "/api/blogs";
       const method = blogId ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

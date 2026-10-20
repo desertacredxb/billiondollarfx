@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdmin } from "@/app/lib/adminAuth";
 
 // Configure your Cloudinary credentials (ensure these are in your .env file)
 cloudinary.config({
@@ -10,11 +11,16 @@ cloudinary.config({
 
 export async function POST(req: NextRequest) {
   try {
+    const denied = await requireAdmin(req);
+    if (denied) return denied;
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
+    }
+    if (!(file instanceof File) || file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      return NextResponse.json({ success: false, error: "Choose a JPEG, PNG, WebP or GIF image up to 5 MB." }, { status: 400 });
     }
 
     // Convert file to buffer

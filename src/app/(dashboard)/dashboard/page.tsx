@@ -6,7 +6,7 @@ import Image from "next/image";
 import emptyIcon from "../../../../assets/icons/empty_state.png"; // Update if needed
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount"; // adjust path as needed
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import Link from "next/link";
 import KycAlertModal from "../../../../components/KycAlertModal";
 import { useMT5AccountSummary } from "../../../../lib/mt5Store";

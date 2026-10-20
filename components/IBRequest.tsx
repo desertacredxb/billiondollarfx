@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Button from "./Button";
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError } from "../lib/apiClient";
 import { useRouter } from "next/navigation";
 
 interface IBRequestProps {

@@ -2,10 +2,16 @@ import { connectToDatabase } from "@/app/lib/db";
 import Blog from "@/app/models/Blogs";
 import { NextResponse } from "next/server";
 import { applyPublishFields, livePublishedFilter } from "@/app/lib/blogPublishing";
+import { requireAdmin } from "@/app/lib/adminAuth";
 
 // GET: Fetch all records (supports dynamic querying by status, category, or search keywords)
 export async function GET(request: Request) {
   try {
+    const requestedStatus = new URL(request.url).searchParams.get("status");
+    if (requestedStatus !== "published") {
+      const denied = await requireAdmin(request);
+      if (denied) return denied;
+    }
     await connectToDatabase();
     const { searchParams } = new URL(request.url);
     
@@ -40,6 +46,8 @@ export async function GET(request: Request) {
 // POST: Direct entry point for creating new blogs
 export async function POST(request: Request) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
     await connectToDatabase();
     const body = await request.json();
 

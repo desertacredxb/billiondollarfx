@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../../../lib/apiClient";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -32,7 +34,7 @@ export default function LoginPage() {
 
       try {
         // 🔥 Verify token with server
-        await fetch(
+        const response = await authenticatedFetch(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${
             JSON.parse(user).email
           }`,
@@ -42,6 +44,8 @@ export default function LoginPage() {
             },
           }
         );
+
+        if (!response.ok) throw new Error("Session expired");
 
         // ✅ Token valid → auto login
         router.replace("/dashboard");
@@ -64,31 +68,8 @@ export default function LoginPage() {
       return setError("Please fill in all fields.");
     }
 
-    // Admin test account (local dev convenience)
-    if (email === "admin@gmail.com" && password === "admin@2025snew") {
-      const adminToken = "admin-token"; // fake token
-      localStorage.setItem("adminToken", adminToken);
-      localStorage.setItem(
-        "admin",
-        JSON.stringify({ email: "admin@gmail.com", role: "admin" })
-      );
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      if (typeof window !== "undefined") {
-        // set a non-httpOnly cookie (quick test; change to httpOnly on server for production)
-        document.cookie = `token=${adminToken}; Path=/; SameSite=Lax;${
-          location.protocol === "https:" ? " Secure;" : ""
-        }`;
-      }
-
-      router.replace("/adminDashboard");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/login`,
         {
           method: "POST",
@@ -128,7 +109,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/request-reset`,
         {
           method: "POST",
@@ -153,7 +134,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-reset-otp`,
         {
           method: "POST",
@@ -201,6 +182,7 @@ export default function LoginPage() {
               className="mx-auto mb-2"
             />
           </Link>
+          <Link href="/admin-login" className="block text-sm text-gray-300 underline mb-4">Administrator sign in</Link>
           <h2 className="text-2xl font-semibold">
             {step === "login"
               ? "Login"

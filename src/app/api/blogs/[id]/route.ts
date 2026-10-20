@@ -2,6 +2,7 @@ import Blog from "@/app/models/Blogs";
 import { connectToDatabase } from "@/app/lib/db";
 import { NextResponse } from "next/server";
 import { applyPublishFields } from "@/app/lib/blogPublishing";
+import { requireAdmin } from "@/app/lib/adminAuth";
 
 // Define the parameters as a Promise
 interface RouteParams {
@@ -20,6 +21,10 @@ export async function GET(request: Request, { params }: RouteParams) {
     if (!blog) {
       return NextResponse.json({ success: false, error: "Blog post not found." }, { status: 404 });
     }
+    if (blog.status !== "published" || (blog.publishedAt && new Date(blog.publishedAt) > new Date())) {
+      const denied = await requireAdmin(request);
+      if (denied) return NextResponse.json({ success: false, error: "Blog post not found." }, { status: 404 });
+    }
     
     return NextResponse.json({ success: true, data: blog });
   } catch (error: any) {
@@ -30,6 +35,8 @@ export async function GET(request: Request, { params }: RouteParams) {
 // PUT: Full update method for general editing execution panels
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
     await connectToDatabase();
     const resolvedParams = await params;
     const body = await request.json();
@@ -61,6 +68,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
 // PATCH: Quick partial modifier specifically used to toggle status variables instantly
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
     await connectToDatabase();
     const resolvedParams = await params;
     const { status } = await request.json();
@@ -95,6 +104,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 // DELETE: Hard deletion pipeline operation from systems
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
+    const denied = await requireAdmin(request);
+    if (denied) return denied;
     await connectToDatabase();
     const resolvedParams = await params;
     const deletedBlog = await Blog.findByIdAndDelete(resolvedParams.id);

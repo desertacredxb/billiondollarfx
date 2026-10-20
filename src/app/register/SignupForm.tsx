@@ -220,7 +220,7 @@
 
 //     try {
 //       setLoading(true);
-//       const res = await fetch(
+//       const res = await authenticatedFetch(
 //         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/register`,
 //         {
 //           method: "POST",
@@ -248,7 +248,7 @@
 //     try {
 //       setLoading(true);
 //       // Calls your updated backend endpoint passing email and otp string tokens
-//       const res = await fetch(
+//       const res = await authenticatedFetch(
 //         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-otp`,
 //         {
 //           method: "POST",
@@ -509,6 +509,8 @@
 
 "use client";
 
+import { authenticatedFetch } from "../../../lib/apiClient";
+
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
@@ -625,7 +627,7 @@ export default function SignUpPage() {
 
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/register`,
         {
           method: "POST",
@@ -652,7 +654,7 @@ export default function SignUpPage() {
 
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-otp`,
         {
           method: "POST",

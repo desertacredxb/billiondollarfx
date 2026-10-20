@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "./apiClient";
 import { useEffect } from "react";
 import { create } from "zustand";
 
@@ -90,6 +90,10 @@ const useUserStore = create<UserStoreState>((set) => ({
         fetchedAt: { ...state.fetchedAt, [email]: Date.now() },
       }));
     } catch (error) {
+      if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status || 0)) {
+        set(state => ({ profiles: { ...state.profiles, [email]: null }, fetchedAt: { ...state.fetchedAt, [email]: 0 } }));
+        return;
+      }
       // Leave the last-known cached value in place on failure rather than
       // clearing it - a transient network hiccup shouldn't blank out a
       // profile that was showing correctly a moment ago.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import { Camera, ShieldCheck } from "lucide-react";
 
 function ProfileImage() {

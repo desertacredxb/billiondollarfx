@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../lib/apiClient";
+
 import { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
 import PhoneInput from "react-phone-input-2";
@@ -66,7 +68,7 @@ export default function RegisterModal({
     // }
 
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/register`,
         {
           method: "POST",
@@ -80,7 +82,7 @@ export default function RegisterModal({
 
       const result = await res.json();
 
-      if (result) {
+      if (res.ok && result.success !== false) {
         setResponseMsg(`✅ ${result.message}`);
         setTimeout(() => {
           onClose();

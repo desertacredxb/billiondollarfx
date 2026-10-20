@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import { toast } from "react-hot-toast";
 import { X, Copy, Wallet, Landmark, Clock3 } from "lucide-react";
 import { Withdrawal } from "./page";

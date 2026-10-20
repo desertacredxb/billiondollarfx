@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 
 type Transaction = {
   date: string;
