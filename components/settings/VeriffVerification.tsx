@@ -111,7 +111,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
         <p className="text-sm text-gray-400">BDFX does not accept UAE clients or UAE-issued identity documents.</p>
         <button type="button" onClick={start} disabled={busy || !country || status.status === "creating"}
           className="rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black disabled:opacity-50">
-          {busy ? "Opening verification…" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Veriff"}
+          {busy ? "Opening verification…" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Verify"}
         </button>
       </>}
       {identityApproved && <Link href={forIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{forIb ? "View IB application" : "Continue to dashboard"}</Link>}
