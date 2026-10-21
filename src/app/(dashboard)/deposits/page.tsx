@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cregis from "../../../../components/deposits/Cregis";
 import CryptoPay from "../../../../components/deposits/Crypto";
-import Digipay from "../../../../components/deposits/Digipay";
 import RameePay from "../../../../components/deposits/Rameepay";
-import TruePay9 from "../../../../components/deposits/TruePay9";
-import TrustPay24 from "../../../../components/deposits/TrustPay24";
 import KycAlertModal from "../../../../components/KycAlertModal";
 import Button from "../../../../components/Button";
 import { useUserProfile } from "../../../../lib/userStore";
@@ -55,7 +52,6 @@ function Deposit() {
         ) : (
           <div className="flex flex-wrap gap-6">
             <RameePay />
-            <TrustPay24 />
             <CryptoPay />
 
             <Cregis />
