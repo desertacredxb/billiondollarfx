@@ -2,7 +2,13 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
-## Latest owner instruction — keep only the chatbot floating control
+## Latest owner request — chatbot backend and admin visibility
+
+The owner asked where chatbot counts and visitor details can be viewed because they were absent from the admin panel. The original guide was a local FAQ with no saved activity. The implementation now adds optional, explicitly acknowledged saved sessions on the existing backend/MongoDB connection, plus **Admin panel -> Chat Reports** (`/chat-reports`). Owners and support-authorized managers get saved-session/contact counts, Dubai date/language/status filters, activity from the last five minutes, selected guide questions/answers, and follow-up status/notes. Anonymous readers, clients and other managers are denied. No new login, provider or credential is needed for implementation.
+
+The guide remains available without saving. Only visitors who choose saving or acknowledge the optional contact form create records. Name/email/optional international phone/residence country are unverified visitor submissions, not automatic account identification. No raw searches, arbitrary messages, URL history or existing account tokens are captured. Saved sessions have independent hashed write capabilities, a 100-event atomic cap, retry deduplication, 24-hour write expiry and 90-day record retention. Counts are sessions, not unique people; prior unsaved history cannot be recovered. No real visitor records or messages are created for testing. See docs/chatbot-flow.md and backend docs/chat-reports.md. Keep the removed WhatsApp floating icon removed, and keep the WhatsApp OTP activation dependency unchanged.
+
+## Earlier owner instruction — keep only the chatbot floating control
 
 The owner explicitly requested: remove the WhatsApp sign because the chatbot is enough. The root layout no longer imports or mounts the separate floating WhatsApp button. Keep BDFX Help as the floating support control. This UI request does not enable or cancel the pending WhatsApp mobile OTP/provider setup, or change payment, trading, registration or contact data.
 
