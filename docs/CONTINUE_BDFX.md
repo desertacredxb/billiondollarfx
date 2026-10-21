@@ -84,6 +84,12 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 
 ## Next actions for remaining setup
 
+### Search Console and mail setup continuation — 21 October 2026
+
+The owner's signed-in Search Console account reached verification for the URL-prefix property `https://www.billiondollarfx.com/` and supplied a new HTML meta tag. That tag is added alongside the existing verification tag; preserve both. Complete live verification and sitemap submission after this release, and record their actual results. The accessible Analytics picker lists only the CFT account with Close Friends Traders and Trade Circle properties; do not connect either unrelated property to BDFX. BDFX still needs its own verified property/measurement ID.
+
+Public DNS checks establish Hostinger MX/SPF/nameservers and DMARC `p=none`. Hostinger's three documented default DKIM CNAME selectors return NXDOMAIN. This does not establish that all custom selectors are absent. The received application email authenticates a Gmail sender, so domain mailbox/provider verification is required before switching SMTP. No DNS, mailbox credentials or sender configuration was changed. See operations-readiness.md for the exact non-secret observations.
+
 Continue the provider/configuration dependencies above. Re-read current main refs before any code changes and preserve intervening live work. Do not repeat completed merges or deployments. Test signed-in support/onboarding only in an authorized non-production test session without contacting real clients or moving money. Any future publication must be scoped to the next requested change; the current release is already live.
 
 For publication, Git CLI read access works but CLI push credentials are unavailable. Use Git Data tools: create blobs/tree, require tree equality with `git write-tree`, create commit, and use `update_ref` with the observed expected SHA. For a new branch, use `create_branch`; `update_ref` cannot create a missing ref in this integration.
