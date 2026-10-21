@@ -49,6 +49,8 @@ interface User {
   address?: string;
   accountType?: string;
   isKycVerified?: boolean;
+  kycProvider?: string;
+  veriff?: { status?: string; reasonCode?: number; sessionId?: string };
   profileImage?: string;
   referralCode?: string; // 🔥 added
 
@@ -169,7 +171,7 @@ export default function UsersPage() {
       setSelectedUser(null);
     } catch (err) {
       console.error("Failed to verify KYC:", err);
-      alert("❌ Failed to verify KYC");
+      alert(axios.isAxiosError(err) && typeof err.response?.data?.message === "string" ? err.response.data.message : "Failed to verify KYC. Please try again.");
     } finally {
       setVerifying(false);
     }
@@ -229,7 +231,7 @@ export default function UsersPage() {
       setSelectedUser(null);
     } catch (err) {
       console.error("Failed to reject user KYC:", err);
-      alert("❌ Failed to reject user KYC");
+      alert(axios.isAxiosError(err) && typeof err.response?.data?.message === "string" ? err.response.data.message : "Failed to reject user KYC. Please try again.");
     }
   };
 
@@ -479,6 +481,12 @@ export default function UsersPage() {
                 </InfoCard>
               </div>
 
+              {selectedUser.kycProvider === "veriff" && <section className="rounded-xl border border-amber-600/40 bg-amber-950/20 p-4 space-y-2">
+                <h3 className="font-semibold text-amber-200">Verification managed by Veriff</h3>
+                <p className="text-sm text-gray-300">Manual approve/reject is unavailable for this account. Review the session in your Veriff customer portal; BDFX updates after the provider decision.</p>
+                <p className="text-sm">Provider status: {selectedUser.veriff?.status || "Not started"}{selectedUser.veriff?.reasonCode ? ` · Reason code: ${selectedUser.veriff.reasonCode}` : ""}</p>
+                {selectedUser.veriff?.sessionId && <p className="text-xs text-gray-400 break-all">Veriff session: {selectedUser.veriff.sessionId}</p>}
+              </section>}
               {/* Documents */}
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
@@ -487,7 +495,7 @@ export default function UsersPage() {
                 {!selectedUser.idProof1?.image &&
                   !selectedUser.idProof2?.image ? (
                   <p className="text-sm text-gray-500 bg-[#161f2e] border border-gray-800 rounded-xl p-4">
-                    No documents submitted yet.
+                    {selectedUser.kycProvider === "veriff" ? "Identity documents are collected by Veriff. Review them in the Veriff customer portal." : "No documents submitted yet."}
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -532,7 +540,7 @@ export default function UsersPage() {
 
             {/* Actions */}
             <div className="sticky bottom-0 bg-[#1f2937] border-t border-gray-800 px-6 py-4 flex flex-wrap justify-end gap-3">
-              {!selectedUser.isKycVerified && selectedUser.hasSubmittedDocuments && (
+              {selectedUser.kycProvider !== "veriff" && !selectedUser.isKycVerified && selectedUser.hasSubmittedDocuments && (
                 <button
                   onClick={() => handleVerifyKyc(selectedUser.email)}
                   disabled={verifying}
@@ -542,12 +550,12 @@ export default function UsersPage() {
                 </button>
               )}
 
-              <button
+              {selectedUser.kycProvider !== "veriff" && <button
                 onClick={() => handleRejectKyc(selectedUser.email)}
                 className="px-4 py-2 rounded-full text-sm font-semibold text-yellow-400 border border-yellow-600/40 hover:bg-yellow-600/10 transition"
               >
                 Reject KYC
-              </button>
+              </button>}
               <button
                 onClick={() => handleDeleteUser(selectedUser.email)}
                 className="px-4 py-2 rounded-full text-sm font-semibold text-red-400 border border-red-600/40 hover:bg-red-600/10 transition"
