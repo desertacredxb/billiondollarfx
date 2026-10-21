@@ -25,6 +25,7 @@ interface VerificationStatus {
 const labels: Record<string, string> = {
   not_started: "Verify your identity", creating: "Preparing verification",
   created: "Verification in progress", approved: "Identity verified",
+  manual_rejected: "Manual review declined",
   declined: "Verification unsuccessful", review: "Further review needed",
   resubmission_requested: "More information needed", expired: "Session expired",
   abandoned: "Verification incomplete", error: "Please try again",
@@ -111,7 +112,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
     } finally { setBusy(false); }
   };
 
-  const needsSupport = status && (["review", "test_approved"].includes(status.status) || (status.status === "declined" && !status.canRetry));
+  const needsSupport = status && (["review", "test_approved", "manual_rejected"].includes(status.status) || (status.status === "declined" && !status.canRetry));
   const identityApproved = status?.approved && (!forIb || status.managedByVeriff);
   const needsIbVerification = forIb && status?.approved && !status.managedByVeriff;
   const canStart = status?.enabled && !identityApproved && !needsSupport;

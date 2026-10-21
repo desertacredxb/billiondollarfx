@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminSession } from "../../../../lib/adminSession";
 import Fuse from "fuse.js";
 import { useEffect, useState, useMemo } from "react";
 import axios from "../../../../lib/apiClient";
@@ -50,7 +51,7 @@ interface User {
   accountType?: string;
   isKycVerified?: boolean;
   kycProvider?: string;
-  veriff?: { status?: string; reasonCode?: number; sessionId?: string };
+  veriff?: { status?: string; reasonCode?: number; sessionId?: string; revision?: number };
   profileImage?: string;
   referralCode?: string; // 🔥 added
 
@@ -73,6 +74,28 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const adminSession = useAdminSession();
+  const [manualDecision, setManualDecision] = useState<boolean | null>(null);
+  const [manualReason, setManualReason] = useState("");
+  const [reviewedDocuments, setReviewedDocuments] = useState(false);
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualMessage, setManualMessage] = useState("");
+  useEffect(() => { setManualDecision(null); setManualReason(""); setReviewedDocuments(false); setManualMessage(""); }, [selectedUser?._id]);
+  const saveManualReview = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedUser || manualDecision === null || manualBusy) return;
+    setManualBusy(true); setManualMessage("");
+    try {
+      const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/manual-kyc/${encodeURIComponent(selectedUser.email)}`, {
+        approved: manualDecision, reason: manualReason, reviewedDocuments, sessionId: selectedUser.veriff?.sessionId,
+        expectedRevision: selectedUser.veriff?.revision,
+      });
+      const updated = { ...selectedUser, isKycVerified: data.approved, veriff: { ...selectedUser.veriff, revision: (selectedUser.veriff?.revision || 0) + 1 } };
+      setUsers(values => values.map(value => value._id === updated._id ? updated : value));
+      setSelectedUser(updated); setManualDecision(null); setManualReason(""); setReviewedDocuments(false); setManualMessage(data.message);
+    } catch (error) { setManualMessage(axios.isAxiosError(error) && typeof error.response?.data?.message === "string" ? error.response.data.message : "Review could not be confirmed. Refresh to check before trying again."); }
+    finally { setManualBusy(false); }
+  };
   const [verifying, setVerifying] = useState(false);
 
   // Add filter state
@@ -483,9 +506,21 @@ export default function UsersPage() {
 
               {selectedUser.kycProvider === "veriff" && <section className="rounded-xl border border-amber-600/40 bg-amber-950/20 p-4 space-y-2">
                 <h3 className="font-semibold text-amber-200">Verification managed by Veriff</h3>
-                <p className="text-sm text-gray-300">Manual approve/reject is unavailable for this account. Review the session in your Veriff customer portal; BDFX updates after the provider decision.</p>
+                <p className="text-sm text-gray-300">Review the identity documents and provider result in Veriff. An owner can record a manual approval or rejection below; the original Veriff result remains in history.</p>
                 <p className="text-sm">Provider status: {selectedUser.veriff?.status || "Not started"}{selectedUser.veriff?.reasonCode ? ` · Reason code: ${selectedUser.veriff.reasonCode}` : ""}</p>
                 {selectedUser.veriff?.sessionId && <p className="text-xs text-gray-400 break-all">Veriff session: {selectedUser.veriff.sessionId}</p>}
+                {adminSession?.role === "owner" && selectedUser.veriff?.sessionId && <div className="space-y-3 pt-3">
+                  <div className="flex flex-wrap gap-3"><button type="button" disabled={manualBusy} onClick={() => { setManualDecision(true); setManualMessage(""); }} className="rounded-lg bg-green-700 px-4 py-2 text-sm">Manual approve</button><button type="button" disabled={manualBusy} onClick={() => { setManualDecision(false); setManualMessage(""); }} className="rounded-lg border border-amber-600 px-4 py-2 text-sm">Manual reject</button></div>
+                  {manualDecision !== null && <form onSubmit={saveManualReview} className="space-y-3 rounded-xl border border-gray-600 p-4">
+                    <h4 className="font-semibold">{manualDecision ? "Confirm manual approval" : "Confirm manual rejection"}</h4>
+                    <p className="text-sm text-gray-300">This records your decision for this client. Check the documents and provider result before confirming, including any risk flag.</p>
+                    <label className="block text-sm">Review reason<textarea required minLength={20} maxLength={1000} disabled={manualBusy} value={manualReason} onChange={event => setManualReason(event.target.value)} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3" placeholder="Record what you reviewed and why you are making this decision." /></label>
+                    <label className="flex gap-3 text-sm"><input type="checkbox" required checked={reviewedDocuments} disabled={manualBusy} onChange={event => setReviewedDocuments(event.target.checked)} /><span>I have reviewed this client's identity documents and Veriff result and take responsibility for this decision.</span></label>
+                    <div className="flex gap-3"><button type="submit" disabled={manualBusy || !reviewedDocuments || manualReason.trim().length < 20} className="rounded-lg bg-[#c6a15b] px-4 py-2 font-semibold text-black disabled:opacity-50">{manualBusy ? "Saving review…" : manualDecision ? "Confirm approval" : "Confirm rejection"}</button><button type="button" disabled={manualBusy} onClick={() => setManualDecision(null)}>Cancel</button></div>
+                  </form>}
+                </div>}
+                {adminSession?.role !== "owner" && <p className="text-sm text-gray-400">Only an owner can record a manual KYC decision.</p>}
+                {manualMessage && <p role="status" className="text-sm text-amber-200">{manualMessage}</p>}
               </section>}
               {/* Documents */}
               <div>
