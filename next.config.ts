@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
-    const privatePaths = ["api/:path*", "admin", "admin-login", "adminDashboard", "users", "brokers", "tickets", "IB", "all-transactions", "bankapproval", "payout-requests", "blog-management/:path*", "enquiries", "activity-log", "staff-users", "business-report", "login", "register", "verify-identity", "dashboard", "deposits", "withdrawals", "settings", "live-accounts", "demo-accounts", "transactions", "web-trader", "introducing-broker", "support", "Ourplatform", "forex-glossary", "technical-analysis", "indicators", "live-markets-rates", "top-news"];
+    const privatePaths = ["api/:path*", "admin", "admin-login", "adminDashboard", "users", "brokers", "tickets", "IB", "all-transactions", "bankapproval", "payout-requests", "blog-management/:path*", "enquiries", "activity-log", "staff-users", "business-report", "website-analytics", "login", "register", "verify-identity", "dashboard", "deposits", "withdrawals", "settings", "live-accounts", "demo-accounts", "transactions", "web-trader", "introducing-broker", "support", "Ourplatform", "forex-glossary", "technical-analysis", "indicators", "live-markets-rates", "top-news"];
     return privatePaths.map(path => ({ source: `/${path}`, headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }));
   },
   async redirects() {
