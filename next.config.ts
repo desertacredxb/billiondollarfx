@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     domains: ["winprofx.com", "www.svgrepo.com", "res.cloudinary.com"],
+    remotePatterns: [
+      { protocol: "https", hostname: "www.billiondollarfx.com", pathname: "/social-card.png", search: "" },
+    ],
   },
 
   async headers() {

@@ -5,8 +5,8 @@ import {
   blogCanonicalUrl,
 } from "@/app/lib/blogPublishing";
 
-// Rebuild at most once an hour so new / scheduled posts show up without a deploy
-export const revalidate = 3600;
+// Match the public article cache so automatic publications reach the sitemap promptly.
+export const revalidate = 60;
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 
