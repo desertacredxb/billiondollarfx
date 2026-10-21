@@ -9,6 +9,7 @@ const PRIVATE_PATHS = [
   "/admin",
   "/admin-login",
   "/enquiries",
+  "/chat-reports",
   "/activity-log",
   "/staff-users",
   "/business-report",

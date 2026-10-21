@@ -2,9 +2,17 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
-## Latest owner instruction — keep only the chatbot floating control
+## Latest owner request — chatbot backend and admin visibility
+
+The owner asked where chatbot counts and visitor details can be viewed because they were absent from the admin panel. The original guide was a local FAQ with no saved activity. The implementation now adds optional, explicitly acknowledged saved sessions on the existing backend/MongoDB connection, plus **Admin panel -> Chat Reports** (`/chat-reports`). Owners and support-authorized managers get saved-session/contact counts, Dubai date/language/status filters, activity from the last five minutes, selected guide questions/answers, and follow-up status/notes. Anonymous readers, clients and other managers are denied. No new login, provider or credential is needed for implementation.
+
+The guide remains available without saving. Only visitors who choose saving or acknowledge the optional contact form create records. Name/email/optional international phone/residence country are unverified visitor submissions, not automatic account identification. No raw searches, arbitrary messages, URL history or existing account tokens are captured. Saved sessions have independent hashed write capabilities, a 100-event atomic cap, retry deduplication, 24-hour write expiry and 90-day record retention. Counts are sessions, not unique people; prior unsaved history cannot be recovered. No real visitor records or messages are created for testing. See docs/chatbot-flow.md and backend docs/chat-reports.md. Keep the removed WhatsApp floating icon removed, and keep the WhatsApp OTP activation dependency unchanged.
+
+## Earlier owner instruction — keep only the chatbot floating control
 
 The owner explicitly requested: remove the WhatsApp sign because the chatbot is enough. The root layout no longer imports or mounts the separate floating WhatsApp button. Keep BDFX Help as the floating support control. This UI request does not enable or cancel the pending WhatsApp mobile OTP/provider setup, or change payment, trading, registration or contact data.
+
+Frontend PR 10 https://github.com/desertacredxb/billiondollarfx/pull/10 is merged to main `81434de341c2364d6af7925c0d2a17fdff5152fd`, tree `1a619c3e903a101025cfe1435daddb497deff9b7`; Vercel production `AygQb6Xy6puf8tSPUq1HfrdA3bH6` succeeded. The tree equals the tested local index. All 24 existing frontend tests and the Next.js production build including TypeScript passed; the initial Google Fonts TLS fetch failure was resolved by enabling system TLS certificates for the local build only. On the reloaded production homepage, the browser found zero `Chat on WhatsApp` links and verified the BDFX Help launcher and opened six-language guide. Public proof: bdfx-chatbot-only-1792576317559.jpg. The deployed application change is only the two-line import/mount removal; the other changes are continuation documentation.
 
 ## Latest completion checkpoint — mobile identity and multilingual chatbot
 
@@ -26,7 +34,7 @@ Identity normalization also handles country-appropriate leading-zero variants vi
 
 The owner's payment instruction is to retain exactly RameePay INR, RameePay Crypto and Cregis Crypto, close TrustPay24 and keep DigiPay closed. The payment change is scoped to preventing duplicate credits while preserving retained gateway configuration and calculations.
 
-- Frontend main: `e7c76cf7a56c59c81eecb96a967c96a58219ed9d`; multilingual support/registration PR 9 is merged and Vercel `39QqahiW8WUDuoGRoPjgVG4xFPvK` succeeded. Earlier automatic-blog and cover/sitemap releases remain included.
+- Frontend main: `81434de341c2364d6af7925c0d2a17fdff5152fd`; PR 10 removes the separate floating WhatsApp icon and keeps BDFX Help. Vercel `AygQb6Xy6puf8tSPUq1HfrdA3bH6` succeeded and the live browser verified the result. Earlier multilingual registration/chat, automatic-blog and cover/sitemap releases remain included.
 - Frontend PR https://github.com/desertacredxb/billiondollarfx/pull/6 merged the owner's Search Console verification alongside the existing tag. Vercel production deployment `37rARNFDuWqtkGVDScd1GTQsmKEr` reported success; both tags are present on the live HTTP 200 homepage.
 - Search Console ownership is verified for `https://www.billiondollarfx.com/` using the new HTML tag. The sitemap was submitted and Google reported **Sitemap processed successfully**, with 28 discovered pages and 0 discovered videos on 21 October 2026. An initial Couldn't fetch state resolved during the same verification session; do not duplicate the submission. Discovered does not mean all 28 pages are indexed.
 - Frontend PR https://github.com/desertacredxb/billiondollarfx/pull/5 merged. Vercel production deployment `2hUyGi9uxDmZZgHjuFGJoRTvEqFT` reported success.
