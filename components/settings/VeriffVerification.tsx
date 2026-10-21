@@ -124,11 +124,11 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
         </button>
       </>}
       {identityApproved && <Link href={returnToIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{returnToIb ? "Continue to IB application" : "Continue to dashboard"}</Link>}
-      <p className="text-sm text-gray-300">Need more support? Contact <a href="tel:+447999283366" className="text-[#00cfff] underline">+447999283366</a>.</p>
+      <p className="text-sm text-gray-300">Need more support? WhatsApp <a href="https://wa.me/447999283366" target="_blank" rel="noopener noreferrer" className="text-[#00cfff] underline">+447999283366</a>.</p>
       <div className="flex flex-wrap gap-5 text-sm">
         <button type="button" onClick={() => void refresh()} disabled={busy} className="text-[#00cfff]">Check status</button>
         <Link href="/login" className="text-[#00cfff]">Sign in</Link>
-        <a href="mailto:support@billiondollarfx.com" className="text-[#00cfff]">Contact support</a>
+        <a href="https://wa.me/447999283366" target="_blank" rel="noopener noreferrer" className="text-[#00cfff]">Contact support on WhatsApp</a>
       </div>
     </section>
   );
