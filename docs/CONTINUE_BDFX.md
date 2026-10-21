@@ -2,6 +2,10 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
+## Latest owner instruction — keep only the chatbot floating control
+
+The owner explicitly requested: remove the WhatsApp sign because the chatbot is enough. The root layout no longer imports or mounts the separate floating WhatsApp button. Keep BDFX Help as the floating support control. This UI request does not enable or cancel the pending WhatsApp mobile OTP/provider setup, or change payment, trading, registration or contact data.
+
 ## Latest completion checkpoint — mobile identity and multilingual chatbot
 
 The owner asked for mobile OTP in addition to the existing email OTP and to prevent a second client login with the same email OR phone, then explicitly selected **WhatsApp**. The owner also requested a WinproFX-style multilingual chatbot and repeated that request while implementation was underway. Preserve both goals; neither cancels the other. No new login/approval prompt is authorized or required for the code work.
@@ -14,7 +18,7 @@ Verified release: **125 backend tests, 24 frontend tests and the production buil
 
 Production startup reported **Registration identity storage preflight passed** at 07:31 Dubai. It also reported **Registration WhatsApp OTP: unconfigured; enforcement disabled**. The public options endpoint returns HTTP 200, mobileOtpRequired:false, mobileOtpChannel:whatsapp and registrationAvailable:true. Health is 200/database connected; empty registration/mobile-verification requests return 400 before account creation and anonymous client lists return 401. Do not claim a real mobile has been verified or enable mandatory WhatsApp delivery with missing provider settings. Email signup remains enabled. The actual WhatsApp provider token, sending number and approved authentication template are still required; do not paste secrets in chat or repeat declined provider logins.
 
-The live browser exercised English menu -> Hindi -> withdrawal subtopic -> automatic USDT timing answer, then changed that same answer to Bengali and back to Hindi. The answer, guide link, consent/privacy boundary and six language choices rendered correctly. The normal WhatsApp chat link remains available on the left. Public proof: bdfx-multilingual-chat-live-20261021.jpg. This is a guided automatic support bot, not an assertion that a live human agent or a WhatsApp business automation account is connected. WinproFX's deeper automation remains unverified behind its required real-details form.
+The initial live browser check exercised English menu -> Hindi -> withdrawal subtopic -> automatic USDT timing answer, then changed that same answer to Bengali and back to Hindi. The answer, guide link, consent/privacy boundary and six language choices rendered correctly. The original screenshot also shows a WhatsApp chat link on the left; the owner subsequently requested removal of that separate floating icon. Public proof of the initial flow: bdfx-multilingual-chat-live-20261021.jpg. This is a guided automatic support bot, not an assertion that a live human agent or a WhatsApp business automation account is connected. WinproFX's deeper automation remains unverified behind its required real-details form.
 
 Identity normalization also handles country-appropriate leading-zero variants via libphonenumber-js. Ambiguous old local numbers without a country code are reserved for support review rather than allowing a potentially duplicate client; an unrelated international number with the same local digits can consequently need support. No existing customer identity is migrated, merged or deleted. The duplicate rule concerns client logins; existing MT5-account and IB behavior is retained.
 
