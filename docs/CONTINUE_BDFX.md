@@ -2,6 +2,16 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
+## Active follow-up — mobile identity and multilingual chatbot
+
+The owner asked for mobile OTP in addition to the existing email OTP and to prevent a second client login with the same email OR phone, then explicitly selected **WhatsApp**. The owner also requested a WinproFX-style multilingual chatbot and repeated that request while implementation was underway. Preserve both goals; neither cancels the other. No new login/approval prompt is authorized or required for the code work.
+
+Implementation now includes canonical new email/phone identities, legacy format matching, partial unique indexes for race protection, server-bound email -> WhatsApp -> client activation -> existing Veriff, hashed codes/tokens, expiry/attempt/resend limits, consent and a compatible email-only rollout. The existing Teleobi adapter is hardened and requires the actual BDFX authentication template in configuration; an old hard-coded ID is not proof of approval. **Do not claim live WhatsApp delivery until the provider is actually configured and a permitted verification succeeds.** The feature flag stays off until that dependency is satisfied, preserving email signup. Backend runbook: docs/mobile-registration.md.
+
+The public WinproFX widget showed a LiveChat greeting and required enquiry form with five categories. Its site offers ten languages, but choosing Hindi left the chat form in English. No contact details or messages were sent. Deeper automation and chatbot language support are not verified. BDFX now has an original four-stage guided flow with six complete languages, seven topics and fourteen answers; it uses existing contact/ticket links and does not pretend a live agent is connected. See docs/chatbot-flow.md. The roadmap now has 24 points.
+
+Pre-publication checks: 125 backend tests and 24 frontend tests passed; final build and publication outcomes must be added after verification. Tests use synthetic stores/provider mocks and send no real OTP, WhatsApp message or email. Existing Veriff/UAE/document restrictions, country rules, retained payment configuration and working platform are preserved. No existing customer merge, deletion or identity backfill is performed. The pending-registration TTL is extended only for unverified drafts to allow both OTP stages; verified users are excluded.
+
 ## Current production state — verified 21 October 2026
 
 The latest owner instruction is to retain exactly RameePay INR, RameePay Crypto and Cregis Crypto, close TrustPay24 and keep DigiPay closed. The payment change is scoped to preventing duplicate credits while preserving retained gateway configuration and calculations.
