@@ -29,6 +29,21 @@ New ticket notifications persist queue state and retry team email up to three ti
 
 GA4 is prepared but disabled pending verified property configuration. Optional analytics requires explicit visitor consent; manual public pageviews use fixed allowlisted paths. Lead and signup events occur after successful server confirmation and do not carry form values or private URLs. Existing Meta Pixel behavior was preserved, not certified.
 
+## Pending-point follow-up — 21 October 2026
+
+The user requested pending work, installed Gmail and clarified the final payment scope: keep **RameePay INR, RameePay Crypto and Cregis Crypto**; DigiPay remains closed and TrustPay24 must be closed. Preserve the retained gateways' existing configuration and calculations. Payment security work is limited to preventing double credits.
+
+- Follow-up code adds a persistent shared deposit claim around the three retained callback paths and reconciliation. Majority/journaled writes and verification of the existing full unique orderid index protect the claim. Repeated/concurrent calls and successful legacy orders cannot submit another automatic credit. Ambiguous MT5 replies/save failures remain locked for manual reconciliation; claims must never be cleared based only on age.
+- The frontend shows exactly the three retained options. DigiPay/TrustPay24 deposit/callback handlers and the unused TruePay9 callback return HTTP 410. Reconciliation skips closed providers and retains their historic records for owner review.
+- Active provider configuration, URLs, keys, payload/encryption formats, conversions, minimums, charges and Cregis partial/top-up business logic are preserved. The abandoned broader Cregis re-query/signature redesign is not part of this change. Do not claim all provider authentication was certified.
+- Full frontend build and 18 frontend tests pass. **102 backend tests pass**. Publication/deployment outcome is recorded below after it succeeds. Every payment call in tests is mocked; no live financial transaction or callback was sent.
+- An hourly GitHub Actions health monitor is prepared. It checks backend/database readiness and the public website, creates/updates one bot alert issue on failure and closes it on recovery. Activation, an actual run and notification delivery require verification after publication.
+- Gmail metadata evidence: two recent administrator OTP messages are currently in Trash; three older client/broker OTPs, a welcome email and an IB approval email are in Spam. These examples pass SPF/DKIM/DMARC for Gmail. Headers show Gmail rewrote the requested domain From to the authenticated Gmail sender. Receipt/authentication is confirmed for these examples, not inbox placement or domain authentication for billiondollarfx.com. No codes/bodies were copied, no email was generated and mailbox state was not changed. Consumer Gmail sender fallback is implemented; a verified domain sender still requires the real provider configuration.
+- GitHub repository access works. A separate Render dashboard secure login reached GitHub authentication and was declined; do not repeat it unless the user asks. The Render health-path setting remains blocked by dashboard/API access.
+- Scoped MongoDB discovery found Project 0 (`6ad7f5e9d7869265e2a7db73`), but cluster listing said it is a Cloud Manager group rather than an Atlas group. Production database backup access is still unverified. No replacement cluster, paid upgrade or restore was created.
+
+Backend details: docs/payment-callback-security.md and docs/production-monitoring.md in desertacredxb/Billion_Doller_Backend. Actual backup restore, verified domain email/inbox placement, GA4/GSC property configuration, WhatsApp templates/consent, provider WebTrader availability, signed-in test sessions and country-policy decisions remain dependencies.
+
 ## Required media are now committed
 
 All four files are included in the implementation commit, and GitHub blob SHAs match the local files:
@@ -61,9 +76,9 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 1. **SMTP/inbox placement:** inspect actual received mail headers and verified domain/provider settings before changing SPF/DKIM/DMARC or claiming spam resolution. See `docs/operations-readiness.md` for SMTP configuration.
 2. **GA4/Search Console:** obtain access to the existing BDFX properties, verify the actual measurement ID and disable enhanced automatic measurement before enabling the manual integration. Existing Google meta verification is not ownership/indexing proof. Do not invent IDs or rankings.
 3. **WhatsApp automation:** verify the real BDFX business provider, approved templates and consent/opt-out setup. Current chat links are not transactional automation. No WATI plugin was found in the directory search.
-4. **Backups/alerts:** the user installed MongoDB Atlas during this turn. The connected account returned no projects and no clusters. Access to the existing BDFX Atlas project is still needed; do not create a replacement database. Render service `srv-d39uut0dl3ps73aiomjg`, workspace `tea-cvptm7adbo4c7396cigg`, has empty HTTP healthCheckPath and default notifyOnFail. Backup/restore and actual alert delivery are unverified. No Render CLI credentials are present.
+4. **Backups/alerts:** scoped discovery found Project 0, but cluster listing identified it as a Cloud Manager group rather than an accessible Atlas project. Access to the existing production project and backup operations is still needed; do not create a replacement database. An hourly GitHub health monitor is prepared in the backend follow-up. Render service `srv-d39uut0dl3ps73aiomjg`, workspace `tea-cvptm7adbo4c7396cigg`, has empty HTTP healthCheckPath and default notifyOnFail. Backup/restore and actual alert delivery are unverified. No Render CLI credentials are present.
 5. **Provider WebTrader:** verify availability with the actual provider. Keep official desktop/mobile MT5 alternatives; do not substitute another terminal or create a real financial account for testing.
-6. **Payment callbacks:** source review found no visible provider-signature verification before state mutation in the inspected Cregis/Truepay9 handlers. Ramee/crypto encryption must not be assumed to authenticate every callback. No forged callback was sent and payment code was not changed. Provider specs and a mocked/sandbox financial reconciliation review are required. See `docs/operations-readiness.md`.
+6. **Payment callbacks:** the owner narrowed this to duplicate-credit protection for RameePay INR/Crypto and Cregis Crypto. The shared atomic claim is implemented and mocked tests exercise all three callbacks. Broader provider authentication remains unverified and must not be silently redesigned. DigiPay and TrustPay24 remain closed. See backend docs/payment-callback-security.md.
 7. **Country eligibility:** preserve legacy rules, including the existing Pakistan restriction, until business review. Do not add UAE marketing pages or invent country-specific legal availability.
 
 ## Next actions for remaining setup
@@ -78,3 +93,5 @@ For publication, Git CLI read access works but CLI push credentials are unavaila
 - Backend: `/workspace/scratch/3d0754b3c2e6/Billion_Doller_Backend`
 
 Use CUA for browser interaction. Browser localhost cannot reach the executor's isolated network. Never enter authentication credentials or OTPs through ordinary browser APIs; use the secure handoff if needed. If these workspaces expire, clone the repositories and check out the improvement branch.
+
+Owner instruction: keep only RameePay INR, RameePay Crypto and Cregis Crypto. DigiPay and TrustPay24 are closed; do not reactivate them.

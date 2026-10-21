@@ -10,7 +10,7 @@ Requested implementation order: complete and verify each item before continuing 
 | 4 | MT5 downloads, WebTrader and setup instructions | Official mobile/store/download links and setup guide implemented; provider WebTrader availability remains unverified (sandbox HTTP 503) |
 | 5 | Consistent account offering and pricing | Live with supplied Liquid/$50/up to 1:500/commission-free/swap-free terms |
 | 6 | Unified IB application and referral journey | Live: public entry, post-verification IB navigation, secured limited referrals and input-based earnings estimate |
-| 7 | OTP email delivery | Mailer hardening and SMTP readiness implemented; actual inbox placement and domain alignment remain unverified |
+| 7 | OTP email delivery | Mailer hardening and sender fallback implemented; received Gmail headers inspected; older OTPs are in Spam, so inbox placement/domain sending setup remain open |
 | 8 | UAE restriction content | Public eligibility and footer updated; other existing country restrictions need business review |
 | 9 | Withdrawal information and support escalation | Live: USDT 1–4 hour information and escalation guide; public help page and runtime checks passed |
 | 10 | Blog, sitemap and page SEO | Live: backend blog storage, scheduled visibility, published SSR, unique metadata/canonicals, sitemap and private noindex rules |
@@ -22,7 +22,7 @@ Requested implementation order: complete and verify each item before continuing 
 | 16 | Support ticket experience | Live: inline validation, references, accessible conversation dialog, reply refresh and retry-safe writes; tests pass; real tickets not generated |
 | 17 | Help centre | Live; account/verification/MT5/payment/IB Help Centre opened and answer expansion verified |
 | 18 | Administrator two-factor sign-in and audit history | Live: owner/manager logins, per-address OTP, scoped permissions, immediate revocation and owner-only activity history |
-| 19 | Failure alerts, database backups and restore verification | Health endpoint verified; Render HTTP health path unset; connected Atlas account exposes no projects/clusters; backup/restore and alert delivery remain unverified |
+| 19 | Failure alerts, database backups and restore verification | Hourly GitHub health monitor prepared; Render HTTP health path unset; discovered project is a Cloud Manager group, not verified production Atlas access; backup/restore and alert delivery remain open |
 | 20 | Form validation, errors and confirmations | Live: support/server validation, duplicate-submit handling and registration/contact inline confirmations; no real form submission generated |
 | 21 | Consistent BDFX branding and original assets | Live: homepage claim cleanup, original market information cards and Education/News content; public content checks passed |
 | 22 | Daily business report | Live admin report with Dubai dates, registration/account counts, payment-status counts and work queues; excludes mixed-currency monetary totals |
