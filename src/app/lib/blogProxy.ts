@@ -5,7 +5,7 @@ import { requireAdmin } from "./adminAuth";
 export async function proxyBlogRequest(request: Request, path = "") {
   const method = request.method;
   const query = new URL(request.url).searchParams;
-  if (method !== "GET" || !path && query.get("status") !== "published") {
+  if (method !== "GET" || path === "/automation" || !path && query.get("status") !== "published") {
     const denied = await requireAdmin(request);
     if (denied) return denied;
   }
