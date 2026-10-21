@@ -4,7 +4,7 @@ import MarketingVideo from "../../../components/MarketingVideo";
 
 import { authenticatedFetch } from "../../../lib/apiClient";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Logo from "../../../assets/bdfx.gif";
@@ -17,6 +17,8 @@ import { Eye, EyeOff } from "lucide-react";
 // Production onboarding collects the details required by the backend's Veriff policy.
 // The backend remains authoritative for enrollment and every approval decision.
 const automaticKyc = process.env.NEXT_PUBLIC_VERIFF_ENABLED !== "false";
+const apiBase = (process.env.NEXT_PUBLIC_API_BASE || "https://billion-doller-backend.onrender.com").replace(/\/+$/, "");
+type RegistrationOptions = { mobileOtpRequired: boolean; registrationAvailable: boolean };
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -35,10 +37,16 @@ export default function SignUpPage() {
     confirmPassword: "",
     referralCode: "",
     agree: false,
+    whatsappOtpConsent: false,
   });
 
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"form" | "otp">("form");
+  const [step, setStep] = useState<"form" | "email" | "mobile">("form");
+  const [registrationOptions, setRegistrationOptions] = useState<RegistrationOptions | null>(null);
+  const [optionsError, setOptionsError] = useState(false);
+  const [registrationToken, setRegistrationToken] = useState("");
+  const [maskedPhone, setMaskedPhone] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const submitLock = useRef(false);
   const [feedback, setFeedback] = useState<{ success: boolean; text: string } | null>(null);
@@ -46,6 +54,29 @@ export default function SignUpPage() {
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const loadOptions = useCallback(async (signal?: AbortSignal) => {
+    setOptionsError(false);
+    try {
+      const response = await fetch(`${apiBase}/api/auth/registration-options`, { cache: "no-store", signal });
+      // Allows the frontend to be released before the matching backend.
+      if (response.status === 404) { setRegistrationOptions({ mobileOtpRequired: false, registrationAvailable: true }); return; }
+      if (!response.ok) throw new Error("Unavailable");
+      const data = await response.json();
+      setRegistrationOptions({ mobileOtpRequired: data.mobileOtpRequired === true, registrationAvailable: data.registrationAvailable === true });
+    } catch { if (!signal?.aborted) setOptionsError(true); }
+  }, []);
+  useEffect(() => {
+    const abort = new AbortController();
+    void loadOptions(abort.signal);
+    return () => abort.abort();
+  }, [loadOptions]);
+  const cooldownActive = resendCooldown > 0;
+  useEffect(() => {
+    if (!cooldownActive) return;
+    const interval = setInterval(() => setResendCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => clearInterval(interval);
+  }, [cooldownActive]);
 
   useEffect(() => {
     const refCode = searchParams?.get("ref");
@@ -59,6 +90,7 @@ export default function SignUpPage() {
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
+    if (submitLock.current) return;
     const { name, value, type } = e.target;
 
     if (type === "checkbox") {
@@ -92,6 +124,9 @@ export default function SignUpPage() {
     if (submitLock.current) return;
     setFeedback(null);
 
+    if (!registrationOptions?.registrationAvailable) return setFeedback({ success: false, text: "Registration is temporarily unavailable. Please try again shortly." });
+    if (registrationOptions.mobileOtpRequired && !formData.whatsappOtpConsent) return setFeedback({ success: false, text: "Please agree to receive your verification code on WhatsApp." });
+
     if (!formData.agree)
       return setFeedback({ success: false, text: "Please accept the terms and conditions." });
     if (formData.password !== formData.confirmPassword)
@@ -117,6 +152,7 @@ export default function SignUpPage() {
 
     const payload = {
       ...formData,
+      email: formData.email.trim().toLowerCase(),
       phone: fullPhoneNumber, // Send full phone number including country code
     };
 
@@ -124,7 +160,7 @@ export default function SignUpPage() {
       submitLock.current = true;
       setLoading(true);
       const res = await authenticatedFetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/register`,
+        `${apiBase}/api/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -135,8 +171,12 @@ export default function SignUpPage() {
       const data = await res.json();
       if (!res.ok) return setFeedback({ success: false, text: data.message || "Unable to register. Please try again." });
 
-      setFeedback({ success: true, text: "A verification code has been sent to your email. Check Inbox and Spam, and use the newest code." });
-      setStep("otp");
+      setRegistrationToken(typeof data.registrationToken === "string" ? data.registrationToken : "");
+      setMaskedPhone(data.maskedPhone || "");
+      setFormData(current => ({ ...current, email: payload.email, password: "", confirmPassword: "" }));
+      setResendCooldown(60);
+      setFeedback({ success: data.emailSent !== false, text: data.emailSent === false ? data.message : "A verification code has been sent to your email. Check Inbox and Spam, and use the newest code." });
+      setStep("email");
     } catch (error) {
       console.error(error);
       setFeedback({ success: false, text: "Unable to register. Please check your connection and try again. Your details have been kept." });
@@ -155,18 +195,30 @@ export default function SignUpPage() {
       submitLock.current = true;
       setLoading(true);
       const res = await authenticatedFetch(
-        `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-otp`,
+        `${apiBase}/api/auth/${step === "mobile" ? "registration/verify-mobile" : "verify-otp"}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: formData.email, otp }),
+          body: JSON.stringify({ email: formData.email, otp, ...(registrationToken ? { registrationToken } : {}) }),
         },
       );
 
       const data = await res.json();
-      if (!res.ok) return setFeedback({ success: false, text: data.message || "The code could not be verified. Check the newest email code and try again." });
+      if (!res.ok) return setFeedback({ success: false, text: data.message || "The code could not be verified. Check the newest code and try again." });
+
+      if (data.mobileRequired === true && !data.token) {
+        setStep("mobile");
+        setOtp("");
+        setMaskedPhone(data.maskedPhone || maskedPhone);
+        setResendCooldown(data.retryAfterSeconds || 60);
+        setFeedback({ success: data.phoneSent === true, text: data.message || "Email verified. Enter your WhatsApp verification code." });
+        return;
+      }
+      if (typeof data.token !== "string" || !data.token) return setFeedback({ success: false, text: "Verification is not complete. Please try again." });
 
       trackConversion("sign_up");
+      setRegistrationToken("");
+      setOtp("");
 
       if (data.kycRequired) {
         localStorage.setItem("bdfx_onboarding_intent", searchParams?.get("intent") === "ib" ? "ib" : "client");
@@ -185,6 +237,24 @@ export default function SignUpPage() {
       submitLock.current = false;
       setLoading(false);
     }
+  };
+
+  const resendCode = async () => {
+    if (submitLock.current || resendCooldown || !registrationToken) return;
+    submitLock.current = true;
+    setLoading(true);
+    setFeedback(null);
+    try {
+      const response = await fetch(`${apiBase}/api/auth/registration/${step === "mobile" ? "send-mobile" : "resend-email"}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ registrationToken }),
+      });
+      const data = await response.json();
+      setResendCooldown(data.retryAfterSeconds || 60);
+      setFeedback({ success: response.ok, text: data.message || "Please use the newest verification code." });
+    } catch {
+      setResendCooldown(60);
+      setFeedback({ success: false, text: "Unable to resend the code. Please check your connection and try again." });
+    } finally { submitLock.current = false; setLoading(false); }
   };
 
   const handelredirect = () => router.push("/login");
@@ -217,6 +287,8 @@ export default function SignUpPage() {
         </div>
 
         {feedback && <p role={feedback.success ? "status" : "alert"} className={`mb-5 rounded-lg border p-4 text-sm ${feedback.success ? "border-emerald-500 text-emerald-100" : "border-red-400 text-red-100"}`}>{feedback.text}</p>}
+        {step === "form" && optionsError && <p role="alert" className="mb-4 text-sm">Registration could not be loaded. <button type="button" onClick={() => void loadOptions()} className="underline">Try again</button></p>}
+        {step === "form" && registrationOptions?.registrationAvailable === false && <p role="alert" className="mb-4 text-sm">New registration is temporarily unavailable. Please try again shortly.</p>}
         {step === "form" ? (
           <form
             onSubmit={handleClick}
@@ -412,12 +484,16 @@ export default function SignUpPage() {
                 .
               </label>
             </div>
+            {registrationOptions?.mobileOtpRequired && <label className="md:col-span-2 flex items-start gap-2 text-sm text-gray-300">
+              <input type="checkbox" name="whatsappOtpConsent" checked={formData.whatsappOtpConsent} onChange={handleChange} required className="mt-1" />
+              <span>Send my mobile verification code on WhatsApp. This verifies my number and does not subscribe me to marketing.</span>
+            </label>}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !registrationOptions?.registrationAvailable || optionsError}
               className="md:col-span-2 bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 rounded-full cursor-pointer"
             >
-              {loading ? "Processing..." : "SIGN UP"}
+              {loading ? "Processing..." : !registrationOptions && !optionsError ? "Loading..." : "SIGN UP"}
             </button>
             <Button
               text="BACK TO LOGIN"
@@ -431,17 +507,18 @@ export default function SignUpPage() {
             className="grid grid-cols-1 gap-4 max-w-lg mx-auto"
           >
             <p className="text-white text-sm mb-2">
-              Enter the newest verification code sent to your email
+              {step === "mobile" ? `Email verified. Enter the newest WhatsApp code sent to ${maskedPhone || "your registered mobile number"}.` : "Enter the newest verification code sent to your email."}
             </p>
             <input
               type="text"
-              aria-label="Email verification code"
+              aria-label={step === "mobile" ? "WhatsApp verification code" : "Email verification code"}
               autoComplete="one-time-code"
               inputMode="numeric"
               maxLength={6}
-              placeholder="Enter OTP"
+              pattern="[0-9]{6}"
+              placeholder={step === "mobile" ? "WhatsApp OTP" : "Email OTP"}
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               className="input mb-5"
               required
             />
@@ -451,9 +528,13 @@ export default function SignUpPage() {
               disabled={loading}
                 className="bg-[var(--primary)] hover:bg-[#f3d089] text-white font-semibold py-2 px-4 rounded-full w-fit cursor-pointer"
               >
-                {loading ? "Verifying..." : "VERIFY OTP"}
+                {loading ? "Verifying..." : step === "mobile" ? "VERIFY MOBILE" : "VERIFY EMAIL"}
               </button>
             </div>
+            {registrationToken && <button type="button" onClick={resendCode} disabled={loading || resendCooldown > 0} className="text-sm text-[#e3c569] underline disabled:opacity-50">
+              {resendCooldown ? `Resend code in ${resendCooldown}s` : `Resend ${step === "mobile" ? "WhatsApp" : "email"} code`}
+            </button>}
+            <p className="text-xs text-gray-300">Each code expires in 5 minutes. Complete registration within 15 minutes and never share your codes.</p>
           </form>
         )}
       </div>
