@@ -3,7 +3,6 @@ import Analytics from "../../components/Analytics";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AOSWrapper from "../../components/AOSWrapper";
-import WhatsAppButton from "../../components/WhatsappButton";
 import SupportGuide from "../../components/chat/SupportGuide";
 import { SITE_ORIGIN } from "../../lib/seo";
 
@@ -84,7 +83,6 @@ export default function RootLayout({
 
         </AOSWrapper>
 
-        <WhatsAppButton />
         <SupportGuide />
         <Analytics />
         {/* <AIChat /> */}
