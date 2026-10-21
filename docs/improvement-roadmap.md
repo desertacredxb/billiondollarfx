@@ -14,7 +14,7 @@ Requested implementation order: complete and verify each item before continuing 
 | 8 | UAE restriction content | Public eligibility and footer updated; other existing country restrictions need business review |
 | 9 | Withdrawal information and support escalation | Live: USDT 1–4 hour information and escalation guide; public help page and runtime checks passed |
 | 10 | Blog, sitemap and page SEO | Live: backend blog storage, scheduled visibility, published SSR, unique metadata/canonicals, sitemap and private noindex rules |
-| 11 | GA4/Search Console and conversion tracking | Consent-based GA4 integration and success-only events implemented, disabled pending a verified property; Search Console access remains unverified |
+| 11 | GA4/Search Console and conversion tracking | Search Console ownership verified and sitemap processed successfully (28 discovered pages); consent-based GA4/events implemented but disabled pending the real BDFX property and required owner business details |
 | 12 | Mobile media performance and expired promotions | Live: expired offers archived; optimized videos/posters with reduced-motion/data-saver playback; media HTTP 200 and optimized lengths verified |
 | 13 | Calculators and calendar tools | IB/Forex calculators, daily reference converter and economic calendar implemented; calculation/error tests pass; live proxy and browser conversion verified with provider date |
 | 14 | Client onboarding checklist | Backend and checklist UI live; first deposit derives from own successful orders; signed-in client journey not exercised |
@@ -33,4 +33,4 @@ Continuation details and unresolved setup dependencies: see [CONTINUE_BDFX.md](C
 
 Current provider/configuration dependencies and unresolved payment callback review: [operations-readiness.md](operations-readiness.md). User approved both merges; Render backend and Vercel frontend releases are verified live. Actual provider delivery, signed-in customer journeys and unresolved setup remain qualified above.
 
-Latest production: frontend `aa57af0` (Vercel succeeded), backend `d54c397` (Render `dep-dbc0gglg1s2s7389oqm0` live). Retain only RameePay INR, RameePay Crypto and Cregis Crypto; DigiPay/TrustPay24 are closed. Shared duplicate-credit guard deployed; 103 backend and 18 frontend tests passed.
+Latest production: frontend `cbb09b3` (Vercel `37rARNFDuWqtkGVDScd1GTQsmKEr` succeeded), backend `d54c397` (Render `dep-dbc0gglg1s2s7389oqm0` live). Search Console verification and the 28-page sitemap succeeded. Retain only RameePay INR, RameePay Crypto and Cregis Crypto; DigiPay/TrustPay24 are closed. Shared duplicate-credit guard deployed; 103 backend and 18 frontend tests passed. The Search Console tag release also passed the production build and TypeScript.

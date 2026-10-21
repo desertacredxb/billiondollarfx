@@ -20,7 +20,9 @@ GA4 is disabled unless both NEXT_PUBLIC_GA4_ENABLED=true and a valid NEXT_PUBLIC
 
 After enabling the verified property, optional analytics requires the visitor's explicit choice. Public pageviews use an allowlist. generate_lead occurs after a persisted contact confirmation; sign_up occurs after successful email verification, not when OTP is requested. No monetary conversion value is invented. Verify consent denial/revocation and the events in DebugView before marking key events in GA4. Preserve the existing Meta Pixel separately; this change does not certify its consent handling or enhanced matching settings.
 
-The existing Google site-verification meta tag is retained. A second tag supplied by Search Console for the signed-in owner's URL-prefix property `https://www.billiondollarfx.com/` is added alongside it. Live ownership verification and sitemap submission must be completed after deployment; the source tag alone is not evidence that these are complete. The accessible Analytics account currently lists CFT's Close Friends Traders and Trade Circle properties, so neither measurement ID may be reused for BDFX.
+The existing Google site-verification meta tag is retained. A second tag supplied by Search Console for the signed-in owner's URL-prefix property `https://www.billiondollarfx.com/` is live alongside it. Ownership verification succeeded on 21 October 2026. The submitted sitemap was processed successfully with 28 discovered pages and 0 videos. The XML returns HTTP 200 with the expected namespace; robots.txt permits it and advertises the same URL. Google's initial Couldn't fetch state resolved during the same session. Sitemap discovery does not guarantee indexing or ranking.
+
+The accessible Analytics account currently lists CFT's Close Friends Traders and Trade Circle properties, so neither measurement ID may be reused for BDFX. A separate BDFX account/property form was prepared with optional data sharing disabled, Dubai reporting time and USD; setup reached the required business-details form. No new account/property was created, business size invented, terms accepted or measurement ID enabled. Hostinger secure sign-in was declined, and the owner then instructed that no more approvals be requested. Leave unverified provider setup pending and do not repeat authentication prompts.
 
 ## WhatsApp
 
@@ -36,7 +38,7 @@ Once the existing BDFX Atlas project is accessible, inspect the cluster tier, ba
 
 ## Existing provider WebTrader
 
-The configured provider URL remains https://webterminal.ascendsmarkets.com/terminal. A sandbox request returned HTTP 503; this is limited evidence from that environment, not a confirmed global outage. Keep the official desktop/mobile MT5 access and support alternatives available. No trading account was created or accessed for tests.
+The configured provider URL remains https://webterminal.ascendsmarkets.com/terminal. A sandbox request returned HTTP 503, and a later cloud-browser visit displayed an upstream remote connection failure. These are limited observations from those environments, not a confirmed global outage. Keep the official desktop/mobile MT5 access and support alternatives available. No trading account was created or accessed for tests.
 
 ## Payment callback review — unresolved priority
 
