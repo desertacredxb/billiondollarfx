@@ -19,6 +19,8 @@ interface IBRequest {
   status: "pending" | "approved" | "rejected";
   referralCode?: string;
   commission?: number;
+  statusReason?: string;
+  approvalProvider?: "manual" | "veriff";
 }
 
 interface ClientConnection {
@@ -151,11 +153,14 @@ export default function IBRequestsPage() {
   };
 
   const reject = async (email: string) => {
+    const reason = window.prompt("Give the client a clear rejection reason (10–1000 characters):");
+    if (reason === null) return;
+    if (reason.trim().length < 10 || reason.trim().length > 1000) { alert("Please enter a clear reason between 10 and 1000 characters."); return; }
     setIsReject(true);
     try {
       const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/reject`,
-        { method: "PUT" }
+        { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: reason.trim() }) }
       );
       const data = await res.json();
       alert(data.message);
@@ -654,6 +659,7 @@ export default function IBRequestsPage() {
               </>
             )}
 
+            {selectedRequest.status !== "approved" && <p className="mt-4 rounded-lg border border-gray-700 p-3 text-gray-300"><strong>Application reason:</strong> {selectedRequest.statusReason || (selectedRequest.status === "rejected" ? "This earlier application was rejected. The client can apply again to request a fresh eligibility check." : "Awaiting identity verification or application review.")}</p>}
             <div className="flex justify-end gap-3 mt-6">
               {selectedRequest.status !== "approved" && (
                 <Button
@@ -661,10 +667,11 @@ export default function IBRequestsPage() {
                     await approve(selectedRequest.email);
                     setSelectedRequest(null);
                   }}
-                  text={isApprove ? "Approving..." : "Approve"}
+                  disabled={isApprove || isReject}
+                  text={isApprove ? "Approving..." : selectedRequest.approvalProvider === "veriff" ? "Approve using verified KYC" : "Approve"}
                 />
               )}
-              {selectedRequest.status !== "rejected" && (
+              {selectedRequest.status !== "rejected" && selectedRequest.approvalProvider !== "veriff" && (
                 <Button
                   onClick={async () => {
                     await reject(selectedRequest.email);
