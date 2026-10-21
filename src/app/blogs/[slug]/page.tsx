@@ -10,6 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { IBlog } from "@/app/models/Blogs";
 import { publishedBlog, publishedBlogs } from "@/app/lib/blogApi";
+import { blogAuthor, blogResourceLinks } from "../../../../lib/blogSeo";
 import {
   Calendar,
   User,
@@ -79,7 +80,7 @@ export async function generateMetadata({
     title: `${title} | ${SITE_NAME}`,
     description,
     keywords,
-    authors: [{ name: blog.author || SITE_NAME }],
+    authors: [{ name: blogAuthor(blog.author).name }],
     alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
@@ -92,7 +93,7 @@ export async function generateMetadata({
       modifiedTime,
       section: blog.category,
       tags: blog.tags,
-      authors: [blog.author || SITE_NAME],
+      authors: [blogAuthor(blog.author).name],
       images: [
         {
           url: blog.coverImage,
@@ -131,21 +132,19 @@ export default async function BlogDetails({ params }: PageProps) {
 
   const canonical = blogCanonicalUrl(blog.slug, blog.canonicalUrl);
   const articleText = plainText(blog.content);
+  const resourceLinks = blogResourceLinks(blog);
 
   const blogSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
-    headline: (blog.metaTitle || blog.title).slice(0, 110),
+    headline: blog.title,
     description: blog.metaDescription || blog.shortDescription,
-    image: [blog.coverImage],
+    image: [new URL(blog.coverImage, SITE_URL).toString()],
     datePublished: new Date(blog.publishedAt || blog.createdAt).toISOString(),
     dateModified: new Date(blog.updatedAt || blog.createdAt).toISOString(),
-    author: {
-      "@type": "Person",
-      name: blog.author || SITE_NAME,
-    },
+    author: blogAuthor(blog.author),
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
@@ -226,7 +225,7 @@ export default async function BlogDetails({ params }: PageProps) {
               </span>
               <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-[#927948]" />
-                {blog.author || "Admin Panel"}
+                {blogAuthor(blog.author).name}
               </span>
             </div>
           </div>
@@ -287,6 +286,11 @@ export default async function BlogDetails({ params }: PageProps) {
         >
           <div className="flow-root" dangerouslySetInnerHTML={{ __html: blog.content }} />
         </article>
+
+        <section aria-labelledby="related-learning" className="mb-10 rounded-2xl border border-[#1e293b] bg-[#121829] p-6">
+          <h2 id="related-learning" className="text-lg font-bold text-white">Continue learning</h2>
+          <ul className="mt-3 space-y-2 text-sm text-[#c3aa76]">{resourceLinks.map(link => <li key={link.href}><Link href={link.href} className="underline underline-offset-4">{link.label}</Link></li>)}</ul>
+        </section>
 
         {/* Tag Pill Chips */}
         {blog.tags && blog.tags.length > 0 && (

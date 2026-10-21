@@ -3,6 +3,7 @@
 import { authenticatedFetch } from "../../../lib/apiClient";
 
 import { SITE_URL } from "@/app/lib/blogPublishing";
+import { blogAuthor } from "../../../lib/blogSeo";
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -98,10 +99,7 @@ export default function BlogList({ initialBlogs = [], initialError = false }: { 
         image: blog.coverImage,
         url: `${SITE_URL}/blogs/${blog.slug}`,
         datePublished: blog.publishedAt || blog.createdAt,
-        author: {
-          "@type": "Person",
-          name: blog.author || "Admin",
-        },
+        author: blogAuthor(blog.author),
       },
     })),
   };

@@ -3,6 +3,7 @@
 import { authenticatedFetch } from "../../../../lib/apiClient";
 
 import React, { useState, useEffect } from "react";
+import BlogAutomationPanel from "./component/BlogAutomationPanel";
 import { useRouter } from "next/navigation";
 import {
   FileText,
@@ -34,6 +35,7 @@ interface Blog {
   tags: string[];
   faqs: FAQ[];
   createdAt: string;
+  autoPublish?: boolean;
 }
 
 export default function AdminBlogManagement() {
@@ -175,6 +177,8 @@ export default function AdminBlogManagement() {
         </div>
       )}
 
+      <BlogAutomationPanel onChange={fetchBlogs} />
+
       {/* Control Tools Panel */}
       <div className="max-w-7xl mx-auto bg-[#121829] border border-[#1e293b] rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-center">
         <div className="relative w-full md:flex-1">
@@ -277,6 +281,7 @@ export default function AdminBlogManagement() {
                             <option value="archived">Archived</option>
                           </select>
                         </div>
+                        {blog.autoPublish && blog.status === "draft" && <p className="mt-1 text-[11px] text-[#c3aa76]">Weekly publishing queue</p>}
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400 font-medium whitespace-nowrap">
                         {blog.createdAt
