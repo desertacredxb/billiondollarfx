@@ -1,6 +1,15 @@
 # Continue BDFX improvements
 
 
+## New owner request — Website Analytics inside admin
+
+The owner asked to add the GA4 dashboard to the existing BDFX admin panel. The new owner-only **Website Analytics** section at `/website-analytics` has 7/28/90-day selection, users/sessions/pageviews, lead/signup event counts, current 30-minute users, daily views, top public pages and traffic channels. It uses the protected `/api/analytics/report` backend adapter with the official Google Data API SDK. No manager permission is expanded; frontend token routing, noindex headers and server owner checks cover the new route.
+
+**The Google reporting connection remains pending.** Browser Google sign-in/public measurement ID cannot authorize server report access. The owner must specifically approve a dedicated read-only Google reporting identity with Viewer access to BDFX property 559982387 and its credential in the existing Render secret manager before that security-sensitive access is created. No service account/key/grant has been created, no Google browser token extracted and no secret committed. The owner explicitly required **no separate login**: all panel reports use the existing BDFX owner session, with the Google connection handled on the server. No Google sign-in button, iframe or forced external-report redirect is added. Until connected, the panel explicitly says reporting connection required and displays no invented counts. Website consent/tracking and Search Console remain live independently.
+
+The backend adapter has fixed BDFX property/scope/report definitions, public-path filtering, bounded parallel provider calls, 60-second memory cache/deduplication, redacted failures and no-store responses. Missing credentials are a connection state, not zero traffic. Synthetic SDK and signed local HTTP tests cover the calculations, cache, errors and anonymous/client/manager/stale denial. Validation: all 28 frontend tests, 143 backend tests and the frontend production build/TypeScript (75 routes) pass. The actual signed-in production panel/Google reporting receipt cannot be certified before connection. See backend docs/website-analytics.md. This new follow-up does not reopen the three unrelated provider dependencies or change gateway, Veriff, identity, chatbot or trading behavior.
+
+
 ## Latest checkpoint — BDFX GA4 live tracking complete
 
 The owner explicitly confirmed GA4 creation and Google Analytics/Data Processing Terms acceptance on 21 October 2026, then selected **United Arab Emirates** as the account-holder country. The existing wizard progressed through acceptance while retained for owner access; fresh Account details confirms Country of Business United Arab Emirates, all four optional sharing boxes unchecked, and Data Processing Terms accepted on October 21, 2026. Do not request this approval or repeat account creation.

@@ -18,6 +18,7 @@ import {
   Landmark,
   Wallet,
   Newspaper,
+  BarChart3,
 } from "lucide-react";
 import clsx from "clsx";
 import Image from "next/image";
@@ -147,6 +148,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         </Section>
 
         <Section title="Administration">
+          <NavLink href="/website-analytics" label="Website Analytics" icon={BarChart3} pathname={pathname} />
           <NavLink href="/business-report" label="Business Report" icon={LayoutDashboard} pathname={pathname} />
           <NavLink href="/staff-users" label="Staff Users" icon={Users} pathname={pathname} />
           <NavLink href="/activity-log" label="Activity History" icon={Briefcase} pathname={pathname} />
