@@ -4,8 +4,11 @@ export const gaId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "";
 export const analyticsEnabled = process.env.NEXT_PUBLIC_GA4_ENABLED === "true" && /^G-[A-Z0-9]{4,20}$/.test(gaId);
 export const publicAnalyticsPaths = new Set(["/", "/about", "/accounts", "/platform", "/contact", "/help-centre", "/ib-broker", "/education", "/analytical-tools", "/economic-calendar", "/currency-converter", "/currency-calculator", "/forex", "/metals", "/indices", "/commodities", "/crypto", "/oil", "/blogs", "/news", "/cashback", "/career"]);
 declare global { interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void } }
+export function analyticsOriginAllowed() {
+  return typeof window !== "undefined" && window.location.origin === SITE_ORIGIN;
+}
 export function analyticsAllowed() {
-  try { return analyticsEnabled && localStorage.getItem(analyticsConsentKey) === "granted"; } catch { return false; }
+  try { return analyticsEnabled && analyticsOriginAllowed() && localStorage.getItem(analyticsConsentKey) === "granted"; } catch { return false; }
 }
 export function trackConversion(event: "generate_lead" | "sign_up") {
   if (typeof window === "undefined" || !analyticsAllowed()) return;

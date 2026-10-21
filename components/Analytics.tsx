@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { analyticsAllowed, analyticsConsentKey, analyticsEnabled, gaId, publicAnalyticsPaths } from "../lib/analytics";
+import { analyticsAllowed, analyticsConsentKey, analyticsEnabled, analyticsOriginAllowed, gaId, publicAnalyticsPaths } from "../lib/analytics";
 import { SITE_ORIGIN } from "../lib/seo";
 
 export default function Analytics() {
@@ -11,7 +11,10 @@ export default function Analytics() {
   const [consent, setConsent] = useState<"granted" | "denied" | null>(null);
   const [ready, setReady] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [productionOrigin, setProductionOrigin] = useState(false);
   useEffect(() => {
+    if (!analyticsOriginAllowed()) return;
+    setProductionOrigin(true);
     try {
       const value = localStorage.getItem(analyticsConsentKey);
       if (value === "granted" || value === "denied") setConsent(value);
@@ -27,7 +30,7 @@ export default function Analytics() {
     window.gtag?.("consent", "update", { analytics_storage: value, ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
     setConsent(value); setSettings(false);
   }
-  if (!analyticsEnabled) return null;
+  if (!analyticsEnabled || !productionOrigin) return null;
   return <>
     {consent === "granted" && <Script id="bdfx-ga4" src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" onReady={() => {
       if (!analyticsAllowed()) return;

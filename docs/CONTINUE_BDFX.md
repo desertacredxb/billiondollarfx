@@ -1,5 +1,17 @@
 # Continue BDFX improvements
 
+
+## Latest checkpoint — BDFX GA4 account and stream created
+
+The owner explicitly confirmed GA4 creation and Google Analytics/Data Processing Terms acceptance on 21 October 2026, then selected **United Arab Emirates** as the account-holder country. The existing wizard progressed through acceptance while retained for owner access; fresh Account details confirms Country of Business United Arab Emirates, all four optional sharing boxes unchecked, and Data Processing Terms accepted on October 21, 2026. Do not request this approval or repeat account creation.
+
+Created separate **Billion Dollar FX** account **412813918**, property **559982387**, and **Billion Dollar FX Website** web stream **16174197976** for **https://www.billiondollarfx.com**. Actual measurement ID **G-M6FW1X3X75** is verified in both Google's installation snippet and saved stream details. Enhanced measurement is saved **off**. Existing CFT properties were not reused. Dubai/GMT+04:00 reporting, USD, Finance, Small/1–10 staff (7 current) and leads/traffic objectives were retained.
+
+Vercel MCP still returns missing mondusgroup team grant (403); no mapped Vercel CLI is installed. The authorized GitHub deployment path is used for the public configuration in tracked `.env.production` (only two public GA4 values, no secrets). Hosting variables can override these values. A canonical-origin gate prevents the banner, tag loading and conversion dispatch on localhost, preview and lookalike domains. Explicit visitor consent, manual allowlisted public pageviews and fixed conversion metadata remain required. No real account/contact/OTP/payment or saved-chat record is created to test conversions.
+
+All **28 frontend tests** pass. Production build including TypeScript passed using system TLS certificates for this environment's Google Fonts request; the first attempt failed on font TLS and no font/site code was changed. Publication and live GA4 receipt are the remaining checks in this checkpoint; do not claim those verified until the deployment and Analytics UI confirm them. The owner reports Render payment completed; no agent payment was attempted. Render health configuration remains complete and live.
+
+
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
 ## Latest completion checkpoint — correct Render login and HTTP health checks
