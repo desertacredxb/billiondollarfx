@@ -86,6 +86,12 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 
 ## Next actions for remaining setup
 
+### New owner request — point 23: Auto SEO with blogs
+
+The owner requested adding **Auto SEO with blogs** to the improvement points on 21 October 2026 (Dubai time). The roadmap now has 23 points. This new item is pending implementation and extends point 10's live blog storage, scheduled visibility, metadata/canonicals and sitemap foundation.
+
+Scope: original blog topic planning/drafts, scheduled publishing, automatic SEO checks and metadata, Article structured data, relevant internal links and sitemap updates. Reuse the existing system, preserve manually edited content, prevent duplicate topics/slugs/publication, check factual claims and expose publication/failure history to administrators. No frequency or content-generation provider has been selected, and this documentation change does not create articles or scheduled jobs. Do not mark this point live until the actual workflow is implemented and verified; indexing/ranking is not guaranteed.
+
 ### Search Console and mail setup continuation — 21 October 2026
 
 The owner's signed-in Search Console account verified the URL-prefix property `https://www.billiondollarfx.com/` after the new HTML meta tag was deployed alongside the existing tag; preserve both. Google successfully processed the submitted sitemap with 28 discovered pages and 0 videos. Public checks confirm XML HTTP 200, the expected sitemap namespace and an unblocked robots.txt reference to the same URL. The accessible Analytics picker lists only the CFT account with Close Friends Traders and Trade Circle properties; do not connect either unrelated property to BDFX. The new BDFX account/property form is prepared through reporting settings, but no account/property was created or terms accepted because the required business size is not verified. BDFX still needs its own verified property/measurement ID.

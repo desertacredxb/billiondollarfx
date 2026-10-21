@@ -26,6 +26,9 @@ Requested implementation order: complete and verify each item before continuing 
 | 20 | Form validation, errors and confirmations | Live: support/server validation, duplicate-submit handling and registration/contact inline confirmations; no real form submission generated |
 | 21 | Consistent BDFX branding and original assets | Live: homepage claim cleanup, original market information cards and Education/News content; public content checks passed |
 | 22 | Daily business report | Live admin report with Dubai dates, registration/account counts, payment-status counts and work queues; excludes mixed-currency monetary totals |
+| 23 | Auto SEO with blogs | Requested by the owner — pending implementation: original blog planning/drafts, scheduled publishing, automated SEO checks/metadata, relevant internal links, Article structured data and sitemap updates; reuse the existing blog system and prevent duplicate posts |
+
+Point 23 extends point 10's existing blog/SEO foundation. Preserve manually edited content, check factual claims and keep publication/failure history visible to administrators. A publishing frequency and any content-generation provider are not configured by this roadmap update; no articles or automation jobs have been created. Search Console submission/discovery does not guarantee indexing or ranking.
 
 Deploy client authentication headers before enabling backend route enforcement. Verify the frontend's Vercel build and the backend's Render deploy, then perform anonymous access smoke checks without retrieving customer records or creating trades, deposits, or withdrawals.
 
