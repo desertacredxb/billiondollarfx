@@ -10,6 +10,8 @@ import { countriesData } from "@/data/IsoCode";
 interface VerificationStatus {
   enabled: boolean;
   canRetry?: boolean;
+  canEditDetails?: boolean;
+  details?: { fullName: string; address: string; state: string; city: string; postalCode: string };
   approved: boolean;
   status: string;
   message: string;
@@ -36,6 +38,23 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
   const [country, setCountry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [details, setDetails] = useState({ fullName: "", address: "", state: "", city: "", postalCode: "" });
+  const [notice, setNotice] = useState("");
+  const saveDetails = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/details`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(details),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to save details.");
+      setStatus(data); setEditing(false); setNotice("Details saved. You can now continue identity verification.");
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to save details."); }
+    finally { setBusy(false); }
+  };
   const [ibIntent, setIbIntent] = useState(false);
   useEffect(() => { setIbIntent(localStorage.getItem("bdfx_onboarding_intent") === "ib"); }, []);
   const returnToIb = forIb || ibIntent;
@@ -104,6 +123,14 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
       {error && <p role="alert" className="text-red-300">{error}</p>}
       {!status && !error && <p className="text-gray-400">Loading your verification status…</p>}
       {status && !status.enabled && !status.approved && <p className="text-amber-200">Identity verification is temporarily unavailable. Please contact support.</p>}
+      {notice && <p role="status" className="text-sm text-emerald-200">{notice}</p>}
+      {status?.canEditDetails && !editing && <button type="button" disabled={busy} onClick={() => { setDetails(status.details || { fullName: "", address: "", state: "", city: "", postalCode: "" }); setEditing(true); setNotice(""); }} className="rounded-lg border border-[#c6a15b] px-4 py-2 text-[#e7c985] disabled:opacity-50">Edit details as per ID</button>}
+      {editing && <form onSubmit={saveDetails} className="space-y-4 rounded-xl border border-gray-600 p-4">
+        <h2 className="font-semibold">Correct your details as shown on your ID</h2>
+        <p className="text-sm text-gray-300">For changes to email, mobile number, nationality or country of residence, contact WhatsApp support below.</p>
+        {([{ key: "fullName", label: "Full name as on ID", max: 150 }, { key: "address", label: "Address", max: 300 }, { key: "state", label: "State / region", max: 100 }, { key: "city", label: "City", max: 100 }, { key: "postalCode", label: "Postal code", max: 30 }] as const).map(field => <label key={field.key} className="block text-sm"><span>{field.label}</span><input name={field.key} value={details[field.key]} required={field.key === "fullName"} maxLength={field.max} disabled={busy} onChange={event => setDetails(value => ({ ...value, [field.key]: event.target.value }))} className="mt-1 w-full rounded-lg border border-gray-600 bg-[#10151f] p-3" /></label>)}
+        <div className="flex gap-4"><button type="submit" disabled={busy || !status?.canEditDetails} className="rounded-lg bg-[#c6a15b] px-4 py-2 font-semibold text-black disabled:opacity-50">{busy ? "Saving…" : "Save details"}</button><button type="button" disabled={busy} onClick={() => setEditing(false)}>Cancel</button></div>
+      </form>}
       {status?.canRetry && <p className="text-sm text-amber-200">You can try again with your original physical ID. Use clear lighting and make sure your details match the document.</p>}
       {canStart && <>
         <IdentityReadinessNotice />
@@ -118,7 +145,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
           </select>
         </div>
         <p className="text-sm text-gray-400">BDFX does not accept UAE clients or UAE-issued identity documents.</p>
-        <button type="button" onClick={start} disabled={busy || !country || status.status === "creating"}
+        <button type="button" onClick={start} disabled={busy || editing || !country || status.status === "creating"}
           className="rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black disabled:opacity-50">
           {busy ? "Opening verification…" : status.canRetry ? "Try verification again" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Verify"}
         </button>
