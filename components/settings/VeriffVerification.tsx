@@ -9,6 +9,7 @@ import { countriesData } from "@/data/IsoCode";
 
 interface VerificationStatus {
   enabled: boolean;
+  canRetry?: boolean;
   approved: boolean;
   status: string;
   message: string;
@@ -89,7 +90,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
     } finally { setBusy(false); }
   };
 
-  const needsSupport = status && ["declined", "review", "test_approved"].includes(status.status);
+  const needsSupport = status && (["review", "test_approved"].includes(status.status) || (status.status === "declined" && !status.canRetry));
   const identityApproved = status?.approved && (!forIb || status.managedByVeriff);
   const needsIbVerification = forIb && status?.approved && !status.managedByVeriff;
   const canStart = status?.enabled && !identityApproved && !needsSupport;
@@ -103,6 +104,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
       {error && <p role="alert" className="text-red-300">{error}</p>}
       {!status && !error && <p className="text-gray-400">Loading your verification status…</p>}
       {status && !status.enabled && !status.approved && <p className="text-amber-200">Identity verification is temporarily unavailable. Please contact support.</p>}
+      {status?.canRetry && <p className="text-sm text-amber-200">You can try again with your original physical ID. Use clear lighting and make sure your details match the document.</p>}
       {canStart && <>
         <IdentityReadinessNotice />
         <p className="text-sm leading-6 text-gray-400">Continue to Veriff to verify your identity using a supported government-issued ID and selfie. Your account will be approved automatically after a successful verification and BDFX eligibility checks.</p>
@@ -118,10 +120,11 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
         <p className="text-sm text-gray-400">BDFX does not accept UAE clients or UAE-issued identity documents.</p>
         <button type="button" onClick={start} disabled={busy || !country || status.status === "creating"}
           className="rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black disabled:opacity-50">
-          {busy ? "Opening verification…" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Verify"}
+          {busy ? "Opening verification…" : status.canRetry ? "Try verification again" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Verify"}
         </button>
       </>}
       {identityApproved && <Link href={returnToIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{returnToIb ? "Continue to IB application" : "Continue to dashboard"}</Link>}
+      <p className="text-sm text-gray-300">Need more support? Contact <a href="tel:+447999283366" className="text-[#00cfff] underline">+447999283366</a>.</p>
       <div className="flex flex-wrap gap-5 text-sm">
         <button type="button" onClick={() => void refresh()} disabled={busy} className="text-[#00cfff]">Check status</button>
         <Link href="/login" className="text-[#00cfff]">Sign in</Link>
