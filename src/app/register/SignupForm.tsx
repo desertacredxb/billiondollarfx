@@ -1,4 +1,5 @@
 "use client";
+import IdentityReadinessNotice from "../../../components/IdentityReadinessNotice";
 import { trackConversion } from "../../../lib/analytics";
 import MarketingVideo from "../../../components/MarketingVideo";
 
@@ -287,6 +288,7 @@ export default function SignUpPage() {
           </p>
         </div>
 
+        {step === "form" && <IdentityReadinessNotice />}
         {feedback && <p role={feedback.success ? "status" : "alert"} className={`mb-5 rounded-lg border p-4 text-sm ${feedback.success ? "border-emerald-500 text-emerald-100" : "border-red-400 text-red-100"}`}>{feedback.text}</p>}
         {step === "form" && optionsError && <p role="alert" className="mb-4 text-sm">Registration could not be loaded. <button type="button" onClick={() => void loadOptions()} className="underline">Try again</button></p>}
         {step === "form" && registrationOptions?.registrationAvailable === false && <p role="alert" className="mb-4 text-sm">New registration is temporarily unavailable. Please try again shortly.</p>}

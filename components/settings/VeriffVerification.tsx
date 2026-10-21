@@ -1,5 +1,6 @@
 "use client";
 
+import IdentityReadinessNotice from "../IdentityReadinessNotice";
 import { authenticatedFetch } from "../../lib/apiClient";
 
 import { useCallback, useEffect, useState } from "react";
@@ -103,6 +104,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
       {!status && !error && <p className="text-gray-400">Loading your verification status…</p>}
       {status && !status.enabled && !status.approved && <p className="text-amber-200">Identity verification is temporarily unavailable. Please contact support.</p>}
       {canStart && <>
+        <IdentityReadinessNotice />
         <p className="text-sm leading-6 text-gray-400">Continue to Veriff to verify your identity using a supported government-issued ID and selfie. Your account will be approved automatically after a successful verification and BDFX eligibility checks.</p>
         {needsIbVerification && <p className="text-sm text-amber-200">Starting this new check will put your identity verification status back into pending until it completes.</p>}
         <div>
