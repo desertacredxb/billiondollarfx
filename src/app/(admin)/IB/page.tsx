@@ -1,27 +1,12 @@
 "use client";
 
 import { authenticatedFetch } from "../../../../lib/apiClient";
+import { loadIBRequests, type IBApplication as IBRequest } from "../../../../lib/ibRequests";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Button from "../../../../components/Button";
 
-interface IBRequest {
-  _id: string;
-  email: string;
-  existingClientBase: string;
-  offerEducation: string;
-  expectedClientsNext3Months: string;
-  expectedCommissionDirect: string;
-  expectedCommissionSubIB: string;
-  yourShare: number;
-  clientShare: number;
-  status: "pending" | "approved" | "rejected";
-  referralCode?: string;
-  commission?: number;
-  statusReason?: string;
-  approvalProvider?: "manual" | "veriff";
-}
 
 interface ClientConnection {
   name: string;
@@ -66,6 +51,7 @@ export default function IBRequestsPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<IBRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [isApprove, setIsApprove] = useState(false);
   const [isReject, setIsReject] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<IBRequest | null>(
@@ -116,11 +102,10 @@ export default function IBRequestsPage() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const res = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib`);
-      const data = await res.json();
-      setRequests(data);
+      setLoadError("");
+      setRequests(await loadIBRequests());
     } catch (err) {
-      console.error("Error fetching IB requests:", err);
+      setLoadError(err instanceof Error ? err.message : "Unable to load IB requests. Please retry.");
     } finally {
       setLoading(false);
     }
@@ -335,9 +320,10 @@ export default function IBRequestsPage() {
         />
       </div>
 
+      {loadError && <div role="alert" className="mb-4 rounded-lg border border-red-700 p-4"><p className="mb-3">{loadError}</p><Button text={loading ? "Loading..." : "Retry"} disabled={loading} onClick={fetchRequests} /></div>}
       {loading ? (
         <p className="text-gray-400">Loading requests...</p>
-      ) : currentData.length === 0 ? (
+      ) : loadError ? null : currentData.length === 0 ? (
         <p className="text-gray-400 text-center py-10">No IB requests found.</p>
       ) : (
         <div className="rounded-lg border border-[#1f2937] overflow-hidden">
