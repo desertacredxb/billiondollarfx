@@ -73,6 +73,8 @@ export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [refresh, setRefresh] = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const adminSession = useAdminSession();
   const [manualDecision, setManualDecision] = useState<boolean | null>(null);
@@ -112,50 +114,15 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-
-    if (!token) {
-      router.push("/admin-login");
-      return;
-    }
-
-    const fetchUsersWithReferrers = async () => {
-      try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
-        );
-        const usersData = res.data;
-        // console.log(usersData);
-
-        // 🔥 Fetch referred user names in parallel
-        const usersWithRef = await Promise.all(
-          usersData.map(async (user: User) => {
-            if (!user.referralCode) return user;
-
-            try {
-              const refRes = await axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/userByRef/${user.referralCode}`
-              );
-              // console.log(refRes.data.user?.fullName);
-              const referredBy = refRes.data.user?.fullName || "N/A";
-              return { ...user, referredByName: referredBy };
-            } catch (err) {
-              console.error("Error fetching referredBy for", user.email);
-              return { ...user, referredByName: "N/A" };
-            }
-          })
-        );
-
-        setUsers(usersWithRef);
-      } catch (err) {
-        console.error("Failed to fetch users:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsersWithReferrers();
-  }, []);
+    const controller = new AbortController();
+    if (!localStorage.getItem("adminToken")) { router.replace("/admin-login"); return; }
+    setLoading(true); setLoadError("");
+    axios.get<User[]>(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`, { signal: controller.signal, timeout: 15000 })
+      .then(({ data }) => { if (!Array.isArray(data)) throw new Error("Invalid user list"); setUsers(data); })
+      .catch(() => { if (!controller.signal.aborted) setLoadError("Users could not be loaded. Please try again."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [router, refresh]);
 
   // ✅ Apply filter on users
   const filteredUsers = users.filter((u) => {
@@ -307,6 +274,7 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {loadError && <div role="alert" className="mb-4 rounded-lg border border-amber-700 p-4"><p>{loadError}</p><button type="button" onClick={() => setRefresh(value => value + 1)} className="mt-2 underline">Try again</button></div>}
       {loading ? (
         <p className="text-gray-400">Loading users...</p>
       ) : (
