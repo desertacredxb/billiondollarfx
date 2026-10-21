@@ -2,7 +2,21 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
-## Latest pending-work checkpoint — seven-person team and access dependencies
+## Latest access checkpoint — owner reports all logins done
+
+The owner replied **all login done** after the named Render/Google Analytics/Hostinger/Atlas login request. Reuse the resulting sessions; do not ask for the same blanket login approval again. No production application change or deployment was needed in this access-review turn. The seven-person GA4 business size remains confirmed; no new measurement ID or property has been created.
+
+Hostinger is signed in to the owner's account. Both its domain portfolio and actual DNS Zone Editor show no domains, its email area offers purchase plans instead of an existing mailbox, and Account Sharing lists no managed accounts. BDFX DNS/SMTP administration is therefore not available through this login. Do not buy a duplicate plan, create a replacement mailbox or change public DNS from guesses. The actual BDFX domain/mailbox owner account or an existing authorized managed account is needed.
+
+Atlas is signed in, but the only organization/project offered is the previously discovered organization and Project 0 (`6ad7f5e9d7869265e2a7db73`). The Clusters page explicitly offers Build a Cluster and shows no existing deployment. Production backup/restore cannot be configured from this empty project. Do not create a replacement cluster, change production connectivity or purchase an upgrade. Access to the existing production project is needed.
+
+Render secure authentication now succeeded using the Google method selected by the owner. The browser offers only **Sandeep's workspace**, one member/Hobby, workspace `tea-dbcabg0473hc73fk874g`. Opening the existing BDFX service `srv-d39uut0dl3ps73aiomjg` explicitly shows **Access denied / You don't have access**. Its actual production workspace remains `tea-cvptm7adbo4c7396cigg`; the existing connector can still read the service and confirms healthCheckPath is empty, notifyOnFail is default and the current backend is running. This is a resource-permission mismatch after successful login, not another failed authentication. Do not sign out, choose another method, grant access or bypass the denied resource without the relevant owner's instruction. The existing production account/workspace must be identified or authorized access supplied.
+
+Analytics now opens the app at the previously known CFT property/admin URL, but its account/property controls do not load. Visible UI remains a bare Admin screen; browser diagnostics report a failed usersettings request with status 0 / Unknown Error. A fresh canonical Analytics tab and one reload did not recover the controls. Do not describe this as bot detection, a proven Google outage, a verified account inventory or successful BDFX setup. Do not reuse the CFT measurement ID, invent BDFX property details or accept unseen terms. Leave the integration disabled. Setup can resume when the Analytics controls work in this browser.
+
+The actual blockers are now the correct existing BDFX resource accounts/permissions and the Analytics loading error. Ask the owner which account or developer holds the BDFX Hostinger domain/mailbox, production MongoDB project and production Render workspace. Do not request passwords/OTPs in chat, send access-request emails, create new permissions or duplicate live infrastructure. Render, Atlas, Hostinger DNS and one Analytics continuation tab are retained for the next turn. Existing live payment, Veriff/country, registration, working trading platform, chatbot/reporting and automatic-blog behavior are preserved.
+
+## Earlier pending-work checkpoint — seven-person team and access dependencies
 
 The owner again requested completion of pending work and said they can provide any required approval. They then explicitly confirmed that the current team has **7 people**, with a future target of 25–50. For GA4 use the current **Small / 1–10 employees** category; do not ask the size again or use the future target. Earlier instructions to avoid approval requests while the owner was away are historical. Continue independent authorized work, but never bypass an actual approval rejection.
 
