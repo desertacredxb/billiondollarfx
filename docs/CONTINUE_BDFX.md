@@ -6,6 +6,8 @@ Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements
 
 The owner explicitly requested: remove the WhatsApp sign because the chatbot is enough. The root layout no longer imports or mounts the separate floating WhatsApp button. Keep BDFX Help as the floating support control. This UI request does not enable or cancel the pending WhatsApp mobile OTP/provider setup, or change payment, trading, registration or contact data.
 
+Frontend PR 10 https://github.com/desertacredxb/billiondollarfx/pull/10 is merged to main `81434de341c2364d6af7925c0d2a17fdff5152fd`, tree `1a619c3e903a101025cfe1435daddb497deff9b7`; Vercel production `AygQb6Xy6puf8tSPUq1HfrdA3bH6` succeeded. The tree equals the tested local index. All 24 existing frontend tests and the Next.js production build including TypeScript passed; the initial Google Fonts TLS fetch failure was resolved by enabling system TLS certificates for the local build only. On the reloaded production homepage, the browser found zero `Chat on WhatsApp` links and verified the BDFX Help launcher and opened six-language guide. Public proof: bdfx-chatbot-only-1792576317559.jpg. The deployed application change is only the two-line import/mount removal; the other changes are continuation documentation.
+
 ## Latest completion checkpoint — mobile identity and multilingual chatbot
 
 The owner asked for mobile OTP in addition to the existing email OTP and to prevent a second client login with the same email OR phone, then explicitly selected **WhatsApp**. The owner also requested a WinproFX-style multilingual chatbot and repeated that request while implementation was underway. Preserve both goals; neither cancels the other. No new login/approval prompt is authorized or required for the code work.
@@ -26,7 +28,7 @@ Identity normalization also handles country-appropriate leading-zero variants vi
 
 The owner's payment instruction is to retain exactly RameePay INR, RameePay Crypto and Cregis Crypto, close TrustPay24 and keep DigiPay closed. The payment change is scoped to preventing duplicate credits while preserving retained gateway configuration and calculations.
 
-- Frontend main: `e7c76cf7a56c59c81eecb96a967c96a58219ed9d`; multilingual support/registration PR 9 is merged and Vercel `39QqahiW8WUDuoGRoPjgVG4xFPvK` succeeded. Earlier automatic-blog and cover/sitemap releases remain included.
+- Frontend main: `81434de341c2364d6af7925c0d2a17fdff5152fd`; PR 10 removes the separate floating WhatsApp icon and keeps BDFX Help. Vercel `AygQb6Xy6puf8tSPUq1HfrdA3bH6` succeeded and the live browser verified the result. Earlier multilingual registration/chat, automatic-blog and cover/sitemap releases remain included.
 - Frontend PR https://github.com/desertacredxb/billiondollarfx/pull/6 merged the owner's Search Console verification alongside the existing tag. Vercel production deployment `37rARNFDuWqtkGVDScd1GTQsmKEr` reported success; both tags are present on the live HTTP 200 homepage.
 - Search Console ownership is verified for `https://www.billiondollarfx.com/` using the new HTML tag. The sitemap was submitted and Google reported **Sitemap processed successfully**, with 28 discovered pages and 0 discovered videos on 21 October 2026. An initial Couldn't fetch state resolved during the same verification session; do not duplicate the submission. Discovered does not mean all 28 pages are indexed.
 - Frontend PR https://github.com/desertacredxb/billiondollarfx/pull/5 merged. Vercel production deployment `2hUyGi9uxDmZZgHjuFGJoRTvEqFT` reported success.
