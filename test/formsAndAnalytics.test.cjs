@@ -16,13 +16,28 @@ test("support fields reject whitespace, invalid categories and excessive input w
 });
 test("conversion events require consent and contain only fixed metadata, never private URLs or form data", () => {
   const captured = []; let granted = false;
-  global.window = { location: { href: "https://bdfx.example.invalid/register?email=private@example.invalid&token=secret" }, gtag: (...args) => captured.push(args) };
+  global.window = { location: { origin: "https://www.billiondollarfx.com", href: "https://www.billiondollarfx.com/register?email=private@example.invalid&token=secret" }, gtag: (...args) => captured.push(args) };
   global.localStorage = { getItem: key => key === analyticsConsentKey && granted ? "granted" : "denied" };
   trackConversion("sign_up"); assert.equal(captured.length, 0);
   granted = true; trackConversion("sign_up"); trackConversion("generate_lead");
   assert.equal(captured.length, 2);
   assert.equal(captured[0][1], "sign_up"); assert.equal(captured[1][1], "generate_lead");
+  granted = false; trackConversion("sign_up"); assert.equal(captured.length, 2);
   const payload = JSON.stringify(captured);
   for (const value of ["private@example.invalid", "token=secret", "?email="]) assert.equal(payload.includes(value), false);
   for (const path of ["/settings", "/register", "/dashboard", "/verify-identity", "/staff-users", "/business-report"]) assert.equal(publicAnalyticsPaths.has(path), false);
+});
+test("a saved consent choice cannot send production conversions from a preview, localhost or lookalike domain", () => {
+  const captured = [];
+  global.localStorage = { getItem: () => "granted" };
+  for (const origin of ["http://localhost:3000", "https://bdfx-preview.vercel.app", "https://www.billiondollarfx.com.example.invalid"]) {
+    global.window = { location: { origin }, gtag: (...args) => captured.push(args) };
+    trackConversion("generate_lead"); trackConversion("sign_up");
+  }
+  assert.equal(captured.length, 0);
+  global.window.location.origin = "https://www.billiondollarfx.com";
+  trackConversion("generate_lead");
+  assert.equal(captured.length, 1);
+  global.localStorage = { getItem: () => { throw new Error("Storage unavailable"); } };
+  trackConversion("sign_up"); assert.equal(captured.length, 1);
 });
