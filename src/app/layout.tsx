@@ -33,6 +33,10 @@ export default function RootLayout({
           name="google-site-verification"
           content="8lTSuR5UYvf6hPgYpADzJxRnZCQ2eWRFJpSJ4KAcNC4"
         />
+        <meta
+          name="google-site-verification"
+          content="qNVog24IqS13Q1uSqt3IzAtphrvW9-G5BXJ_eKf-p5E"
+        />
         <link rel="icon" href="/favicon.ico" />
 
         <style>{`
