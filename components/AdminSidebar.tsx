@@ -148,6 +148,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         </Section>
 
         <Section title="Administration">
+          <NavLink href="/email-marketing" label="Email Marketing" icon={MessageSquare} pathname={pathname} />
           <NavLink href="/website-analytics" label="Website Analytics" icon={BarChart3} pathname={pathname} />
           <NavLink href="/business-report" label="Business Report" icon={LayoutDashboard} pathname={pathname} />
           <NavLink href="/staff-users" label="Staff Users" icon={Users} pathname={pathname} />

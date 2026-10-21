@@ -29,7 +29,7 @@ test("admin requests select the admin session, including same-origin blog mutati
   window.location.pathname = "/blog-management/edit/test";
   await authenticatedFetch("/api/blogs/test", { method: "PUT" });
   assert.equal(captured.at(-1).init.headers.get("Authorization"), "Bearer admin-test-token");
-  for (const path of ["/staff-users", "/activity-log", "/business-report", "/chat-reports", "/website-analytics"]) {
+  for (const path of ["/staff-users", "/activity-log", "/business-report", "/chat-reports", "/email-marketing", "/website-analytics"]) {
     window.location.pathname = path;
     await authenticatedFetch(`${backend}/api/operations/overview`);
     assert.equal(captured.at(-1).init.headers.get("Authorization"), "Bearer admin-test-token");

@@ -2,7 +2,7 @@ import axios from "axios";
 
 export { AxiosError } from "axios";
 
-const adminPaths = new Set(["adminDashboard", "users", "bankapproval", "brokers", "tickets", "IB", "payout-requests", "all-transactions", "blog-management", "enquiries", "staff-users", "activity-log", "business-report", "chat-reports", "website-analytics"]);
+const adminPaths = new Set(["adminDashboard", "users", "bankapproval", "brokers", "tickets", "IB", "payout-requests", "all-transactions", "blog-management", "enquiries", "staff-users", "activity-log", "business-report", "chat-reports", "email-marketing", "website-analytics"]);
 
 function tokenFor(url: string): string | null {
   if (typeof window === "undefined") return null;

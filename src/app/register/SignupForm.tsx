@@ -38,6 +38,7 @@ export default function SignUpPage() {
     referralCode: "",
     agree: false,
     whatsappOtpConsent: false,
+    marketingConsent: false,
   });
 
   const [otp, setOtp] = useState("");
@@ -484,6 +485,10 @@ export default function SignUpPage() {
                 .
               </label>
             </div>
+            <label className="flex items-start gap-3 text-sm text-gray-300">
+              <input type="checkbox" name="marketingConsent" checked={formData.marketingConsent} onChange={handleChange} className="mt-1" />
+              <span>Email me BDFX educational updates and offers. Optional; unsubscribe anytime in Settings or an email.</span>
+            </label>
             {registrationOptions?.mobileOtpRequired && <label className="md:col-span-2 flex items-start gap-2 text-sm text-gray-300">
               <input type="checkbox" name="whatsappOtpConsent" checked={formData.whatsappOtpConsent} onChange={handleChange} required className="mt-1" />
               <span>Send my mobile verification code on WhatsApp. This verifies my number and does not subscribe me to marketing.</span>

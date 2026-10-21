@@ -14,7 +14,7 @@ test("manager navigation opens an allowed section and hides owner-only controls"
   assert.equal(canAccessAdminPath(manager, "/chat-reports"), true);
   assert.equal(canAccessAdminPath({ role: "manager", permissions: ["finance"] }, "/chat-reports"), false);
   assert.equal(canAccessAdminPath(manager, "/enquiries"), true);
-  for (const path of ["/users", "/payout-requests", "/staff-users", "/activity-log", "/website-analytics", "/adminDashboard"]) assert.equal(canAccessAdminPath(manager, path), false);
+  for (const path of ["/users", "/payout-requests", "/staff-users", "/activity-log", "/email-marketing", "/website-analytics", "/adminDashboard"]) assert.equal(canAccessAdminPath(manager, path), false);
 });
 
 test("owners retain staff/history access while managers only receive their selected operational sections", () => {
