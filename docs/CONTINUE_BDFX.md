@@ -2,22 +2,23 @@
 
 Checkpoint: 21 October 2026, Dubai time. Work on branch `codex/bdfx-improvements-2026-10-21`. Preserve the working live Veriff registration, UAE/document restrictions, owner/manager access and production changes. Never print credentials, OTPs or provider secrets.
 
-## Current production state — user-approved release
+## Current production state — verified 21 October 2026
 
-The user approved merging both prepared PRs and deploying to Render/Vercel on 21 October 2026 (Dubai time). The earlier automatic-review rejection is resolved by that approval; both merges succeeded. No production publication approval is outstanding for this release.
+The latest owner instruction is to retain exactly RameePay INR, RameePay Crypto and Cregis Crypto, close TrustPay24 and keep DigiPay closed. The payment change is scoped to preventing duplicate credits while preserving retained gateway configuration and calculations.
 
-- Frontend repository: `desertacredxb/billiondollarfx`.
-- Frontend production main: `24867e80cdfaf51912869183940777216915f479`.
-- Frontend PR: https://github.com/desertacredxb/billiondollarfx/pull/4 — merged.
-- Vercel production deployment `EtaVKXg6uJeLMYCyZ3iciEuSDJ6V` reported success for that main commit.
-- Live site: https://www.billiondollarfx.com.
-- Backend repository: `desertacredxb/Billion_Doller_Backend`.
-- Backend production main: `a8ee4b725d8ce72a34a39b1fbdeb92d6a199f930`.
-- Backend PR: https://github.com/desertacredxb/Billion_Doller_Backend/pull/4 — merged.
-- Render deployment `dep-dbbvjv49v7es73a1hpa0` is live for that main commit. Post-release application-error log queries returned no entries in the inspected initial window.
-- Both deployments were triggered automatically by their main-branch merges. No redundant deploy was triggered.
-- Production public UI verification is complete for Help Centre interaction, calculator calculation/validation, currency conversion and economic calendar loading. Anonymous support redirects to `/login`; no signed-in customer journey was exercised.
-- The separate feature preview remains protected by Vercel sign-in. Vercel account API access to team `mondusgroup` remains unavailable through the connected Vercel app, but GitHub commit status and public production verification established the release outcome. Do not disable deployment protection or request secrets in chat.
+- Frontend main: `aa57af04267c607c3dcf5e5e64a3458fd0bbb4ec`.
+- Frontend PR https://github.com/desertacredxb/billiondollarfx/pull/5 merged. Vercel production deployment `2hUyGi9uxDmZZgHjuFGJoRTvEqFT` reported success.
+- Backend main: `d54c397b9b5b1591e62493bd27154c3142983dde`.
+- Backend PR https://github.com/desertacredxb/Billion_Doller_Backend/pull/5 merged, followed by startup fix PR https://github.com/desertacredxb/Billion_Doller_Backend/pull/6.
+- Render deployment `dep-dbc0gglg1s2s7389oqm0` is live for backend main. Startup connected to MongoDB, passed the required deposit order uniqueness check (before server listen), retained Veriff storage preflight and started on port 5000. Initial post-release error-level log query returned no entries.
+- The first backend rollout `dep-dbc0ele8bjmc73d2bhf0` failed because Model.init retained a pre-connection auto-create error with buffering disabled. The fix directly inspects the connected collection, following the existing Veriff pattern. The previous production instance stayed healthy while the fix was deployed. This failure is resolved; do not redeploy the failed intermediate main commit.
+- Backend tests: **103/103 pass**. Frontend tests: **18/18 pass**. Next.js production build and TypeScript pass. Payment, database-failure and retry scenarios used mocked financial services; no live payment/account/deposit/withdrawal/refund/callback/email was created for tests.
+- Active frontend payment components are exactly RameePay, CryptoPay and Cregis. TrustPay24 was removed. DigiPay/TrustPay24 deposit and callback handlers and the unused TruePay9 callback return HTTP 410. Closed-provider records are retained and automatic reconciliation skips them.
+- Both main merges triggered automatic deployments. No redundant deployment was triggered.
+- Hourly health workflow is on backend main. Its first push-triggered run succeeded: https://github.com/desertacredxb/Billion_Doller_Backend/actions/runs/39521595904. Actual outage notification delivery was not forced/tested.
+- Live site: https://www.billiondollarfx.com. Backend: https://billion-doller-backend.onrender.com.
+
+The earlier 22-point release remains in place, including Veriff/UAE restrictions, owner/manager access, Help Centre, calculations, reference rates and support changes. Signed-in customer journeys remain unexercised. The protected Vercel preview/team API access limitation remains; do not disable protection or request secrets in chat.
 
 ## Implemented in the live release
 
@@ -36,8 +37,8 @@ The user requested pending work, installed Gmail and clarified the final payment
 - Follow-up code adds a persistent shared deposit claim around the three retained callback paths and reconciliation. Majority/journaled writes and verification of the existing full unique orderid index protect the claim. Repeated/concurrent calls and successful legacy orders cannot submit another automatic credit. Ambiguous MT5 replies/save failures remain locked for manual reconciliation; claims must never be cleared based only on age.
 - The frontend shows exactly the three retained options. DigiPay/TrustPay24 deposit/callback handlers and the unused TruePay9 callback return HTTP 410. Reconciliation skips closed providers and retains their historic records for owner review.
 - Active provider configuration, URLs, keys, payload/encryption formats, conversions, minimums, charges and Cregis partial/top-up business logic are preserved. The abandoned broader Cregis re-query/signature redesign is not part of this change. Do not claim all provider authentication was certified.
-- Full frontend build and 18 frontend tests pass. **102 backend tests pass**. Publication/deployment outcome is recorded below after it succeeds. Every payment call in tests is mocked; no live financial transaction or callback was sent.
-- An hourly GitHub Actions health monitor is prepared. It checks backend/database readiness and the public website, creates/updates one bot alert issue on failure and closes it on recovery. Activation, an actual run and notification delivery require verification after publication.
+- Full frontend build and 18 frontend tests pass. **103 backend tests pass**. Publication/deployment outcome is recorded below after it succeeds. Every payment call in tests is mocked; no live financial transaction or callback was sent.
+- An hourly GitHub Actions health monitor is published on main and its first run succeeded. It checks backend/database readiness and the public website, creates/updates one bot alert issue on failure and closes it on recovery. Actual outage notification/email delivery remains unverified; no test outage or issue was generated.
 - Gmail metadata evidence: two recent administrator OTP messages are currently in Trash; three older client/broker OTPs, a welcome email and an IB approval email are in Spam. These examples pass SPF/DKIM/DMARC for Gmail. Headers show Gmail rewrote the requested domain From to the authenticated Gmail sender. Receipt/authentication is confirmed for these examples, not inbox placement or domain authentication for billiondollarfx.com. No codes/bodies were copied, no email was generated and mailbox state was not changed. Consumer Gmail sender fallback is implemented; a verified domain sender still requires the real provider configuration.
 - GitHub repository access works. A separate Render dashboard secure login reached GitHub authentication and was declined; do not repeat it unless the user asks. The Render health-path setting remains blocked by dashboard/API access.
 - Scoped MongoDB discovery found Project 0 (`6ad7f5e9d7869265e2a7db73`), but cluster listing said it is a Cloud Manager group rather than an Atlas group. Production database backup access is still unverified. No replacement cluster, paid upgrade or restore was created.
@@ -62,10 +63,10 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 - `NEXT_TURBOPACK_EXPERIMENTAL_USE_SYSTEM_TLS_CERTS=1 npm run build` passes.
 - `npx tsc --noEmit` passes.
 - Frontend: `node --test test/*.test.cjs` — 18/18 pass, including calculation math, reference API failures, form validation and consent/no-private-data events.
-- Backend: `npm test` — 88/88 pass, including Veriff/UAE restrictions, scoped staff access, duplicate-index recovery, session-derived reply sender, closed tickets and safe mail failures.
+- Backend: `npm test` — 103/103 pass, including Veriff/UAE restrictions, scoped staff access, duplicate-index recovery, session-derived reply sender, closed tickets and safe mail failures.
 - Live HTTP checks returned 200 for homepage, Help Centre, calculator, Education, News, sitemap and optimized media. The new Help Centre is in the sitemap; inspected unverified homepage claims are absent. Media Content-Length matches the optimized asset sizes.
 - Browser checks: Help Centre answer expands; a 0.2-lot sell example produces 20,000 units, margin 220, pip value 2 and estimated loss -200. Leverage 501 displays validation instead of a result. TradingView iframe displays scheduled events. These calculator values are test examples, not trading recommendations.
-- Implementation Git trees exactly matched tested local indexes. Production trees: frontend `4acd1a3b236274385eea2e913a18a2f914076156` (includes continuation documentation); backend `1d052b757fd624542755c8700e8624b38aae7d62`.
+- Implementation Git trees exactly matched tested local indexes. Current deployed trees: frontend `ffc2609540753a0d1ba86bfb2033aa11c37fcd02`; backend `5ad9945e6702be1d7cc984cbe030c021a5020dd6`. The later continuation-only branch checkpoint is not a new production release.
 - Live `/admin` resolves to `/admin-login`; live `/health` returns 200 with database connected. Anonymous `/api/staff`, `/api/operations/report` and `/api/tickets/admin` return 401.
 - No real OTP, ticket, enquiry, customer email, financial account, deposit, withdrawal or trade was created by tests. No global customer list was retrieved.
 - Production reference proxy returned HTTP 200 for USD/INR and 165 currencies. Browser conversion displayed 100 USD = 9,484 INR with provider reference date 2026-10-20. These are dated reference rates, not broker execution quotes. Sandbox direct upstream requests still return 403; proxy failure states are covered by mocks.
@@ -76,7 +77,7 @@ Signup MP4: 1,369,314 bytes (original about 20.5 MB). Dashboard MP4: 2,364,378 b
 1. **SMTP/inbox placement:** inspect actual received mail headers and verified domain/provider settings before changing SPF/DKIM/DMARC or claiming spam resolution. See `docs/operations-readiness.md` for SMTP configuration.
 2. **GA4/Search Console:** obtain access to the existing BDFX properties, verify the actual measurement ID and disable enhanced automatic measurement before enabling the manual integration. Existing Google meta verification is not ownership/indexing proof. Do not invent IDs or rankings.
 3. **WhatsApp automation:** verify the real BDFX business provider, approved templates and consent/opt-out setup. Current chat links are not transactional automation. No WATI plugin was found in the directory search.
-4. **Backups/alerts:** scoped discovery found Project 0, but cluster listing identified it as a Cloud Manager group rather than an accessible Atlas project. Access to the existing production project and backup operations is still needed; do not create a replacement database. An hourly GitHub health monitor is prepared in the backend follow-up. Render service `srv-d39uut0dl3ps73aiomjg`, workspace `tea-cvptm7adbo4c7396cigg`, has empty HTTP healthCheckPath and default notifyOnFail. Backup/restore and actual alert delivery are unverified. No Render CLI credentials are present.
+4. **Backups/alerts:** scoped discovery found Project 0, but cluster listing identified it as a Cloud Manager group rather than an accessible Atlas project. Access to the existing production project and backup operations is still needed; do not create a replacement database. The hourly GitHub health monitor is now active on backend main; its first run passed. Render service `srv-d39uut0dl3ps73aiomjg`, workspace `tea-cvptm7adbo4c7396cigg`, has empty HTTP healthCheckPath and default notifyOnFail. Backup/restore and actual alert delivery are unverified. No Render CLI credentials are present.
 5. **Provider WebTrader:** verify availability with the actual provider. Keep official desktop/mobile MT5 alternatives; do not substitute another terminal or create a real financial account for testing.
 6. **Payment callbacks:** the owner narrowed this to duplicate-credit protection for RameePay INR/Crypto and Cregis Crypto. The shared atomic claim is implemented and mocked tests exercise all three callbacks. Broader provider authentication remains unverified and must not be silently redesigned. DigiPay and TrustPay24 remain closed. See backend docs/payment-callback-security.md.
 7. **Country eligibility:** preserve legacy rules, including the existing Pakistan restriction, until business review. Do not add UAE marketing pages or invent country-specific legal availability.
