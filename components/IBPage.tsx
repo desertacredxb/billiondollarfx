@@ -314,7 +314,7 @@ function IBPage({ user }: IBPageProps) {
 
         // 1️⃣ Call update commission first
         const updateRes = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/update-commission`,
+          `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/update-commission-v3`,
           {
             email,
             sdate: lastWithdrawalDate
@@ -327,7 +327,7 @@ function IBPage({ user }: IBPageProps) {
           }
         );
 
-        // console.log("Commission updated:", updateRes.data);
+        console.log("Commission updated:", updateRes.data);
 
         setIbCommission(res.data.commission);
       } catch (error) {
