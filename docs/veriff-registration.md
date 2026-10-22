@@ -17,3 +17,5 @@ IB applications send their bearer token and follow the backend's `verificationRe
 Automatic IB activation requires backend `VERIFF_IB_AUTO_APPROVAL=true` and an eligible live verification. The identity page distinguishes verified identity from an IB role that is still processing. It never grants a role or referral code in browser storage.
 
 Document choices and selfie requirements are controlled by the selected Veriff product. API failures leave the application pending and show a retry/support action. Verification-time guarantees, MT5 provisioning, bank approval, and WhatsApp OTP are separate from this change.
+
+Owner clarification, 22 October 2026: provider failures/review, including reason `501`, retain **Edit name & resubmit**, **Save details** and **Resubmit verification** when allowed by the backend. A client can also resubmit without changing the name. Only address editing was removed; no address input is restored. ID/document and selfie instructions remain visible independently of the action permissions. A fresh attempt still requires a fresh signed Veriff approval and the existing BDFX eligibility checks. Explicit owner/policy holds remain enforced.
