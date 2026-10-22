@@ -7,7 +7,10 @@ import KycVerification from "../../../../components/settings/KycVerification";
 import SecurityForm from "../../../../components/settings/SecurityForm";
 import BankDetailsForm from "../../../../components/settings/BankDetailsForm";
 
+import EmailPreferences from "../../../../components/settings/EmailPreferences";
+
 const tabs = [
+  { key: "emails", label: "Email Preferences" },
   { key: "profile", label: "Profile Info" },
   { key: "identity", label: "KYC Verification" },
   { key: "security", label: "Security" },
@@ -30,6 +33,8 @@ function SettingContent() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case "emails":
+        return <EmailPreferences />;
       case "profile":
         return <ProfileForm />;
       case "identity":

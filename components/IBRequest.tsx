@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "./Button";
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError } from "../lib/apiClient";
+import { useRouter } from "next/navigation";
 
 interface IBRequestProps {
   user: {
@@ -10,6 +11,13 @@ interface IBRequestProps {
   };
   refreshUser?: () => void;
   setUser?: (user: IBRequestProps["user"]) => void;
+}
+
+interface Application {
+  status: "not_applied" | "pending" | "approved" | "rejected";
+  statusReason?: string;
+  canReapply?: boolean;
+  verificationRequired?: boolean;
 }
 
 interface FormData {
@@ -23,6 +31,7 @@ interface FormData {
 }
 
 function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     existingClientBase: "",
@@ -34,6 +43,21 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
     clientShare: "0",
   });
   const [loading, setLoading] = useState(false);
+
+  const [application, setApplication] = useState<Application | null>(null);
+  const [statusError, setStatusError] = useState("");
+  const [statusAttempt, setStatusAttempt] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setStatusError("");
+    axios.get<Application>(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${encodeURIComponent(user.email)}`, {
+      signal: controller.signal, timeout: 15000,
+      headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+    }).then(({ data }) => { if (!controller.signal.aborted) setApplication(data); })
+      .catch(() => { if (!controller.signal.aborted) setStatusError("Unable to load your IB application. Please retry."); });
+    return () => controller.abort();
+  }, [user.email, statusAttempt]);
 
   // Update form values
   const handleChange = (field: keyof FormData, value: string) => {
@@ -48,26 +72,29 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
     setFormData(updated);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (reapply = false) => {
+    if (loading) return;
     setLoading(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib/register`, {
         ...formData,
         email: user.email,
-      });
+        reapply,
+      }, { headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } });
 
-      alert("✅ IB Request Submitted!");
+      alert(response.data.message || "IB Request Submitted!");
       setShowForm(false);
+      setApplication(response.data.newIB);
 
       // mark request as pending instantly
-      setUser?.({ ...user, ibRequestPending: true });
+      setUser?.({ ...user, ibRequestPending: response.data.newIB?.status !== "approved" });
 
       // refresh user from backend
       refreshUser?.();
+      if (response.data.verificationRequired) router.push("/verify-identity?returnTo=ib");
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       if (
-        axiosErr.response?.status === 400 &&
         axiosErr.response?.data?.message
       ) {
         alert(`⚠️ ${axiosErr.response.data.message}`);
@@ -130,19 +157,29 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
 
         {/* Status Button */}
         <div className="text-center">
-          {user.ibRequestPending ? (
-            <Button text="IB Request Awaiting Approval" disabled />
+          {statusError ? (
+            <div role="alert"><p className="mb-3">{statusError}</p><Button text="Retry" onClick={() => setStatusAttempt(value => value + 1)} /></div>
+          ) : !application ? (
+            <p role="status">Checking your IB application...</p>
+          ) : application.status === "not_applied" ? (
+            <Button text="Enroll To Become IB" onClick={() => setShowForm(true)} />
           ) : (
-            <Button
-              text="Enroll To Become IB"
-              onClick={() => setShowForm(true)}
-            />
+            <div className="rounded-xl border border-gray-700 p-5 text-left" role="status">
+              <h3 className="mb-2 font-semibold">{application.status === "rejected" ? "IB application unsuccessful" : application.status === "approved" ? "IB application approved" : "IB application pending"}</h3>
+              <p className="mb-4 text-gray-300">{application.statusReason}</p>
+              <div className="flex flex-wrap items-center gap-4">
+                {application.canReapply && <Button text={loading ? "Checking..." : "Apply again"} disabled={loading} onClick={() => handleSubmit(true)} />}
+                {application.verificationRequired && <Button text="Complete identity verification" onClick={() => router.push("/verify-identity?returnTo=ib")} />}
+                {application.status !== "approved" && <a href="https://wa.me/447999283366" target="_blank" rel="noopener noreferrer" className="text-[#ffd700] underline">Contact WhatsApp support</a>}
+              </div>
+              {application.canReapply && <p className="mt-3 text-sm text-gray-400">After resolving the reason above, apply again. Eligible accounts with approved live KYC, including an approved support review, are automatically approved. Applications awaiting a manual decision go back to support.</p>}
+            </div>
           )}
         </div>
       </div>
 
       {/* Modal Form */}
-      {showForm && !user.ibRequestPending && (
+      {showForm && application?.status === "not_applied" && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
           <div className="bg-[#111a2e] p-6 rounded-lg w-[90%] md:w-[500px]">
             <h2 className="text-xl font-semibold mb-4">
@@ -247,7 +284,8 @@ function IBRequest({ user, refreshUser, setUser }: IBRequestProps) {
                 Cancel
               </button>
               <Button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
+                disabled={loading}
                 text={loading ? "Submitting..." : "Submit Request"}
               />
             </div>

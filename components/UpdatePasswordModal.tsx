@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "../lib/apiClient";
+
 import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
@@ -84,7 +86,7 @@ const UpdatePasswordModal = ({ isOpen, onClose, accountNo }: Props) => {
         payload.password = investorPassword;
       }
 
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/change_password`,
         {
           method: "POST",

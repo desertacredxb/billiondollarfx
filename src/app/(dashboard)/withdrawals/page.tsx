@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import { Wallet, X } from "lucide-react";
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount";
@@ -168,7 +168,10 @@ const handleSubmit = async (e: React.FormEvent) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-gradient-to-br from-[#0a0f1d] to-[#0f172a] p-6 text-white rounded-xl min-h-[85vh]">
-        <h1 className="text-2xl font-bold mb-6">Withdrawal Portal</h1>
+        <h1 className="text-2xl font-bold mb-4">Withdrawal Portal</h1>
+        <p className="mb-6 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+          Bonus funds are non-withdrawable. You cannot withdraw your deposit bonus.
+        </p>
 
         {/* Account Display Cards */}
         {accounts.length === 0 ? (
@@ -237,6 +240,9 @@ const handleSubmit = async (e: React.FormEvent) => {
               </button>
 
               <h2 className="text-xl font-bold mb-4">Request Withdrawal</h2>
+              <p className="mb-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+                Bonus funds are non-withdrawable. You cannot withdraw your deposit bonus.
+              </p>
 
               {/* 🔹 TRADER ACCOUNT SELECTOR INSIDE MODAL */}
               <div className="bg-[#121a2a] border border-gray-700 p-4 rounded-xl mb-6">
@@ -483,6 +489,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       <RegisterModal
         isOpen={showCreateModal}
+        profile={profile}
         onClose={() => {
           setShowCreateModal(false);
           refresh();

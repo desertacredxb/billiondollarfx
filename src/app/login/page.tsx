@@ -1,4 +1,7 @@
 "use client";
+import MarketingVideo from "../../../components/MarketingVideo";
+
+import { authenticatedFetch } from "../../../lib/apiClient";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -32,7 +35,7 @@ export default function LoginPage() {
 
       try {
         // 🔥 Verify token with server
-        await fetch(
+        const response = await authenticatedFetch(
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${
             JSON.parse(user).email
           }`,
@@ -42,6 +45,8 @@ export default function LoginPage() {
             },
           }
         );
+
+        if (!response.ok) throw new Error("Session expired");
 
         // ✅ Token valid → auto login
         router.replace("/dashboard");
@@ -64,31 +69,8 @@ export default function LoginPage() {
       return setError("Please fill in all fields.");
     }
 
-    // Admin test account (local dev convenience)
-    if (email === "admin@gmail.com" && password === "admin@2025snew") {
-      const adminToken = "admin-token"; // fake token
-      localStorage.setItem("adminToken", adminToken);
-      localStorage.setItem(
-        "admin",
-        JSON.stringify({ email: "admin@gmail.com", role: "admin" })
-      );
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      if (typeof window !== "undefined") {
-        // set a non-httpOnly cookie (quick test; change to httpOnly on server for production)
-        document.cookie = `token=${adminToken}; Path=/; SameSite=Lax;${
-          location.protocol === "https:" ? " Secure;" : ""
-        }`;
-      }
-
-      router.replace("/adminDashboard");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/login`,
         {
           method: "POST",
@@ -115,7 +97,7 @@ export default function LoginPage() {
         }`;
       }
 
-      router.replace("/dashboard");
+      router.replace(data.user?.kycProvider === "veriff" && !data.user?.isKycVerified ? "/verify-identity" : "/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       setError("Something went wrong. Please try again.");
@@ -128,7 +110,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/request-reset`,
         {
           method: "POST",
@@ -153,7 +135,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/verify-reset-otp`,
         {
           method: "POST",
@@ -181,14 +163,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-black">
-      <video
-        autoPlay
-        loop
-        muted
-        className="absolute w-full h-full object-cover z-0"
-      >
-        <source src="/signup.mp4" type="video/mp4" />
-      </video>
+      <MarketingVideo src="/media/signup.mp4" poster="/media/signup-poster.jpg" className="absolute inset-0 h-full w-full object-cover z-0" />
 
       <div className="z-20 w-full max-w-md p-8 rounded-xl bg-black/30 backdrop-blur border border-white/10 text-white">
         <div className="text-center mb-6">
@@ -201,6 +176,7 @@ export default function LoginPage() {
               className="mx-auto mb-2"
             />
           </Link>
+          <Link href="/admin-login" className="block text-sm text-gray-300 underline mb-4">Administrator sign in</Link>
           <h2 className="text-2xl font-semibold">
             {step === "login"
               ? "Login"
@@ -282,7 +258,7 @@ export default function LoginPage() {
                   "SIGN IN"
                 )
               }
-              onClick={handleSignIn}
+              type="submit"
               disabled={loading}
               className={`w-full bg-[var(--primary)] text-white py-2 rounded-full ${
                 loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"

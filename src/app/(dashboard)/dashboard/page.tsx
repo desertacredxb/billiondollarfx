@@ -6,8 +6,10 @@ import Image from "next/image";
 import emptyIcon from "../../../../assets/icons/empty_state.png"; // Update if needed
 import Button from "../../../../components/Button";
 import RegisterModal from "../../../../components/CreateAccount"; // adjust path as needed
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import Link from "next/link";
+import MarketingVideo from "../../../../components/MarketingVideo";
+import OnboardingChecklist from "../../../../components/OnboardingChecklist";
 import KycAlertModal from "../../../../components/KycAlertModal";
 import { useMT5AccountSummary } from "../../../../lib/mt5Store";
 import { useUserProfile } from "../../../../lib/userStore";
@@ -55,23 +57,6 @@ export default function DepositsPage() {
     verifySession();
   }, []);
 
-  useEffect(() => {
-    if (isLoggedIn && profile && !isKycVerified) {
-      // show first popup after 5s
-      const timeout = setTimeout(() => setShowKycPopup(true), 5000);
-
-      // keep showing every 10s
-      const interval = setInterval(() => {
-        setShowKycPopup(true);
-      }, 10000);
-
-      return () => {
-        clearTimeout(timeout);
-        clearInterval(interval);
-      };
-    }
-  }, [isLoggedIn, profile, isKycVerified]);
-
   // Single source of truth for live balance - see lib/mt5Store.ts. Replaces
   // the old fetchAccountSummary() that read from the legacy MoneyPlantFX API
   // (/api/moneyplant/checkBalance), which could disagree with the real MT5
@@ -82,15 +67,9 @@ export default function DepositsPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <OnboardingChecklist refreshKey={accounts.length} onCreateAccount={() => setShowModal(true)} />
       <div className="w-full rounded-md overflow-hidden shadow-md">
-        <video
-          src="/BILLION$ FX WEBSITE ANIMATION.mp4" // 👈 place your video in public/banner/
-          className="w-full object-cover rounded-md"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
+        <MarketingVideo src="/media/dashboard-banner.mp4" poster="/media/dashboard-poster.jpg" className="w-full rounded-md object-cover" />
       </div>
       {/* ✅ Top Ticker Bar */}
       <div className="w-full rounded-md overflow-hidden shadow-md">
@@ -192,6 +171,7 @@ export default function DepositsPage() {
         </div>
         <RegisterModal
           isOpen={showModal}
+          profile={profile}
           onClose={() => {
             setShowModal(false);
             refresh(); // ✅ Refresh account list after modal closes

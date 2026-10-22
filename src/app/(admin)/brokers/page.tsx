@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import { useRouter } from "next/navigation";
 
 interface Broker {
@@ -23,8 +23,8 @@ export default function UsersPage() {
     const token = localStorage.getItem("adminToken");
 
     // 🔐 Redirect to login if no token
-    if (!token || token !== "admin-token") {
-      router.push("/login");
+    if (!token) {
+      router.push("/admin-login");
       return;
     }
 

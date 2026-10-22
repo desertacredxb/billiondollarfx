@@ -28,6 +28,11 @@ export default function PrivacyPolicy() {
 
       {/* Content Section */}
       <section className="w-11/12 md:w-4/5 mx-auto pb-20 space-y-10">
+        <div className="space-y-4">
+          <h2 className="text-xl md:text-2xl font-semibold text-[var(--primary)]">BDFX Help support sessions</h2>
+          <p className="text-gray-300 leading-relaxed">The automated help guide can be used without saving a support session. If you choose to save it, BDFX records the selected language, menu topics, guide questions and activity times for support review. Free-text searches are not recorded. You may stop further activity saving from the guide.</p>
+          <p className="text-gray-300 leading-relaxed">A follow-up request separately asks for permission to save the name, email, optional international phone number and country you provide. These details are unverified and are used to respond to that support request; submitting them does not opt you into marketing. A saved session, its contact details and team notes are retained for up to 90 days from the start of the saved session and can be viewed only by authorized support staff. Stopping further saving does not remove earlier saved activity. Contact support@billiondollarfx.com about your information. Never submit passwords, OTPs, payment security codes or identity documents through the guide.</p>
+        </div>
         <div className="space-y-6">
           <h2 className="text-xl md:text-2xl font-semibold text-[var(--primary)]">
             Privacy Protection
@@ -307,9 +312,9 @@ export default function PrivacyPolicy() {
             at:
           </p>
           <p className="text-[var(--primary)] font-semibold">
-            <a href="mailto:info@billiondollarfx.com">
+            <a href="mailto:support@billiondollarfx.com">
               {" "}
-              info@billiondollarfx.com
+              support@billiondollarfx.com
             </a>
           </p>
         </div>

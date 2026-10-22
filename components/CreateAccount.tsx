@@ -1,18 +1,23 @@
 "use client";
 
+import { authenticatedFetch } from "../lib/apiClient";
+
 import { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { Eye, EyeOff } from "lucide-react";
-import { countriesData } from "@/data/IsoCode";
+import { getAccountRegistrationDetails } from "../lib/accountRegistration";
+import type { UserProfile } from "../lib/userStore";
 
 export default function RegisterModal({
   isOpen,
   onClose,
+  profile,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  profile: UserProfile | null;
 }) {
   const [formData, setFormData] = useState({
     Fname: "",
@@ -29,33 +34,13 @@ export default function RegisterModal({
   const [loading, setLoading] = useState(false);
   const [responseMsg, setResponseMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [countryData, setCountryData] = useState<any>(null);
+  const [countryIso, setCountryIso] = useState("us");
   useEffect(() => {
-    const userString = localStorage.getItem("user");
-    if (userString) {
-      const user = JSON.parse(userString);
-      console.log(user)
-      const data =  countriesData.find(
-        (data) => data.country === user.nationality
-      )
-      setCountryData(data);
-
-      console.log(countriesData.find(
-        (data) => data.country === user.nationality
-      ))
-
-      const [first, ...rest] = user.fullName.split(" ");
-      const last = rest.join(" ");
-
-      setFormData((prev) => ({
-        ...prev,
-        Fname: first,
-        Lname: last,
-        email: user.email || "",
-        mobile: data?.code+user.phone
-      }));
-    }
-  }, []);
+    if (!isOpen) return;
+    const { countryIso, ...details } = getAccountRegistrationDetails(profile);
+    setCountryIso(countryIso);
+    setFormData(prev => ({ ...prev, ...details }));
+  }, [isOpen, profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,7 +68,7 @@ export default function RegisterModal({
     // }
 
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/mt5/register`,
         {
           method: "POST",
@@ -97,7 +82,7 @@ export default function RegisterModal({
 
       const result = await res.json();
 
-      if (result) {
+      if (res.ok && result.success !== false) {
         setResponseMsg(`✅ ${result.message}`);
         setTimeout(() => {
           onClose();
@@ -189,7 +174,7 @@ export default function RegisterModal({
             <div>
               <label className="block mb-1 font-medium">Phone</label>
               <PhoneInput
-                country={countryData?.iso?.toLowerCase() ||"us"}
+                country={countryIso}
                 value={formData.mobile}
                 onChange={(value) =>
                   setFormData((prev) => ({ ...prev, mobile: value }))
@@ -252,7 +237,7 @@ export default function RegisterModal({
 
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !profile}
             className="mt-4 w-full bg-[var(--primary)] text-white py-2 rounded hover:brightness-110 transition"
           >
             {loading ? "Registering..." : "Register"}

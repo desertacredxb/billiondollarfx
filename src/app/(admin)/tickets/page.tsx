@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import axios from "../../../../lib/apiClient";
 import { useRouter } from "next/navigation";
 import { Delete, Trash2 } from "lucide-react";
 
@@ -42,8 +42,8 @@ export default function AdminTicketsPage() {
     const token = localStorage.getItem("adminToken");
 
     // 🔐 Redirect to login if no token
-    if (!token || token !== "admin-token") {
-      router.push("/login");
+    if (!token) {
+      router.push("/admin-login");
       return;
     }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

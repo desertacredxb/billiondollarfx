@@ -1,6 +1,6 @@
 "use client";
 
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import { CreditCard, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";

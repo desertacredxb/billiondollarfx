@@ -1,181 +1,76 @@
 "use client";
 
-import { div } from "framer-motion/client";
-import { useState } from "react";
-import { FaFacebook, FaInstagram, FaYoutube, FaLinkedin } from "react-icons/fa";
+import { FormEvent, useRef, useState } from "react";
+import Link from "next/link";
+import { trackConversion } from "../../../lib/analytics";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
+import { authenticatedFetch } from "../../../lib/apiClient";
+import { countriesData } from "@/data/IsoCode";
+
+const empty = { name: "", phone: "", email: "", country: "", message: "", privacyAccepted: false, marketingConsent: false, website: "" };
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    country: "",
-    message: "",
-    consent: false,
-  });
+  const [form, setForm] = useState(empty);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<{ text: string; success: boolean } | null>(null);
+  const requestId = useRef("");
+  const submitting = useRef(false);
+  const input = "mt-2 w-full rounded-lg border border-slate-500 bg-[#0b1423] px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#ffd700]";
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value, type } = e.target;
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setFeedback(null);
+    try {
+      requestId.current ||= crypto.randomUUID();
+      const params = new URLSearchParams(location.search);
+      const response = await authenticatedFetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/enquiries`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, requestId: requestId.current, campaign: { source: params.get("utm_source"), medium: params.get("utm_medium"), campaign: params.get("utm_campaign") } }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Unable to send your enquiry. Please try again.");
+      trackConversion("generate_lead");
+      setFeedback({ success: true, text: `${result.message} Reference: ${result.reference}` });
+      setForm(empty);
+      requestId.current = "";
+    } catch (error) { setFeedback({ success: false, text: error instanceof Error ? error.message : "Unable to send your enquiry. Please try again." }); }
+    finally { submitting.current = false; setBusy(false); }
+  }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked // ✅ cast safely
-          : value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // console.log(formData);
-  };
-
-  return (
-    <div>
-      <Navbar />
-      <div className="bg-[#0a0f1c] text-white px-4 pb-16 pt-28 md:px-12 lg:px-20">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            Connect with Billion Dollar FX: Unleash Your Trading Potential
-          </h2>
-          <p className="text-gray-300 mb-6">
-            Embark on a journey to success with Billion Dollar FX, where your
-            questions and feedback become the compass guiding our commitment to
-            excellence.
-          </p>
-
-          {/* Social Icons */}
-          <div className="flex justify-center space-x-6 text-lg mb-10">
-            <a href="#">
-              <FaFacebook />
-            </a>
-            <a href="#">
-              <FaInstagram />
-            </a>
-            <a href="#">
-              <FaLinkedin />
-            </a>
-            <a href="#">
-              <FaYoutube />
-            </a>
+  return <><Navbar /><main className="bg-[#0a0f1c] text-white px-5 pt-32 pb-20">
+    <div className="mx-auto max-w-5xl">
+      <p className="text-[#ffd700] text-sm font-semibold">Billion Dollar FX Support</p>
+      <h1 className="mt-3 text-3xl md:text-4xl font-semibold">How can we help?</h1>
+      <p className="mt-4 max-w-2xl text-slate-300">Ask about account opening, verification, MT5 or our partner programme. Existing clients can also create a support ticket in their dashboard.</p>
+      <p className="mt-3 text-sm text-slate-300">We don’t accept UAE clients.</p>
+      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_2fr]">
+        <aside className="space-y-6 text-slate-300">
+          <div><h2 className="font-semibold text-white">Email support</h2><a className="mt-2 inline-block text-[#ffd700] break-all underline" href="mailto:support@billiondollarfx.com">support@billiondollarfx.com</a></div>
+          <div><h2 className="font-semibold text-white">Phone / WhatsApp</h2><a className="mt-2 inline-block text-[#ffd700] underline" href="tel:+447999283366">+44 7999 283366</a><a className="mt-2 block text-[#ffd700] underline" href="https://wa.me/447999283366" target="_blank" rel="noopener noreferrer">Open WhatsApp</a></div>
+          <div><h2 className="font-semibold text-white">Postal address</h2><p className="mt-2">P.O. Box 838, Castries, Saint Lucia.</p></div>
+          <div><h2 className="font-semibold text-white">Already a client?</h2><Link href="/support" className="mt-2 inline-block text-[#ffd700] underline">Open a support ticket</Link></div>
+        </aside>
+        <form onSubmit={submit} className="rounded-2xl border border-white/15 bg-[#101827] p-5 sm:p-7 space-y-5">
+          <h2 className="text-xl font-semibold">Send an enquiry</h2>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block" htmlFor="contact-name">Full name<input id="contact-name" required minLength={2} maxLength={120} autoComplete="name" value={form.name} onChange={event => setForm(value => ({ ...value, name: event.target.value }))} className={input} /></label>
+            <label className="block" htmlFor="contact-email">Email<input id="contact-email" required type="email" maxLength={254} autoComplete="email" value={form.email} onChange={event => setForm(value => ({ ...value, email: event.target.value }))} className={input} /></label>
+            <label className="block" htmlFor="contact-phone">Mobile number <span className="text-xs text-slate-400">(optional)</span><input id="contact-phone" type="tel" maxLength={40} autoComplete="tel" placeholder="Include + and country code" value={form.phone} onChange={event => setForm(value => ({ ...value, phone: event.target.value }))} className={input} /></label>
+            <label className="block" htmlFor="contact-country">Country of residence<select id="contact-country" required autoComplete="country-name" value={form.country} onChange={event => setForm(value => ({ ...value, country: event.target.value }))} className={input}><option value="">Select country</option>{countriesData.filter(country => country.iso !== "AE").map(country => <option key={country.iso} value={country.country}>{country.country}</option>)}</select></label>
           </div>
-        </div>
-
-        {/* Contact Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="max-w-5xl mx-auto bg-transparent"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter your full name here.."
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full rounded-md bg-transparent border border-gray-500 px-4 py-3 focus:outline-none"
-            />
-            <input
-              type="text"
-              name="phone"
-              placeholder="Enter phone number"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full rounded-md bg-transparent border border-gray-500 px-4 py-3 focus:outline-none"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email here.."
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full rounded-md bg-transparent border border-gray-500 px-4 py-3 focus:outline-none"
-            />
-            <select
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              className="w-full rounded-md bg-transparent border border-gray-500 px-4 py-3 focus:outline-none"
-            >
-              <option value="">Select Country</option>
-              <option value="India">India</option>
-              <option value="UAE">UAE</option>
-              <option value="USA">USA</option>
-            </select>
-          </div>
-
-          <textarea
-            name="message"
-            placeholder="Enter your message here.."
-            value={formData.message}
-            onChange={handleChange}
-            className="w-full rounded-md bg-transparent border border-gray-500 px-4 py-3 mb-4 focus:outline-none"
-            rows={4}
-          ></textarea>
-
-          <div className="flex items-start space-x-2 mb-6 text-sm text-gray-400">
-            <input
-              type="checkbox"
-              name="consent"
-              checked={formData.consent}
-              onChange={handleChange}
-              className="mt-1"
-            />
-            <p>
-              Here at Billion Dollar FX we take your privacy seriously and will
-              only use your personal information to administer your account and
-              to provide the products and services you have requested from us.
-              However, from time to time we would like to contact you with
-              details of other products, offers and services we provide. If you
-              consent to us contacting you for this purpose please tick to say
-              you would like us to contact you. I have read and agree to the
-              terms & conditions and privacy & cookies policy.
-            </p>
-          </div>
-
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-md font-medium"
-          >
-            Submit
-          </button>
+          <label className="block" htmlFor="contact-message">Your message<textarea id="contact-message" required minLength={10} maxLength={5000} rows={5} value={form.message} onChange={event => setForm(value => ({ ...value, message: event.target.value }))} className={input} /></label>
+          <div hidden aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" value={form.website} onChange={event => setForm(value => ({ ...value, website: event.target.value }))} /></label></div>
+          <label className="flex items-start gap-3 text-sm text-slate-300"><input required type="checkbox" checked={form.privacyAccepted} onChange={event => setForm(value => ({ ...value, privacyAccepted: event.target.checked }))} className="mt-1" /><span>I have read the <Link href="/Privacy-Policy" className="text-[#ffd700] underline">Privacy Policy</Link> and agree that BDFX may use these details to respond to this enquiry.</span></label>
+          <label className="flex items-start gap-3 text-sm text-slate-300"><input type="checkbox" checked={form.marketingConsent} onChange={event => setForm(value => ({ ...value, marketingConsent: event.target.checked }))} className="mt-1" /><span>Send me occasional BDFX news and offers. This is optional.</span></label>
+          {feedback && <p role={feedback.success ? "status" : "alert"} aria-live="polite" className={`rounded-lg border p-4 text-sm ${feedback.success ? "border-emerald-500/40 text-emerald-200" : "border-red-400/40 text-red-200"}`}>{feedback.text}</p>}
+          <button type="submit" disabled={busy} className="rounded-lg bg-[#ffd700] px-6 py-3 font-semibold text-black disabled:opacity-50">{busy ? "Sending enquiry…" : "Send enquiry"}</button>
         </form>
-
-        {/* Contact Info */}
-        <div className="flex flex-col md:flex-row justify-center items-center gap-8 text-center mt-12 text-gray-300">
-          <div>whatsapp - +447999283366</div>
-          <div>info@billiondollarfx.com</div>
-          <div>+447999283366</div>
-          <div>P.O Box 838 Castries, Saint Lucia.</div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="text-center mt-16 max-w-3xl mx-auto">
-          <h3 className="text-xl md:text-2xl font-semibold mb-4">
-            Embark on a transformative trading journey with us — where trading
-            isn&apos;t just an action, it&apos;s a difference. Trade with us, be
-            the difference.
-          </h3>
-          <p className="text-gray-300 mb-6">
-            Dive into a world where every trade creates a ripple of impact. Join
-            us in shaping a unique trading experience that not only sets you
-            apart but also makes a positive difference. Trade with purpose,
-            trade with us.
-          </p>
-          <button className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-md font-medium">
-            Start your Journey today
-          </button>
-        </div>
       </div>
-      <Footer />
+      <section className="mt-16 rounded-2xl border border-white/15 p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5"><div><h2 className="text-xl font-semibold">Ready to open an account?</h2><p className="mt-2 text-slate-300">Register and complete identity verification to get started.</p></div><Link href="/register" className="rounded-lg bg-[#ffd700] px-6 py-3 font-semibold text-black text-center">Create account</Link></section>
     </div>
-  );
+  </main><Footer /></>;
 }

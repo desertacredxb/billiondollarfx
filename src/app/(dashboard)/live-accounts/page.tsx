@@ -172,6 +172,7 @@ export default function LiveAccounts() {
         {/* Modal */}
         <RegisterModal
           isOpen={showModal}
+          profile={profile}
           onClose={() => {
             setShowModal(false);
             refresh();

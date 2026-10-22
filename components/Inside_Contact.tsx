@@ -5,16 +5,13 @@ export default function InsightsSection() {
     <section className="bg-[#121E2C] text-white py-16 px-4 text-center">
       {/* Heading */}
       <h2 className="text-2xl md:text-3xl  font-semibold leading-tight mb-4">
-        Critical Insights: Unveiling the
-        <span className="text-[var(--primary)]"> Pinnacle Learnings</span> for
-        <br className="hidden md:block" /> Strategic Success.
+        Need help with your
+        <span className="text-[var(--primary)]"> BDFX account?</span>
       </h2>
 
       {/* Paragraph */}
       <p className="text-gray-400 text-base md:text-lg max-w-3xl mx-auto mb-8">
-        Beginners and experienced forex traders alike must keep in mind that
-        practice, knowledge, and discipline are key to getting and staying
-        ahead. The Best Forex Brokers Platform can help achieve success.
+        Find setup guides in the help centre or contact support about identity verification, MT5 access, payments or your IB account.
       </p>
 
       {/* WhatsApp Button  */}

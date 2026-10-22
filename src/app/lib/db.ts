@@ -5,7 +5,6 @@ import mongoose from "mongoose";
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 console.log("Node DNS:", dns.getServers());
-console.log("Mongo URI:", process.env.MONGODB_URI);
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 

@@ -22,6 +22,9 @@ export interface IBlog extends Document {
   metaKeywords: string[];
   canonicalUrl: string;
   scheduledAt: Date | null;
+  autoPublish?: boolean;
+  automationKey?: string;
+  lastAutoPublishedAt?: Date | null;
   featured: boolean;
   allowComments: boolean;
   readTimeMinutes: number;
@@ -58,9 +61,12 @@ const BlogSchema = new Schema<IBlog>(
     metaTitle: { type: String, trim: true },
     metaDescription: { type: String, trim: true },
     metaKeywords: [{ type: String, trim: true }],
-    // Optional override; when empty the page uses its own /blog/<slug> URL
+    // Optional override; when empty the page uses its own /blogs/<slug> URL
     canonicalUrl: { type: String, trim: true, default: "" },
     scheduledAt: { type: Date, default: null },
+    autoPublish: { type: Boolean, default: false },
+    automationKey: { type: String, default: "" },
+    lastAutoPublishedAt: { type: Date, default: null },
     featured: { type: Boolean, default: false },
     allowComments: { type: Boolean, default: true },
     readTimeMinutes: { type: Number, default: 0 },

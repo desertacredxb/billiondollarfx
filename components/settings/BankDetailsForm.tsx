@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ProfileImage from "./ProfileImage";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import { FiEdit } from "react-icons/fi";
 
 type BankDetailsFormFields = {

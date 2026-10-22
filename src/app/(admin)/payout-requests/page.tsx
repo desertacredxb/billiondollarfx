@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError } from "../../../../lib/apiClient";
 import { toast } from "react-hot-toast";
 import { RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import Button from "../../../../components/Button";

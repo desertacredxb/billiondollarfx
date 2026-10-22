@@ -1,5 +1,8 @@
 "use client";
 
+import { authenticatedFetch } from "../../../../../lib/apiClient";
+import { dubaiScheduleInput, dubaiScheduleValue } from "../../../../../lib/blogSeo";
+
 import React, {
   useState,
   useEffect,
@@ -638,17 +641,20 @@ export default function BlogEditorWorkspace({
     coverImage: "",
     coverAlt: "",
     status: "draft" as "draft" | "published" | "archived",
-    author: "Admin Panel",
+    author: "Billion Dollar FX",
     tagsString: "",
     metaTitle: "",
     metaDescription: "",
     metaKeywordsString: "",
     canonicalUrl: "",
     scheduledAt: "",
+    autoPublish: false,
     featured: false,
     allowComments: true,
   });
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [seoBusy, setSeoBusy] = useState(false);
+  const [seoChecks, setSeoChecks] = useState<{ key: string; passed: boolean; message: string }[]>([]);
 
   useEffect(() => {
     if (blogId) fetchBlogDetails();
@@ -684,7 +690,7 @@ export default function BlogEditorWorkspace({
 
   const fetchBlogDetails = async () => {
     try {
-      const res = await fetch(`/api/blogs/${blogId}`);
+      const res = await authenticatedFetch(`/api/blogs/${blogId}`);
       const data = await res.json();
       if (data.success) {
         const blog = data.data || data;
@@ -702,7 +708,8 @@ export default function BlogEditorWorkspace({
           metaDescription: blog.metaDescription || "",
           metaKeywordsString: blog.metaKeywords?.join(", ") || "",
           canonicalUrl: blog.canonicalUrl || "",
-          scheduledAt: blog.scheduledAt ? blog.scheduledAt.slice(0, 16) : "",
+          scheduledAt: dubaiScheduleInput(blog.scheduledAt),
+          autoPublish: !!blog.autoPublish,
           featured: !!blog.featured,
           allowComments: blog.allowComments !== false,
         });
@@ -1227,7 +1234,7 @@ export default function BlogEditorWorkspace({
       const data = new FormData();
       data.append("file", selectedFile);
       try {
-        const res = await fetch("/api/blogs/upload", {
+        const res = await authenticatedFetch("/api/blogs/upload", {
           method: "POST",
           body: data,
         });
@@ -1284,7 +1291,7 @@ export default function BlogEditorWorkspace({
     data.append("file", file);
 
     try {
-      const res = await fetch("/api/blogs/upload", {
+      const res = await authenticatedFetch("/api/blogs/upload", {
         method: "POST",
         body: data,
       });
@@ -1415,7 +1422,7 @@ export default function BlogEditorWorkspace({
       published: {
         title: "Publish Article?",
         message: `This article will be live on the website${
-          formData.slug ? ` at /blog/${formData.slug}` : ""
+          formData.slug ? ` at /blogs/${formData.slug}` : ""
         } and visible to all visitors.`,
         label: "Publish",
       },
@@ -1448,29 +1455,23 @@ export default function BlogEditorWorkspace({
 
   const performSave = async () => {
     setActionLoading(true);
-    const htmlContent = getCurrentHtml();
-
-    const payload = {
-      ...formData,
-      content: htmlContent,
-      tags: formData.tagsString
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      metaKeywords: formData.metaKeywordsString
-        .split(",")
-        .map((k) => k.trim())
-        .filter(Boolean),
-      faqs: faqs.filter((f) => f.question && f.answer),
-      readTimeMinutes,
-      wordCount: stats.words,
-    };
-
     try {
+      const htmlContent = getCurrentHtml();
+      const payload = {
+        ...formData,
+        scheduledAt: dubaiScheduleValue(formData.scheduledAt),
+        content: htmlContent,
+        tags: formData.tagsString.split(",").map(t => t.trim()).filter(Boolean),
+        metaKeywords: formData.metaKeywordsString.split(",").map(k => k.trim()).filter(Boolean),
+        faqs: faqs.filter(f => f.question && f.answer),
+        readTimeMinutes,
+        wordCount: stats.words,
+      };
+
       const url = blogId ? `/api/blogs/${blogId}` : "/api/blogs";
       const method = blogId ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1479,7 +1480,7 @@ export default function BlogEditorWorkspace({
 
       if (data.success) {
         setIsDirty(false);
-        triggerAlert("success", "Blog data structures committed successfully.");
+        triggerAlert("success", "Article saved.");
         setTimeout(() => router.push("/blog-management"), 1200);
       } else {
         throw new Error(data.error || "Execution module error.");
@@ -1489,6 +1490,30 @@ export default function BlogEditorWorkspace({
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const fillSeo = async () => {
+    if (seoBusy) return;
+    setSeoBusy(true);
+    try {
+      const response = await authenticatedFetch("/api/blogs/seo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        ...formData, content: getCurrentHtml(), scheduledAt: dubaiScheduleValue(formData.scheduledAt),
+        tags: formData.tagsString.split(",").map(tag => tag.trim()).filter(Boolean),
+        metaKeywords: formData.metaKeywordsString.split(",").map(tag => tag.trim()).filter(Boolean),
+      }) });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Could not check this article.");
+      setFormData(previous => {
+        if (previous.title !== formData.title || previous.shortDescription !== formData.shortDescription) return previous;
+        return { ...previous, metaTitle: previous.metaTitle.trim() || result.data.metaTitle,
+          metaDescription: previous.metaDescription.trim() || result.data.metaDescription,
+          coverAlt: previous.coverAlt.trim() || result.data.coverAlt,
+          metaKeywordsString: previous.metaKeywordsString.trim() || result.data.metaKeywords.join(", ") };
+      });
+      setSeoChecks(result.checks); markDirty();
+      triggerAlert("success", "Missing SEO fields filled. Your existing text is retained.");
+    } catch (error) { triggerAlert("error", error instanceof Error ? error.message : "Could not check this article."); }
+    finally { setSeoBusy(false); }
   };
 
   if (loading) {
@@ -2251,6 +2276,11 @@ export default function BlogEditorWorkspace({
                 : "hidden"
             }
           >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="max-w-xl text-xs text-slate-400">Saving fills empty SEO fields automatically. Use this check to preview suggestions; your existing text stays as entered.</p>
+              <button type="button" disabled={seoBusy} onClick={fillSeo} className="rounded-xl border border-[#927948] px-4 py-2 text-xs font-bold text-[#c3aa76] disabled:opacity-50">{seoBusy ? "Checking…" : "Fill missing SEO & check"}</button>
+            </div>
+            {seoChecks.length > 0 && <ul aria-label="SEO checks" className="space-y-2 text-xs">{seoChecks.map(check => <li key={check.key} className={check.passed ? "text-emerald-300" : "text-amber-300"}>{check.passed ? "✓" : "Review:"} {check.message}</li>)}</ul>}
             <div>
               <label className={LABEL}>Meta Title</label>
               <input
@@ -2258,7 +2288,7 @@ export default function BlogEditorWorkspace({
                 name="metaTitle"
                 value={formData.metaTitle}
                 onChange={handleInputChange}
-                placeholder="SEO document browser tab title tag text..."
+                placeholder="Leave blank to generate from the article title"
                 className={`${INPUT} px-4 py-3`}
               />
             </div>
@@ -2269,7 +2299,7 @@ export default function BlogEditorWorkspace({
                 rows={4}
                 value={formData.metaDescription}
                 onChange={handleInputChange}
-                placeholder="SEO description layout parameters..."
+                placeholder="Leave blank to generate from the article summary"
                 className={`${INPUT} px-4 py-3 resize-none`}
               />
             </div>
@@ -2280,7 +2310,7 @@ export default function BlogEditorWorkspace({
                 name="metaKeywordsString"
                 value={formData.metaKeywordsString}
                 onChange={handleInputChange}
-                placeholder="medical tools, surgical guidance, operational metrics"
+                placeholder="forex basics, MT5, account guides"
                 className={`${INPUT} px-4 py-3`}
               />
             </div>
@@ -2291,7 +2321,7 @@ export default function BlogEditorWorkspace({
                 name="canonicalUrl"
                 value={formData.canonicalUrl}
                 onChange={handleInputChange}
-                placeholder="https://example.com/blog/original-post"
+                placeholder="https://example.com/blogs/original-post"
                 className={`${INPUT} px-4 py-3`}
               />
             </div>
@@ -2386,7 +2416,7 @@ export default function BlogEditorWorkspace({
             }
           >
             <div>
-              <label className={LABEL}>Schedule Publish (optional)</label>
+              <label className={LABEL}>Publish no earlier than · Dubai time (optional)</label>
               <input
                 type="datetime-local"
                 name="scheduledAt"
@@ -2395,10 +2425,16 @@ export default function BlogEditorWorkspace({
                 className={`${INPUT} px-4 py-3 [color-scheme:dark]`}
               />
               <p className="text-[10px] font-semibold text-slate-500 mt-1.5">
-                Leave blank to publish immediately when status is set to
-                Published.
+                Times use Dubai (UTC+4). Published posts appear at the selected time. Queued drafts wait for the next available weekly publishing slot.
               </p>
             </div>
+
+            {formData.status === "draft" && <ToggleRow
+              label="Add to weekly publishing queue"
+              hint="Publish this draft automatically in an available slot while automatic publishing is enabled."
+              value={formData.autoPublish}
+              onChange={value => { setFormData(previous => ({ ...previous, autoPublish: value })); markDirty(); }}
+            />}
 
             <ToggleRow
               label="Featured Article"

@@ -1,6 +1,9 @@
 "use client";
 
+import { authenticatedFetch } from "../../../../lib/apiClient";
+
 import React, { useState, useEffect } from "react";
+import BlogAutomationPanel from "./component/BlogAutomationPanel";
 import { useRouter } from "next/navigation";
 import {
   FileText,
@@ -32,6 +35,7 @@ interface Blog {
   tags: string[];
   faqs: FAQ[];
   createdAt: string;
+  autoPublish?: boolean;
 }
 
 export default function AdminBlogManagement() {
@@ -56,7 +60,7 @@ export default function AdminBlogManagement() {
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/blogs");
+      const res = await authenticatedFetch("/api/blogs");
       const data = await res.json();
       if (data.success && data.data) {
         setBlogs(data.data);
@@ -84,7 +88,7 @@ export default function AdminBlogManagement() {
     }
 
     try {
-      const res = await fetch(`/api/blogs/${targetId}`, {
+      const res = await authenticatedFetch(`/api/blogs/${targetId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -107,14 +111,14 @@ export default function AdminBlogManagement() {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/blogs/${targetId}`, { method: "DELETE" });
+      const res = await authenticatedFetch(`/api/blogs/${targetId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         triggerAlert("success", "Article directory item purged.");
         setIsDeleteModalOpen(false);
         fetchBlogs();
       } else {
-        throw new Error(data.error || "Failed to delete item.");
+        throw new Error(data.error || "Failed to archive article.");
       }
     } catch (err: any) {
       triggerAlert("error", err.message);
@@ -172,6 +176,8 @@ export default function AdminBlogManagement() {
           <span>{alert.message}</span>
         </div>
       )}
+
+      <BlogAutomationPanel onChange={fetchBlogs} />
 
       {/* Control Tools Panel */}
       <div className="max-w-7xl mx-auto bg-[#121829] border border-[#1e293b] rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-center">
@@ -275,6 +281,7 @@ export default function AdminBlogManagement() {
                             <option value="archived">Archived</option>
                           </select>
                         </div>
+                        {blog.autoPublish && blog.status === "draft" && <p className="mt-1 text-[11px] text-[#c3aa76]">Weekly publishing queue</p>}
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400 font-medium whitespace-nowrap">
                         {blog.createdAt
@@ -301,7 +308,7 @@ export default function AdminBlogManagement() {
                               setBlogToDelete(blog);
                               setIsDeleteModalOpen(true);
                             }}
-                            title="Delete"
+                            title="Archive"
                             className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -335,7 +342,7 @@ export default function AdminBlogManagement() {
               </h3>
             </div>
             <p className="text-xs text-slate-400 font-medium leading-relaxed">
-              Are you sure you want to permanently delete{" "}
+              Archive this article? You can restore it from the archived list.{" "}
               <span className="font-bold text-slate-200">
                 "{blogToDelete?.title}"
               </span>
@@ -358,7 +365,7 @@ export default function AdminBlogManagement() {
                 {actionLoading && (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 )}
-                <span>Delete</span>
+                <span>Archive</span>
               </button>
             </div>
           </div>

@@ -1,23 +1,12 @@
 "use client";
 
+import { authenticatedFetch } from "../../../../lib/apiClient";
+import { loadIBRequests, type IBApplication as IBRequest } from "../../../../lib/ibRequests";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Button from "../../../../components/Button";
 
-interface IBRequest {
-  _id: string;
-  email: string;
-  existingClientBase: string;
-  offerEducation: string;
-  expectedClientsNext3Months: string;
-  expectedCommissionDirect: string;
-  expectedCommissionSubIB: string;
-  yourShare: number;
-  clientShare: number;
-  status: "pending" | "approved" | "rejected";
-  referralCode?: string;
-  commission?: number;
-}
 
 interface ClientConnection {
   name: string;
@@ -62,6 +51,7 @@ export default function IBRequestsPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<IBRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [isApprove, setIsApprove] = useState(false);
   const [isReject, setIsReject] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<IBRequest | null>(
@@ -112,11 +102,10 @@ export default function IBRequestsPage() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/ib`);
-      const data = await res.json();
-      setRequests(data);
+      setLoadError("");
+      setRequests(await loadIBRequests());
     } catch (err) {
-      console.error("Error fetching IB requests:", err);
+      setLoadError(err instanceof Error ? err.message : "Unable to load IB requests. Please retry.");
     } finally {
       setLoading(false);
     }
@@ -124,8 +113,8 @@ export default function IBRequestsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
-    if (!token || token !== "admin-token") {
-      router.push("/login");
+    if (!token) {
+      router.push("/admin-login");
       return;
     }
     fetchRequests();
@@ -134,7 +123,7 @@ export default function IBRequestsPage() {
   const approve = async (email: string) => {
     setIsApprove(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/approve`,
         { method: "PUT" }
       );
@@ -149,11 +138,14 @@ export default function IBRequestsPage() {
   };
 
   const reject = async (email: string) => {
+    const reason = window.prompt("Give the client a clear rejection reason (10–1000 characters):");
+    if (reason === null) return;
+    if (reason.trim().length < 10 || reason.trim().length > 1000) { alert("Please enter a clear reason between 10 and 1000 characters."); return; }
     setIsReject(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/ib/${email}/reject`,
-        { method: "PUT" }
+        { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: reason.trim() }) }
       );
       const data = await res.json();
       alert(data.message);
@@ -175,7 +167,7 @@ export default function IBRequestsPage() {
       setLoadingClients(true);
       setClientConnections([]);
 
-      const usersRes = await fetch(
+      const usersRes = await authenticatedFetch(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/users`
       );
 
@@ -196,7 +188,7 @@ export default function IBRequestsPage() {
           const symbolLots: { [key: string]: number } = {};
 
           try {
-            const accRes = await fetch(
+            const accRes = await authenticatedFetch(
               `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${u.email}`
             );
             const userData = await accRes.json();
@@ -204,7 +196,7 @@ export default function IBRequestsPage() {
 
             for (const acc of accounts as Account[]) {
               // Deposits
-              const depRes = await fetch(
+              const depRes = await authenticatedFetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/deposit/${acc.accountNo}`
               );
               const deposits = await depRes.json();
@@ -218,7 +210,7 @@ export default function IBRequestsPage() {
                   ) || 0;
 
               // Withdrawals
-              const wdRes = await fetch(
+              const wdRes = await authenticatedFetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/withdrawal/${acc.accountNo}`
               );
               const withdrawals = await wdRes.json();
@@ -245,7 +237,7 @@ export default function IBRequestsPage() {
                 .split("T")[0];
               const endDate = today.toISOString().split("T")[0];
 
-              const dealsRes = await fetch(
+              const dealsRes = await authenticatedFetch(
                 `${process.env.NEXT_PUBLIC_API_BASE}/api/moneyplant/getDeals`,
                 {
                   method: "POST",
@@ -328,9 +320,10 @@ export default function IBRequestsPage() {
         />
       </div>
 
+      {loadError && <div role="alert" className="mb-4 rounded-lg border border-red-700 p-4"><p className="mb-3">{loadError}</p><Button text={loading ? "Loading..." : "Retry"} disabled={loading} onClick={fetchRequests} /></div>}
       {loading ? (
         <p className="text-gray-400">Loading requests...</p>
-      ) : currentData.length === 0 ? (
+      ) : loadError ? null : currentData.length === 0 ? (
         <p className="text-gray-400 text-center py-10">No IB requests found.</p>
       ) : (
         <div className="rounded-lg border border-[#1f2937] overflow-hidden">
@@ -652,6 +645,7 @@ export default function IBRequestsPage() {
               </>
             )}
 
+            {selectedRequest.status !== "approved" && <p className="mt-4 rounded-lg border border-gray-700 p-3 text-gray-300"><strong>Application reason:</strong> {selectedRequest.statusReason || (selectedRequest.status === "rejected" ? "This earlier application was rejected. The client can apply again to request a fresh eligibility check." : "Awaiting identity verification or application review.")}</p>}
             <div className="flex justify-end gap-3 mt-6">
               {selectedRequest.status !== "approved" && (
                 <Button
@@ -659,10 +653,11 @@ export default function IBRequestsPage() {
                     await approve(selectedRequest.email);
                     setSelectedRequest(null);
                   }}
-                  text={isApprove ? "Approving..." : "Approve"}
+                  disabled={isApprove || isReject}
+                  text={isApprove ? "Approving..." : selectedRequest.approvalProvider === "veriff" ? "Approve using verified KYC" : "Approve"}
                 />
               )}
-              {selectedRequest.status !== "rejected" && (
+              {selectedRequest.status !== "rejected" && selectedRequest.approvalProvider !== "veriff" && (
                 <Button
                   onClick={async () => {
                     await reject(selectedRequest.email);

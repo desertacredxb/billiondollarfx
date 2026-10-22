@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import ProfileImage from "./ProfileImage";
 
 export default function ProfileForm() {
@@ -72,7 +72,8 @@ export default function ProfileForm() {
     try {
       const res = await axios.put(
         `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/update-profile/${email}`,
-        formData
+        formData,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } }
       );
 
       if (res.data?.success && res.data?.user) {

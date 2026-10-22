@@ -117,9 +117,9 @@ export default function TermsConditions() {
           <p className="text-gray-300 leading-relaxed">
             6.1 Please email us at{" "}
             <span className="text-[var(--primary)] font-semibold">
-              <a href="mailto: info@billiondollarfx.com">
+              <a href="mailto: support@billiondollarfx.com">
                 {" "}
-                info@billiondollarfx.com
+                support@billiondollarfx.com
               </a>
             </span>{" "}
             with any queries or worries about this agreement or other

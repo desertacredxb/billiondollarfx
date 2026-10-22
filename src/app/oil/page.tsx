@@ -4,6 +4,7 @@ import { div } from "framer-motion/client";
 import Image from "next/image";
 import { useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
+import MarketOverview from "../../../components/MarketOverview";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import Button from "../../../components/Button";
@@ -17,52 +18,7 @@ export default function Oil() {
   };
   const handleClick = () => alert("Account Opening Started!");
 
-  const chartItems = [
-    {
-      id: 1,
-      icon: "https://winprofx.com/_next/static/media/trade(16).8b7ac7ee.svg",
-      title: "Crude Oil Futures",
-      subtitle: "Crude Oil",
-      price: "1.0932",
-      currency: "USD",
-      change: "-0.00072 -0.07%",
-      changeColor: "text-red-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 2,
-      icon: "https://winprofx.com/_next/static/media/trade(15).8f35c15c.svg",
-      title: "ETHANOL FUTURES",
-      subtitle: "ETHANOL",
-      price: "1.0932",
-      currency: "USD",
-      change: "+0.00072 +0.07%",
-      changeColor: "text-green-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 3,
-      icon: "https://winprofx.com/_next/static/media/trade(14).cb452dca.svg",
-      title: "NY Harbor ULSD Futures",
-      subtitle: "NY Harbor ULSD",
-      price: "1.0932",
-      currency: "USD",
-      change: "+0.00072 +0.07%",
-      changeColor: "text-green-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-    {
-      id: 4,
-      icon: "https://winprofx.com/_next/static/media/trade(13).d6d6527b.svg",
-      title: "RBOB Gasoline Futures",
-      subtitle: "RBOB Gasoline",
-      price: "1.0932",
-      currency: "USD",
-      change: "-0.00072 -0.07%",
-      changeColor: "text-red-400",
-      chart: "https://winprofx.com/_next/static/media/grap.37f414da.svg",
-    },
-  ];
+
 
   const accordionItems = [
     {
@@ -102,60 +58,7 @@ export default function Oil() {
           <Button text="Open Account" onClick={handleClick} />
         </section>
 
-        {/* Chart Section */}
-        <section className=" py-10">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 px-4">
-            {chartItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-[#1b2d3a] p-5 rounded-2xl shadow-md text-white"
-              >
-                {/* Header */}
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9">
-                      <Image
-                        src={item.icon}
-                        alt={item.subtitle}
-                        width={36}
-                        height={36}
-                        className="rounded-full object-contain"
-                      />
-                    </div>
-                    <div className="leading-tight">
-                      <h3 className="text-sm font-semibold">{item.title}</h3>
-                      <p className="text-xs text-gray-400">{item.subtitle}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-right leading-tight">
-                    <p className="text-[10px] text-gray-400">{item.currency}</p>
-                    <p className="text-lg font-bold">{item.price}</p>
-                    <p className={`text-xs font-medium ${item.changeColor}`}>
-                      {item.change}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Chart */}
-                <div className="mt-4">
-                  <Image
-                    src={item.chart}
-                    alt={`${item.title} chart`}
-                    width={400}
-                    height={100}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-
-                {/* Footer */}
-                <p className="mt-4 text-xs text-gray-500 flex items-center gap-1">
-                  <span>©</span> Data Provider
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <MarketOverview />
 
         {/* Accordion Section */}
         <section className="max-w-4xl mx-auto px-4 py-10">

@@ -109,9 +109,10 @@ export default function DepositWithdrawalPolicy() {
           </h2>
           <ul className="list-disc list-inside text-gray-300 space-y-2 pl-2">
             <li>
-              Requests for withdrawals are handled from 9:00 AM to 6:00 PM
-              Labuan time, Monday through Friday. After these hours, requests
-              will be handled the following working day.
+              USDT withdrawal requests typically take 1–4 hours, subject to
+              account verification, available funds, payment-provider checks and
+              blockchain network conditions. Other payment methods have their
+              own processing and settlement times.
             </li>
             <li>
               Funds can only be deposited and withdrawn by verified clients with
@@ -178,7 +179,7 @@ export default function DepositWithdrawalPolicy() {
             pertaining to deposit or withdrawal terms. Written complaints should
             be sent to{" "}
             <span className="text-[var(--primary)] font-semibold">
-              info@billiondollarfx.com
+              support@billiondollarfx.com
             </span>
             .
           </p>

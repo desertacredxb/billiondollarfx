@@ -176,7 +176,7 @@ export default function AMLPolicy() {
             If you have any questions or concerns about our KYC, AML, or
             BillionDollarFX policies, please send an email to{" "}
             <span className="text-[var(--primary)] font-semibold">
-              info@billiondollarfx.com
+              support@billiondollarfx.com
             </span>
             .
           </p>

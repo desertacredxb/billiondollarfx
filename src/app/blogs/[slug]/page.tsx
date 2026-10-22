@@ -5,12 +5,12 @@ import {
   SITE_URL,
   SITE_NAME,
   blogCanonicalUrl,
-  livePublishedFilter,
 } from "@/app/lib/blogPublishing";
 import Image from "next/image";
 import Link from "next/link";
-import { connectToDatabase } from "@/app/lib/db";
-import Blog, { IBlog } from "@/app/models/Blogs";
+import type { IBlog } from "@/app/models/Blogs";
+import { publishedBlog, publishedBlogs } from "@/app/lib/blogApi";
+import { blogAuthor, blogResourceLinks } from "../../../../lib/blogSeo";
 import {
   Calendar,
   User,
@@ -30,18 +30,8 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// cache() so generateMetadata and the page share one DB query per request
-const getBlogPost = cache(async (slug: string): Promise<IBlog | null> => {
-  try {
-    await connectToDatabase();
-    const blog = await Blog.findOne({ slug, ...livePublishedFilter() }).lean();
-    if (!blog) return null;
-    return JSON.parse(JSON.stringify(blog)) as IBlog;
-  } catch (error) {
-    console.error("Error fetching blog post:", error);
-    return null;
-  }
-});
+// Metadata and article rendering share one public request.
+const getBlogPost = cache(publishedBlog);
 
 /** JSON-LD safe for inline <script>: stops "</script>" in content breaking out. */
 const toJsonLd = (data: unknown) =>
@@ -57,43 +47,12 @@ type RelatedBlog = Pick<
 
 async function getRelatedBlogs(blog: IBlog, limit = 4): Promise<RelatedBlog[]> {
   try {
-    await connectToDatabase();
-    const fields = "title slug coverImage coverAlt category publishedAt createdAt";
-    const sort = { publishedAt: -1 as const, createdAt: -1 as const };
-
-    const related = await Blog.find({
-      ...livePublishedFilter(),
-      slug: { $ne: blog.slug },
-      $and: [
-        { $or: [{ category: blog.category }, { tags: { $in: blog.tags || [] } }] },
-      ],
-    })
-      .select(fields)
-      .sort(sort)
-      .limit(limit)
-      .lean();
-
-    // Top up with latest posts if there aren't enough related ones
-    if (related.length < limit) {
-      const excludeSlugs = [blog.slug, ...related.map((b) => b.slug)];
-      const latest = await Blog.find({
-        ...livePublishedFilter(),
-        slug: { $nin: excludeSlugs },
-      })
-        .select(fields)
-        .sort(sort)
-        .limit(limit - related.length)
-        .lean();
-      related.push(...latest);
-    }
-
-    return JSON.parse(JSON.stringify(related)) as RelatedBlog[];
-  } catch (error) {
-    console.error("Error fetching related blogs:", error);
-    return [];
-  }
+    const { data } = await publishedBlogs();
+    return data.filter(post => post.slug !== blog.slug)
+      .sort((a, b) => Number(b.category === blog.category || b.tags?.some(tag => blog.tags?.includes(tag))) - Number(a.category === blog.category || a.tags?.some(tag => blog.tags?.includes(tag))))
+      .slice(0, limit) as unknown as RelatedBlog[];
+  } catch { return []; }
 }
-
 
 export async function generateMetadata({
   params,
@@ -121,7 +80,7 @@ export async function generateMetadata({
     title: `${title} | ${SITE_NAME}`,
     description,
     keywords,
-    authors: [{ name: blog.author || SITE_NAME }],
+    authors: [{ name: blogAuthor(blog.author).name }],
     alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
@@ -134,7 +93,7 @@ export async function generateMetadata({
       modifiedTime,
       section: blog.category,
       tags: blog.tags,
-      authors: [blog.author || SITE_NAME],
+      authors: [blogAuthor(blog.author).name],
       images: [
         {
           url: blog.coverImage,
@@ -173,21 +132,19 @@ export default async function BlogDetails({ params }: PageProps) {
 
   const canonical = blogCanonicalUrl(blog.slug, blog.canonicalUrl);
   const articleText = plainText(blog.content);
+  const resourceLinks = blogResourceLinks(blog);
 
   const blogSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
-    headline: (blog.metaTitle || blog.title).slice(0, 110),
+    headline: blog.title,
     description: blog.metaDescription || blog.shortDescription,
-    image: [blog.coverImage],
+    image: [new URL(blog.coverImage, SITE_URL).toString()],
     datePublished: new Date(blog.publishedAt || blog.createdAt).toISOString(),
     dateModified: new Date(blog.updatedAt || blog.createdAt).toISOString(),
-    author: {
-      "@type": "Person",
-      name: blog.author || SITE_NAME,
-    },
+    author: blogAuthor(blog.author),
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,
@@ -204,7 +161,7 @@ export default async function BlogDetails({ params }: PageProps) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blogs` },
       { "@type": "ListItem", position: 3, name: blog.title, item: canonical },
     ],
   };
@@ -248,7 +205,7 @@ export default async function BlogDetails({ params }: PageProps) {
         {/* Navigation Breadcrumb */}
         <div className="mb-8">
           <Link
-            href="/blog"
+            href="/blogs"
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-[#927948] transition-colors uppercase tracking-wider bg-[#121829] px-3.5 py-2 rounded-xl border border-[#1e293b] shadow-sm"
           >
             <ArrowLeft className="w-4 h-4 text-[#927948]" /> Back to Articles
@@ -268,7 +225,7 @@ export default async function BlogDetails({ params }: PageProps) {
               </span>
               <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-[#927948]" />
-                {blog.author || "Admin Panel"}
+                {blogAuthor(blog.author).name}
               </span>
             </div>
           </div>
@@ -329,6 +286,11 @@ export default async function BlogDetails({ params }: PageProps) {
         >
           <div className="flow-root" dangerouslySetInnerHTML={{ __html: blog.content }} />
         </article>
+
+        <section aria-labelledby="related-learning" className="mb-10 rounded-2xl border border-[#1e293b] bg-[#121829] p-6">
+          <h2 id="related-learning" className="text-lg font-bold text-white">Continue learning</h2>
+          <ul className="mt-3 space-y-2 text-sm text-[#c3aa76]">{resourceLinks.map(link => <li key={link.href}><Link href={link.href} className="underline underline-offset-4">{link.label}</Link></li>)}</ul>
+        </section>
 
         {/* Tag Pill Chips */}
         {blog.tags && blog.tags.length > 0 && (
@@ -402,7 +364,7 @@ export default async function BlogDetails({ params }: PageProps) {
                 {relatedBlogs.map((post) => (
                   <li key={post._id}>
                     <Link
-                      href={`/blog/${post.slug}`}
+                      href={`/blogs/${post.slug}`}
                       className="group flex gap-4 p-2 -m-2 rounded-2xl hover:bg-[#0a0f1c] transition-colors"
                     >
                       <div className="relative w-24 h-20 shrink-0 rounded-xl overflow-hidden border border-[#1e293b] bg-[#0a0f1c]">
@@ -436,7 +398,7 @@ export default async function BlogDetails({ params }: PageProps) {
               </ul>
 
               <Link
-                href="/blog"
+                href="/blogs"
                 className="mt-6 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[#927948] border border-[#927948]/30 bg-[#927948]/10 hover:bg-[#927948] hover:text-white rounded-xl py-2.5 transition-colors"
               >
                 View All Articles

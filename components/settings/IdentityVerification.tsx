@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircle } from "lucide-react";
 import Image from "next/image";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import docImage from "../../assets/icons/doc_upload-tuKFdIoz.png";
 import ProfileImage from "./ProfileImage";
 

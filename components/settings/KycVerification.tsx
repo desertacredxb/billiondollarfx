@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import ProfileImage from "./ProfileImage";
+import VeriffVerification from "./VeriffVerification";
 
 const DOC_TYPES = [
   "Passport",
@@ -44,6 +45,7 @@ interface ProofFormState {
 const emptyProof: ProofFormState = { docType: "", docNumber: "", image: undefined };
 
 export default function KycVerification() {
+  const [veriffManaged, setVeriffManaged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [email, setEmail] = useState("");
@@ -72,6 +74,7 @@ export default function KycVerification() {
           `${process.env.NEXT_PUBLIC_API_BASE}/api/auth/user/${storedEmail}`
         );
         setCountry(response.data.country || response.data.nationality || "");
+        setVeriffManaged(response.data.kycProvider === "veriff");
         setHasSubmittedDocuments(response.data.hasSubmittedDocuments || false);
         setIsKycVerified(response.data.isKycVerified || false);
         setSubmittedIdProof1(response.data.idProof1 || {});
@@ -182,6 +185,8 @@ export default function KycVerification() {
       </div>
     );
   }
+
+  if (veriffManaged) return <VeriffVerification />;
 
   if (hasSubmittedDocuments) {
     return (

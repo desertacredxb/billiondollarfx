@@ -2,12 +2,8 @@ import Image from "next/image";
 import {
   FaWhatsapp,
   FaEnvelope,
-  FaPhone,
   FaFacebookF,
   FaInstagram,
-  FaLinkedinIn,
-  FaYoutube,
-  FaPhoneAlt,
 } from "react-icons/fa";
 import logo from "../assets/bdfx.gif";
 import Link from "next/link";
@@ -27,9 +23,11 @@ const navLinks = [
   { label: "About Us", href: "/about" },
   { label: "Our IB", href: "/ib-broker" },
   { label: "Education", href: "/education" },
-  { label: "News & Insights", href: "/news" }, // or use "/insights" if that's your route
+  { label: "Blogs", href: "/blogs" }, // or use "/insights" if that's your route
+  { label: "News", href: "/news" }, // or use "/insights" if that's your route
   { label: "Join Our Team", href: "/career" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Help Centre", href: "/help-centre" },
 ];
 const footerLinks = [
   { label: "Privacy Policy", path: "/Privacy-Policy" },
@@ -38,7 +36,6 @@ const footerLinks = [
   { label: "Deposit & Withdrawal Policy", path: "/Deposit&Withdrawal" },
   { label: "Restricted Countries", path: "/Restricted-Countries" },
   { label: "Risk Disclosure", path: "/risk-discloser" },
-  // { label: "Client Services Agreement", path: "/client-services-agreement" },
 ];
 
 export default function Footer() {
@@ -49,7 +46,7 @@ export default function Footer() {
         <div>
           <Image
             src={logo}
-            alt="Billio Dollar FX"
+            alt="Billion Dollar FX"
             width={240}
             className="mb-4"
           />
@@ -102,7 +99,9 @@ export default function Footer() {
               <FaWhatsapp className="text-green-400" /> +447999283366
             </li>
             <li className="flex items-center gap-2">
-              <FaEnvelope className="text-blue-400" /> info@billiondollarfx.com
+              <a href="mailto:support@billiondollarfx.com" className="flex items-center gap-2 hover:text-white transition-colors">
+                <FaEnvelope className="text-blue-400" /> support@billiondollarfx.com
+              </a>
             </li>
 
           </ul>
@@ -170,18 +169,19 @@ export default function Footer() {
           <h4 className="font-semibold text-white mb-2">Restricted Regions</h4>
           <p className="text-gray-400 text-sm">
             Billion Dollar FX Limited does not provide services for
-            citizens/residents of the USA, Cuba, Iraq, Myanmar, North Korea,
+            citizens/residents of the UAE, USA, Cuba, Iraq, Myanmar, North Korea,
             Sudan. The services of Billion Dollar FX Limited are not intended
             for distribution to, or use by, any person in any country or
             jurisdiction where such distribution or use would be contrary to
-            local law or regulation.
+            local law or regulation. UAE-issued identity documents are not accepted.
+            See the <Link href="/Restricted-Countries" className="underline">restricted countries policy</Link> for further eligibility information.
           </p>
         </div>
       </div>
 
       {/* Footer Bottom */}
       <div className="mt-10 border-t border-gray-700 pt-6 text-center text-gray-400 text-xs flex flex-col md:flex-row md:justify-between items-center gap-2">
-        <p>© 2025 All Rights Reserved By Billion Dollar FX</p>
+        <p>© {new Date().getFullYear()} All Rights Reserved By Billion Dollar FX</p>
         <div className="flex flex-wrap justify-center gap-4">
           {footerLinks.map((item, idx) => (
             <Link

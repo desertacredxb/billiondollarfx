@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ProfileImage from "./ProfileImage";
-import axios from "axios";
+import axios from "../../lib/apiClient";
 import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
