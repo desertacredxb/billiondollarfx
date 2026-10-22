@@ -8,6 +8,16 @@ interface ConnectedReport {
 }
 type Report = ConnectedReport | { connected: false };
 const count = (value: number) => new Intl.NumberFormat("en-GB").format(value);
+const reportingErrors: Record<string, string> = {
+  GA4_CREDENTIALS_INVALID: "The saved Google reporting credential is invalid. Check that the complete service-account JSON was saved in the server settings.",
+  GA4_API_DISABLED: "Google Analytics Data API needs to be enabled in the reporting service account's Google Cloud project.",
+  GA4_ACCESS_DENIED: "The reporting service account needs Viewer access to the Billion Dollar FX Analytics property.",
+  GA4_AUTH_FAILED: "Google could not authenticate the reporting account. Check that its saved key is active and belongs to that account.",
+  GA4_TIMEOUT: "Google reporting took too long. Please refresh shortly.",
+  GA4_QUOTA: "Google reporting is temporarily rate limited. Please retry shortly.",
+  GA4_REQUEST_INVALID: "Google could not accept this report request. Please contact support.",
+  GA4_RESPONSE_INVALID: "Google returned an unexpected report format. Please contact support.",
+};
 export default function WebsiteAnalytics() {
   const [days, setDays] = useState("7"), [refresh, setRefresh] = useState(0);
   const [report, setReport] = useState<Report | null>(null), [loading, setLoading] = useState(true), [error, setError] = useState("");
@@ -18,8 +28,19 @@ export default function WebsiteAnalytics() {
       try {
         const { data } = await api.get<Report>(`${process.env.NEXT_PUBLIC_API_BASE}/api/analytics/report`, { params: { days }, signal: controller.signal, timeout: 20000 });
         if (!controller.signal.aborted) setReport(data);
-      } catch {
-        if (!controller.signal.aborted) { setReport(null); setError("Unable to load website reporting. Please retry shortly."); }
+      } catch (failure) {
+        if (!controller.signal.aborted) {
+          let message = "Unable to load website reporting. Please retry shortly.";
+          if (api.isAxiosError<{ code?: unknown }>(failure)) {
+            const status = failure.response?.status, code = failure.response?.data?.code;
+            if (status === 401) message = "Your admin session has expired. Please sign in again to view website reporting.";
+            else if (status === 403) message = "Website reporting is available to the BDFX owner account.";
+            else if (status === 503 && typeof code === "string" && Object.hasOwn(reportingErrors, code)) message = reportingErrors[code];
+            else if (failure.code === "ECONNABORTED") message = "The reporting server took too long to respond. Please refresh shortly.";
+            else if (!failure.response) message = "The reporting server could not be reached. Please check your connection and refresh.";
+          }
+          setReport(null); setError(message);
+        }
       } finally { if (!controller.signal.aborted) setLoading(false); }
     }
     setReport(null); void load();
