@@ -1,5 +1,7 @@
 # BDFX improvement roadmap
 
+Latest review: 22 October 2026. Read [approved-behavior.md](approved-behavior.md) first; its current validation and open-item list supersede older setup checkpoints below. All 208 backend and 36 frontend tests, TypeScript and the production build passed. Current owner reads of IB, Analytics, Chat Reports, Business Report, staff, audit, campaign and publishing controls succeeded; 23 public/access-control smoke checks passed. Client name editing/resubmission is restored for ordinary unapproved review, while only address editing is removed. Repository instructions and regression checks preserve accepted behavior; a permanent write freeze has not been configured.
+
 Requested implementation order: complete and verify each item before continuing to the next.
 
 | Item | Work | Status |
@@ -10,7 +12,7 @@ Requested implementation order: complete and verify each item before continuing 
 | 4 | MT5 downloads, WebTrader and setup instructions | Complete: official links and setup guide live; owner confirmed the trading platform is working on 21 October 2026. Earlier sandbox connection failures are not a live-platform defect |
 | 5 | Consistent account offering and pricing | Live with supplied Liquid/$50/up to 1:500/commission-free/swap-free terms |
 | 6 | Unified IB application and referral journey | Live: public entry, post-verification IB navigation, secured limited referrals and input-based earnings estimate |
-| 7 | OTP email delivery | Mailer hardening/sender fallback live; canonical duplicate blocking deployed; email-to-WhatsApp OTP flow prepared, with actual WhatsApp sender/template unconfigured and enforcement off; domain inbox placement also remains open |
+| 7 | OTP email delivery | Domain SMTP has system-mail server-acceptance evidence; inbox placement remains unconfirmed. Canonical duplicate blocking is live. WhatsApp OTP configuration is present, enforcement is off, and actual approved-template delivery/phone verification remains unverified |
 | 8 | UAE restriction content | Public eligibility and footer updated; other existing country restrictions need business review |
 | 9 | Withdrawal information and support escalation | Live: USDT 1–4 hour information and escalation guide; public help page and runtime checks passed |
 | 10 | Blog, sitemap and page SEO | Live: backend blog storage, scheduled visibility, published SSR, unique metadata/canonicals, sitemap and private noindex rules |
@@ -22,7 +24,7 @@ Requested implementation order: complete and verify each item before continuing 
 | 16 | Support ticket experience | Live: validation, references, accessible conversations and retry-safe writes; isolated signed-in HTTP journey covers ticket/reply retries, ownership and closed conversations without real tickets |
 | 17 | Help centre | Live; account/verification/MT5/payment/IB Help Centre opened and answer expansion verified |
 | 18 | Administrator two-factor sign-in and audit history | Live: owner/manager logins, per-address OTP, scoped permissions, immediate revocation and owner-only activity history |
-| 19 | Failure alerts, database backups and restore verification | Hourly GitHub monitor active; Render HTTP /health now configured and live, with existing Only failure notifications inherited. Actual production database access/backup restore and real alert delivery remain unverified; the currently accessible Atlas project is empty |
+| 19 | Failure alerts, database backups and restore verification | Render HTTP /health and fresh direct website/database checks pass. GitHub has a fifteen-minute cron configuration, but its latest observed scheduled run is stale; scheduling timeliness/actual alert delivery remain unverified. The accessible Atlas project is empty, so production backup/restore remains blocked on the actual database project |
 | 20 | Form validation, errors and confirmations | Live: support/server validation, duplicate-submit handling and registration/contact inline confirmations; no real form submission generated |
 | 21 | Consistent BDFX branding and original assets | Live: homepage claim cleanup, original market information cards and Education/News content; public content checks passed |
 | 22 | Daily business report | Live admin report with Dubai dates, registration/account counts, payment-status counts and work queues; excludes mixed-currency monetary totals |
@@ -47,4 +49,4 @@ Three roadmap items remain partly open: #7, #15 and #19. These cover domain emai
 
 ## Follow-up: GA4 in admin
 
-The owner requested Website Analytics inside the existing admin panel. Owner-only navigation/page and protected Google Data API adapter are implemented, including date-range totals, realtime users, daily pageviews and public page/channel tables. Browser Google login is separate from server reporting authorization. The dedicated reporting identity/property Viewer grant and Render credential remain pending specific owner approval; missing connection is displayed honestly without sample/zero traffic. This follow-up is not certified live reporting until the Google connection and owner production page are verified.
+The owner requested Website Analytics inside the existing admin panel. The dedicated BDFX Google connection is now working, including historical/realtime reporting in the existing owner session. Fresh production reads succeeded on 22 October. Do not recreate the property, reporting identity/key or grant, and do not introduce another human login. A valid empty realtime response no longer blocks historical totals. Preserve production consent, public-path filtering, owner-only access and event-based conversion definitions.

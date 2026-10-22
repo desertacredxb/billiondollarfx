@@ -2,6 +2,8 @@
 
 Keep owner-approved flows unchanged during unrelated fixes. Check affected UI paths and regression tests before publishing. Change the agreed behavior only when the owner explicitly asks for that change.
 
+Read `docs/approved-behavior.md` before changing an existing feature. Check dependent client/admin journeys, not just the edited component. Existing tests and CI protect expected behavior; do not claim a permanent repository write lock or enforced branch protection without verifying that configuration.
+
 ## Client identity corrections (owner confirmed 22 October 2026)
 
 - Keep **Edit name & resubmit → Save details → Resubmit verification** on the client verification page. Ordinary unapproved review must not hide the name correction action when the backend permits it.
