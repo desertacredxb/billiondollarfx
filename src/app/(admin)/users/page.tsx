@@ -82,6 +82,19 @@ export default function UsersPage() {
   const [reviewedDocuments, setReviewedDocuments] = useState(false);
   const [manualBusy, setManualBusy] = useState(false);
   const [manualMessage, setManualMessage] = useState("");
+  const syncVeriff = async () => {
+    if (!selectedUser || manualBusy) return;
+    setManualBusy(true); setManualMessage("");
+    try {
+      const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/admin/sync/${selectedUser._id}`, {
+        sessionId: selectedUser.veriff?.sessionId, expectedRevision: selectedUser.veriff?.revision,
+      }, { timeout: 20000 });
+      const updated = { ...selectedUser, isKycVerified: data.approved, veriff: data.veriff };
+      setUsers(values => values.map(value => value._id === updated._id ? updated : value));
+      setSelectedUser(updated); setManualDecision(null); setManualMessage(data.message);
+    } catch (error) { setManualMessage(axios.isAxiosError(error) && typeof error.response?.data?.message === "string" ? error.response.data.message : "Veriff sync could not be confirmed. Refresh to check before retrying."); }
+    finally { setManualBusy(false); }
+  };
   useEffect(() => { setManualDecision(null); setManualReason(""); setReviewedDocuments(false); setManualMessage(""); }, [selectedUser?._id]);
   const saveManualReview = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -475,9 +488,10 @@ export default function UsersPage() {
               {selectedUser.kycProvider === "veriff" && <section className="rounded-xl border border-amber-600/40 bg-amber-950/20 p-4 space-y-2">
                 <h3 className="font-semibold text-amber-200">Verification managed by Veriff</h3>
                 <p className="text-sm text-gray-300">Review the identity documents and provider result in Veriff. An owner can record a manual approval or rejection below; the original Veriff result remains in history.</p>
-                <p className="text-sm">Provider status: {selectedUser.veriff?.status || "Not started"}{selectedUser.veriff?.reasonCode ? ` · Reason code: ${selectedUser.veriff.reasonCode}` : ""}</p>
+                <p className="text-sm">BDFX verification status: {selectedUser.veriff?.status || "Not started"}{selectedUser.veriff?.reasonCode ? ` · Reason code: ${selectedUser.veriff.reasonCode}` : ""}</p>
                 {selectedUser.veriff?.sessionId && <p className="text-xs text-gray-400 break-all">Veriff session: {selectedUser.veriff.sessionId}</p>}
                 {adminSession?.role === "owner" && selectedUser.veriff?.sessionId && <div className="space-y-3 pt-3">
+                  {!selectedUser.isKycVerified && <button type="button" disabled={manualBusy} onClick={() => void syncVeriff()} className="rounded-lg bg-[#c6a15b] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{manualBusy ? "Checking…" : "Sync current Veriff result"}</button>}
                   <div className="flex flex-wrap gap-3"><button type="button" disabled={manualBusy} onClick={() => { setManualDecision(true); setManualMessage(""); }} className="rounded-lg bg-green-700 px-4 py-2 text-sm">Manual approve</button><button type="button" disabled={manualBusy} onClick={() => { setManualDecision(false); setManualMessage(""); }} className="rounded-lg border border-amber-600 px-4 py-2 text-sm">Manual reject</button></div>
                   {manualDecision !== null && <form onSubmit={saveManualReview} className="space-y-3 rounded-xl border border-gray-600 p-4">
                     <h4 className="font-semibold">{manualDecision ? "Confirm manual approval" : "Confirm manual rejection"}</h4>
