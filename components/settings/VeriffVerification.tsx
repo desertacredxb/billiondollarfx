@@ -1,7 +1,9 @@
 "use client";
 
 import IdentityReadinessNotice from "../IdentityReadinessNotice";
+import IdentityNameCorrection from "./IdentityNameCorrection";
 import { authenticatedFetch } from "../../lib/apiClient";
+import { verificationActions } from "../../lib/verificationActions";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -13,7 +15,8 @@ interface VerificationStatus {
   failureReason?: string;
   reasonCode?: number | null;
   canEditDetails?: boolean;
-  details?: { fullName: string; address: string; state: string; city: string; postalCode: string };
+  resubmissionRequired?: boolean;
+  details?: { fullName: string };
   approved: boolean;
   status: string;
   message: string;
@@ -54,7 +57,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to save details.");
-      setStatus(data); setEditing(false); setNotice("Details saved. You can now continue identity verification.");
+      setStatus(data); setEditing(false); setNotice("Name saved. Select Resubmit verification to submit a fresh identity check.");
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to save details."); }
     finally { setBusy(false); }
   };
@@ -112,10 +115,8 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
     } finally { setBusy(false); }
   };
 
-  const needsSupport = status && (["review", "test_approved", "manual_rejected"].includes(status.status) || (status.status === "declined" && !status.canRetry));
-  const identityApproved = status?.approved && (!forIb || status.managedByVeriff);
-  const needsIbVerification = forIb && status?.approved && !status.managedByVeriff;
-  const canStart = status?.enabled && !identityApproved && !needsSupport;
+  const { identityApproved, needsIbVerification, canEditName, canStart, startLabel } = verificationActions(status, forIb);
+  const showEditing = editing && canEditName;
 
   return (
     <section className="rounded-2xl border border-[#c6a15b]/30 bg-[#0f172a] p-6 md:p-10 text-white max-w-2xl mx-auto space-y-5">
@@ -128,15 +129,11 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
       {!status && !error && <p className="text-gray-400">Loading your verification status…</p>}
       {status && !status.enabled && !status.approved && <p className="text-amber-200">Identity verification is temporarily unavailable. Please contact support.</p>}
       {notice && <p role="status" className="text-sm text-emerald-200">{notice}</p>}
-      {status?.canEditDetails && !editing && <button type="button" disabled={busy} onClick={() => { setDetails({ fullName: status.details?.fullName || "" }); setEditing(true); setNotice(""); }} className="rounded-lg border border-[#c6a15b] px-4 py-2 text-[#e7c985] disabled:opacity-50">Edit details as per ID</button>}
-      {editing && <form onSubmit={saveDetails} className="space-y-4 rounded-xl border border-gray-600 p-4">
-        <h2 className="font-semibold">Enter your full name exactly as shown on your ID</h2>
-        <p className="text-sm text-gray-300">For changes to email, mobile number, nationality or country of residence, contact WhatsApp support below.</p>
-        <label className="block text-sm"><span>Full name as on ID</span><input name="fullName" value={details.fullName} required maxLength={150} disabled={busy} onChange={event => setDetails({ fullName: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-600 bg-[#10151f] p-3" /></label>
-        <div className="flex gap-4"><button type="submit" disabled={busy || !status?.canEditDetails} className="rounded-lg bg-[#c6a15b] px-4 py-2 font-semibold text-black disabled:opacity-50">{busy ? "Saving…" : "Save details"}</button><button type="button" disabled={busy} onClick={() => setEditing(false)}>Cancel</button></div>
-      </form>}
+      <IdentityNameCorrection allowed={canEditName} editing={showEditing} busy={busy} fullName={details.fullName}
+        onEdit={() => { setDetails({ fullName: status?.details?.fullName || "" }); setEditing(true); setNotice(""); }}
+        onChange={fullName => setDetails({ fullName })} onSave={saveDetails} onCancel={() => setEditing(false)} />
       {status?.canRetry && <p className="text-sm text-amber-200">You can try again with your original physical ID. Use clear lighting and make sure your details match the document.</p>}
-      {canStart && <>
+      {canStart && status && <>
         <IdentityReadinessNotice />
         <p className="text-sm leading-6 text-gray-400">Continue to Veriff to verify your identity using a supported government-issued ID and selfie. Your account will be approved automatically after a successful verification and BDFX eligibility checks.</p>
         {needsIbVerification && <p className="text-sm text-amber-200">Starting this new check will put your identity verification status back into pending until it completes.</p>}
@@ -149,9 +146,9 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
           </select>
         </div>
         <p className="text-sm text-gray-400">BDFX does not accept UAE clients or UAE-issued identity documents.</p>
-        <button type="button" onClick={start} disabled={busy || editing || !country || status.status === "creating"}
+        <button type="button" onClick={start} disabled={busy || showEditing || !country || status.status === "creating"}
           className="rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black disabled:opacity-50">
-          {busy ? "Opening verification…" : status.canRetry ? "Try verification again" : status.status === "resubmission_requested" ? "Continue verification" : "Continue to Verify"}
+          {busy ? "Opening verification…" : startLabel}
         </button>
       </>}
       {identityApproved && <Link href={returnToIb ? "/introducing-broker" : "/dashboard"} className="inline-block rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black">{returnToIb ? "Continue to IB application" : "Continue to dashboard"}</Link>}
