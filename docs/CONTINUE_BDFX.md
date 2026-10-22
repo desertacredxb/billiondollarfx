@@ -1,3 +1,19 @@
+# Latest checkpoint — 22 October 2026
+
+This checkpoint supersedes older pending-Google-connection notes below. Website Analytics is connected to the correct BDFX GA4 property using the dedicated server identity, and the owner confirmed the live dashboard after the zero-active-user realtime parser fix. Do not create another Google key/property or repeat that setup. Backend main before this security release is 2d7269de481e71a4d74d6b8bb0ea8f6cce167b7d; frontend is c99c8e0398528ef46824f5078c21fea08ab2e0f7.
+
+The owner requested security updates, database backup setup and failure alerts. Security changes are validated locally: backend dependency alerts 21 to 0, frontend production audit 0; five unpatched dev-only lint/globbing warnings remain, documented in docs/security-updates.md. Node 22.23.3 passes 198 backend tests, 30 frontend tests and the Next.js 16.4.2 production build. Verify the new hosting deployments and CI separately after publication.
+
+Failure monitoring is scheduled every 15 minutes on the public backend repository, assigning its incident issue to the existing repository owner. A separate GitHub test issue #13 verified creation/assignment and is closed; email/push receipt is not inferred. An hourly ChatGPT condition watch is enabled for new incidents and recovery. Existing Render /health and Only failure notifications are preserved.
+
+Fresh Atlas discovery still exposes only Project 0 (6ad7f5e9d7869265e2a7db73), with zero clusters. No production backup or restore was created; access to the actual existing database project is required. Do not build a replacement cluster or claim backups are configured. Never request a connection password/URI in chat or restore over production.
+
+The WATI dashboard could not be accessed because of the Cloud Browser security policy; browser controls subsequently became unavailable. Do not work around the block through raw browser or private API access. The public BDFX registration-options endpoint still showed mobileOtpRequired:false and registrationAvailable:true. Current template approval was not verified; the owner was asked for the bdfx_registration_otp status screenshot. A pre-existing token-renewal reminder exists; do not infer that a token is absent from older documentation.
+
+A screenshot review also observed Sessions=6 versus channel rows Direct=6 and Unassigned=2. The report loads, but the differing aggregates have not been reconciled. Do not describe that count comparison as verified.
+
+---
+
 # Continue BDFX improvements
 
 
