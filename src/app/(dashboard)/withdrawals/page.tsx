@@ -19,11 +19,13 @@ export default function Withdrawal() {
   const [showModal, setShowModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showKycPopup, setShowKycPopup] = useState(false);
+  // VND (Floxy) rate + minimum, fetched when the VND method is chosen.
+  const [vndQuote, setVndQuote] = useState<{ vndPerUsd: number; minVnd: number } | null>(null);
 
   // 🔹 Form state with default values
   const [form, setForm] = useState({
     accountNo: "",
-    currency: "CRYPTO" as "INR" | "USD" | "CRYPTO",
+    currency: "CRYPTO" as "INR" | "USD" | "CRYPTO" | "VND",
     amount: "",
     note: "",
     // INR Details (Prefilled from User Object)
@@ -40,6 +42,11 @@ export default function Withdrawal() {
     walletAddress: "",
     network: "TRC20",
     memo: "",
+    // VND bank details (Floxy payout) - prefilled from the profile's bank details
+    vndHolderName: "",
+    vndAccountNumber: "",
+    vndBankName: "",
+    vndRoutingCode: "",
   });
 
   // Prefill the account selector and bank details from the shared profile
@@ -59,6 +66,10 @@ export default function Withdrawal() {
         profile.mobile != null ? String(profile.mobile) : profile.phone || "",
       bankName: profile.bankName || "",
       swiftCode: profile.iban || "",
+      // Same holder/account/bank fields serve a Vietnamese bank account.
+      vndHolderName: prev.vndHolderName || profile.accountHolderName || "",
+      vndAccountNumber: prev.vndAccountNumber || profile.accountNumber || "",
+      vndBankName: prev.vndBankName || profile.bankName || "",
     }));
   }, [profile, accounts]);
 
@@ -73,6 +84,20 @@ export default function Withdrawal() {
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "currency" && value === "VND") loadVndQuote();
+  };
+
+  // Rate + minimum for VND withdrawals; the backend locks the rate again on submit.
+  const loadVndQuote = async () => {
+    try {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE}/api/payment/floxy/quote`);
+      const quote = { vndPerUsd: Number(res.data.vndPerUsd), minVnd: Number(res.data.minVnd) };
+      setVndQuote(quote);
+      return quote;
+    } catch {
+      toast.error("VND withdrawals are unavailable right now.");
+      return null;
+    }
   };
 
   const fetchRate = async () => {
@@ -104,6 +129,23 @@ const handleSubmit = async (e: React.FormEvent) => {
   if (form.currency === "INR") {
     const rate = await fetchRate(); // INR to USD rate
     amountInUSD = amountNum * rate;
+  }
+  if (form.currency === "VND") {
+    const quote = vndQuote || (await loadVndQuote());
+    if (!quote) return;
+    if (!Number.isInteger(amountNum)) {
+      toast.error("Enter a whole VND amount.");
+      return;
+    }
+    if (amountNum < quote.minVnd) {
+      toast.error(`Minimum withdrawal amount is VND ${quote.minVnd.toLocaleString("en-US")}.`);
+      return;
+    }
+    if (!form.vndHolderName.trim() || !form.vndAccountNumber.trim() || !form.vndBankName.trim()) {
+      toast.error("Account holder name, account number and bank name are required.");
+      return;
+    }
+    amountInUSD = amountNum / quote.vndPerUsd;
   }
 
   // 2. Balance Check (MT5 balance is in USD)
@@ -281,6 +323,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <option value="CRYPTO">Crypto</option>
                     <option value="INR">INR (Bank Transfer / UPI)</option>
                     <option value="USD">USD (International Wire)</option>
+                    <option value="VND">VND (Vietnam Bank Transfer)</option>
                   </select>
                 </div>
 
@@ -454,10 +497,66 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </>
                 )}
 
+                {/* 2D. VND FIELDS (Floxy bank payout, prefilled from profile) */}
+                {form.currency === "VND" && (
+                  <>
+                    <div>
+                      <label htmlFor="vndHolderName" className="block text-xs text-gray-400 mb-1">Account Holder Name</label>
+                      <input
+                        id="vndHolderName"
+                        type="text"
+                        name="vndHolderName"
+                        placeholder="Name exactly as on the bank account"
+                        value={form.vndHolderName}
+                        onChange={handleChange}
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm mb-3"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="vndAccountNumber" className="block text-xs text-gray-400 mb-1">Bank Account Number</label>
+                      <input
+                        id="vndAccountNumber"
+                        type="text"
+                        name="vndAccountNumber"
+                        placeholder="Bank Account Number"
+                        value={form.vndAccountNumber}
+                        onChange={handleChange}
+                        className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm mb-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="vndBankName" className="block text-xs text-gray-400 mb-1">Bank Name</label>
+                        <input
+                          id="vndBankName"
+                          type="text"
+                          name="vndBankName"
+                          placeholder="e.g. Vietcombank"
+                          value={form.vndBankName}
+                          onChange={handleChange}
+                          className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="vndRoutingCode" className="block text-xs text-gray-400 mb-1">Bank Code (Optional)</label>
+                        <input
+                          id="vndRoutingCode"
+                          type="text"
+                          name="vndRoutingCode"
+                          placeholder="e.g. VCB"
+                          value={form.vndRoutingCode}
+                          onChange={handleChange}
+                          className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* Common Inputs */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-  Amount ({form.currency === "INR" ? "₹" : "$"})
+  Amount ({form.currency === "INR" ? "₹" : form.currency === "VND" ? "VND" : "$"})
 </label>
                   <input
                     type="number"
@@ -467,6 +566,20 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={handleChange}
                     className="w-full p-2.5 rounded-xl bg-gray-800 border border-gray-700 text-sm"
                   />
+                  {form.currency === "VND" && vndQuote && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Minimum VND {vndQuote.minVnd.toLocaleString("en-US")}.
+                      {Number(form.amount) > 0 && (
+                        <>
+                          {" "}About{" "}
+                          <span className="text-gray-200">
+                            ${(Number(form.amount) / vndQuote.vndPerUsd).toFixed(2)}
+                          </span>{" "}
+                          will be deducted from your MT5 balance.
+                        </>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <input
                   type="text"

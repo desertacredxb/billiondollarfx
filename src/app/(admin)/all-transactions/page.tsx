@@ -46,7 +46,7 @@ interface WithdrawalResponse {
   name: string;
   accountNo: string | number;
   status: "Pending" | "Completed" | "Rejected" | string;
-  currency?: "INR" | "USD" | "CRYPTO" | string;
+  currency?: "INR" | "USD" | "CRYPTO" | "VND" | string;
   response?: {
     orderid?: string;
     [key: string]: unknown; // safer than any
@@ -60,10 +60,12 @@ const getCurrencySymbol = (
   type: "deposit" | "withdrawal"
 ): string => {
   if (type === "withdrawal") {
-    return (row as WithdrawalResponse).currency === "INR" ? "₹" : "$";
+    const currency = (row as WithdrawalResponse).currency;
+    return currency === "INR" ? "₹" : currency === "VND" ? "VND " : "$";
   }
+  // Floxy orders store the USD credited (the VND paid is kept separately).
   const provider = String((row as DepositResponse).provider || "").toUpperCase();
-  return provider === "CRYPTO" || provider === "CREGIS" ? "$" : "₹";
+  return provider === "CRYPTO" || provider === "CREGIS" || provider === "FLOXY" ? "$" : "₹";
 };
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
