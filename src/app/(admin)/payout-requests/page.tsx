@@ -13,7 +13,7 @@ export interface Withdrawal {
   _id: string;
   orderid: string;
   accountNo: string;
-  currency: "INR" | "USD" | "CRYPTO";
+  currency: "INR" | "USD" | "CRYPTO" | "VND";
   amount: number;
   amountUSD?: string;
   status: "Pending" | "Processing" | "Completed" | "Rejected" | "Failed";
@@ -34,6 +34,19 @@ export interface Withdrawal {
   network?: string;
   memo?: string;
   isManual?: boolean;
+  transactionReference?: string;
+  // Floxy (VND) payout bookkeeping
+  floxy?: {
+    vndPerUsd?: number;
+    routingCode?: string;
+    pendingKey?: string;
+    payoutId?: string;
+    status?: string;
+    needsReview?: boolean;
+    failureCode?: string;
+    networkDeclineCode?: string;
+    lastMessage?: string;
+  };
 }
 
 export default function AdminWithdrawals() {
@@ -86,6 +99,7 @@ export default function AdminWithdrawals() {
   const formatAmount = (w: Withdrawal) => {
     if (w.currency === "CRYPTO") return `${w.amount} ${w.cryptoSymbol || "USDT"}`;
     if (w.currency === "INR") return `₹${w.amount}`;
+    if (w.currency === "VND") return `VND ${Number(w.amount).toLocaleString("en-US")}`;
     return `$${w.amount}`;
   };
 
@@ -141,6 +155,8 @@ export default function AdminWithdrawals() {
       ? "bg-purple-900 text-purple-300"
       : currency === "INR"
       ? "bg-blue-900 text-blue-300"
+      : currency === "VND"
+      ? "bg-rose-900 text-rose-300"
       : "bg-green-900 text-green-300";
 
   return (
@@ -149,7 +165,7 @@ export default function AdminWithdrawals() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Withdrawal Requests</h1>
           <p className="text-gray-400 mt-1 text-sm">
-            Manage and review user withdrawal requests across INR, USD, and Crypto methods.
+            Manage and review user withdrawal requests across INR, USD, VND, and Crypto methods.
           </p>
         </div>
         <button
