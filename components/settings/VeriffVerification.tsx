@@ -1,6 +1,6 @@
 "use client";
 
-import IdentityReadinessNotice from "../IdentityReadinessNotice";
+import IdentityVerificationGuidance from "./IdentityVerificationGuidance";
 import IdentityNameCorrection from "./IdentityNameCorrection";
 import { authenticatedFetch } from "../../lib/apiClient";
 import { verificationActions } from "../../lib/verificationActions";
@@ -115,7 +115,7 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
     } finally { setBusy(false); }
   };
 
-  const { identityApproved, needsIbVerification, canEditName, canStart, startLabel } = verificationActions(status, forIb);
+  const { identityApproved, needsIbVerification, canEditName, canStart, startLabel, showDocumentGuidance } = verificationActions(status, forIb);
   const showEditing = editing && canEditName;
 
   return (
@@ -133,9 +133,8 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
         onEdit={() => { setDetails({ fullName: status?.details?.fullName || "" }); setEditing(true); setNotice(""); }}
         onChange={fullName => setDetails({ fullName })} onSave={saveDetails} onCancel={() => setEditing(false)} />
       {status?.canRetry && <p className="text-sm text-amber-200">You can try again with your original physical ID. Use clear lighting and make sure your details match the document.</p>}
+      <IdentityVerificationGuidance visible={showDocumentGuidance} />
       {canStart && status && <>
-        <IdentityReadinessNotice />
-        <p className="text-sm leading-6 text-gray-400">Continue to Veriff to verify your identity using a supported government-issued ID and selfie. Your account will be approved automatically after a successful verification and BDFX eligibility checks.</p>
         {needsIbVerification && <p className="text-sm text-amber-200">Starting this new check will put your identity verification status back into pending until it completes.</p>}
         <div>
           <label htmlFor="residence-country" className="block text-sm mb-2">Country of residence</label>
@@ -145,7 +144,6 @@ export default function VeriffVerification({ forIb = false }: { forIb?: boolean 
             {countriesData.filter(item => !isUae(item.country)).map(item => <option key={item.country} value={item.country}>{item.country}</option>)}
           </select>
         </div>
-        <p className="text-sm text-gray-400">BDFX does not accept UAE clients or UAE-issued identity documents.</p>
         <button type="button" onClick={start} disabled={busy || showEditing || !country || status.status === "creating"}
           className="rounded-lg bg-[#c6a15b] px-5 py-3 font-semibold text-black disabled:opacity-50">
           {busy ? "Opening verification…" : startLabel}
