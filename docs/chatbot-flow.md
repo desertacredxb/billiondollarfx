@@ -1,5 +1,15 @@
 # BDFX multilingual support flow
 
+## Website Buddy — owner approved 25 October 2026
+
+The existing BDFX Help control now uses a navy/gold character with pointer-responsive eyes and an error expression. It keeps the same six translated public FAQ catalogs, optional saved-session consent and contact request flow. Related questions and fixed website actions help visitors continue to registration, deposits, MT5 or support.
+
+After a short field hover/focus, the companion explains allowlisted form fields or relevant internal navigation. Native invalid events and safe error IDs from existing registration/payment feedback provide contextual help, including password mismatch, duplicate-account, OTP and payment-request errors. These notifications contain only a fixed guide ID. They never submit a form, change a validation decision, approve KYC, retry a payment or inspect private field values.
+
+A delayed welcome and a contextual idle suggestion are capped at two proactive prompts per browser tab. Closing a suggestion mutes incidental prompts for 90 seconds; visitors can pause suggestions. Staff/API routes receive no contextual listeners or nudges. Language and suggestion preferences are tab-local; hover/error activity and form content are not added to saved Chat Reports. Reduced-motion preferences disable character motion.
+
+This release adds local guidance, not an external model or a connected n8n conversation backend. Unmatched questions retain the existing honest fallback. Verification, OTP, gateway requests, consent, backend settings and admin permissions remain governed by their existing flows.
+
 Owner request: match the useful support-flow behavior observed on WinproFX, check the automation depth and support multiple languages. This is an original BDFX guide, not a claim to have copied or accessed WinproFX's private chatbot configuration.
 
 ## WinproFX observations — 21 October 2026, Dubai time

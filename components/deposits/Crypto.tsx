@@ -4,6 +4,7 @@ import axios from "../../lib/apiClient";
 import { CreditCard, X } from "lucide-react";
 import Button from "../../components/Button"; // ✅ import your Button
 import toast, { Toaster } from "react-hot-toast";
+import { announceBuddyIssue } from "../../lib/bdfxBuddy";
 import { MIN_DEPOSIT_USD } from "../../constants/deposit";
 import { useUserProfile } from "../../lib/userStore";
 
@@ -59,10 +60,12 @@ function CryptoPay() {
         window.location.href = res.data.decrypted.url;
       } else {
         toast.error("Error getting Payout URL");
+        announceBuddyIssue("payment");
       }
     } catch (err) {
       console.error(err);
       toast.error("Deposit failed. Try again.");
+      announceBuddyIssue("payment");
     } finally {
       setLoading(false);
       setShowModal(false);

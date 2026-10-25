@@ -1,0 +1,14 @@
+.mascot{--look-x:0px;--look-y:0px;display:inline-flex;align-items:center;flex-direction:column;width:66px;min-height:95px;flex-shrink:0}
+.antenna{width:3px;height:10px;background:#dab773;position:relative;border-radius:3px}
+.antenna::before{content:"";position:absolute;top:-4px;left:-3px;width:9px;height:9px;border-radius:50%;background:#f7df9c;box-shadow:0 0 8px #edc97866}
+.head{width:60px;height:51px;border:1px solid #f0d797;background:radial-gradient(ellipse at 30% 15%,#fff0b6,#dfb96d 48%,#99733c);border-radius:24px 24px 19px 19px;display:grid;place-items:center;box-shadow:inset 0 -4px 8px #80582033,0 5px 15px #0004;transition:transform 180ms ease}
+.visor{display:flex;align-items:center;justify-content:center;gap:10px;position:relative;background:linear-gradient(145deg,#263c53,#0c1627);width:44px;height:31px;border-radius:14px;border:1px solid #8e7851;box-shadow:inset 0 2px 6px #0005}
+.eye{height:13px;width:7px;border-radius:6px;background:#ffe2a2;box-shadow:0 0 7px #f1cf8955;transform:translate(var(--look-x),var(--look-y));transition:height 150ms ease,transform 100ms ease}
+.smile{position:absolute;bottom:4px;left:17px;width:9px;height:5px;border-bottom:2px solid #f2ce85;border-radius:0 0 10px 10px}
+.body{margin-top:4px;width:38px;height:24px;border:1px solid #b49455;border-radius:12px;background:linear-gradient(135deg,#2b3b50,#101b2a);color:#e9cb86;font:11px/1 Georgia,serif;display:grid;place-items:center;position:relative}
+.body::before,.body::after{content:"";width:8px;height:16px;position:absolute;top:3px;border-radius:7px;background:linear-gradient(#f5db99,#b38b49)}
+.body::before{left:-9px;transform:rotate(19deg)}.body::after{right:-9px;transform:rotate(-19deg)}
+.shadow{width:45px;height:4px;border-radius:50%;background:#0005;filter:blur(2px);margin-top:4px}
+.mascot[data-concerned=true] .eye:first-child{height:8px}.mascot[data-concerned=true] .head{transform:rotate(-6deg)}
+button:hover>.mascot .head,button:focus-visible>.mascot .head{transform:translateY(-3px) rotate(5deg)}
+@media(prefers-reduced-motion:reduce){.head,.eye{transition:none}.head,.eye,button:hover>.mascot .head,button:focus-visible>.mascot .head{transform:none}}

@@ -2,6 +2,7 @@
 import IdentityReadinessNotice from "../../../components/IdentityReadinessNotice";
 import { trackConversion } from "../../../lib/analytics";
 import MarketingVideo from "../../../components/MarketingVideo";
+import { announceBuddyIssue, registrationBuddyIssue } from "../../../lib/bdfxBuddy";
 
 import { authenticatedFetch } from "../../../lib/apiClient";
 
@@ -56,6 +57,9 @@ export default function SignUpPage() {
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  useEffect(() => {
+    if (feedback && !feedback.success) announceBuddyIssue(registrationBuddyIssue(feedback.text));
+  }, [feedback]);
 
   const loadOptions = useCallback(async (signal?: AbortSignal) => {
     setOptionsError(false);
@@ -520,6 +524,7 @@ export default function SignUpPage() {
               type="text"
               aria-label={step === "mobile" ? "WhatsApp verification code" : "Email verification code"}
               autoComplete="one-time-code"
+              data-bdfx-guide="otp"
               inputMode="numeric"
               maxLength={6}
               pattern="[0-9]{6}"
