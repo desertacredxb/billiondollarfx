@@ -24,7 +24,7 @@ export function useBuddyCompanion(open: boolean) {
   useEffect(() => {
     setEnabled(read("bdfx_buddy_paused") !== "1");
     mutedUntil.current = Number(read("bdfx_buddy_muted_until")) || 0;
-    proactiveCount.current = Number(read("bdfx_buddy_prompts")) || 0;
+    proactiveCount.current = Number(read("bdfx_buddy_prompts_v2")) || 0;
   }, []);
   useEffect(() => { setCue(null); field.current = null; clearHover(); }, [pathname, clearHover]);
   useEffect(() => { if (open) { clearHover(); setCue(current => current?.kind === "issue" ? current : null); } }, [open, clearHover]);
@@ -43,14 +43,14 @@ export function useBuddyCompanion(open: boolean) {
   }, []);
   useEffect(() => {
     if (!enabled || !context) return;
-    const interactive = () => document.visibilityState === "visible" && document.hasFocus();
+    const interactive = () => document.visibilityState === "visible";
     const editing = () => document.activeElement instanceof HTMLElement && !!document.activeElement.closest("input,select,textarea,[contenteditable=true]");
     const canSuggest = () => !open && interactive() && !editing() && Date.now() >= mutedUntil.current && proactiveCount.current < 2;
     let lastIdleReset = 0;
     let idleTimer: ReturnType<typeof setTimeout>;
     const suggest = (kind: "welcome" | "idle") => {
       if (!canSuggest()) return;
-      proactiveCount.current++; write("bdfx_buddy_prompts", String(proactiveCount.current));
+      proactiveCount.current++; write("bdfx_buddy_prompts_v2", String(proactiveCount.current));
       setCue(current => current || { kind, context });
     };
     const resetIdle = () => {
@@ -58,7 +58,13 @@ export function useBuddyCompanion(open: boolean) {
       lastIdleReset = Date.now(); clearTimeout(idleTimer);
       idleTimer = setTimeout(() => suggest("idle"), 45_000);
     };
-    const welcomeTimer = setTimeout(() => suggest("welcome"), 9000);
+    let welcomeTimer = setTimeout(() => suggest("welcome"), 3000);
+    const visible = () => {
+      if (!interactive()) return;
+      clearTimeout(welcomeTimer);
+      if (proactiveCount.current === 0) welcomeTimer = setTimeout(() => suggest("welcome"), 3000);
+      resetIdle();
+    };
     resetIdle();
     const describeTarget = (target: EventTarget | null) => {
       if (!(target instanceof Element) || target.closest("[data-bdfx-buddy]")) return null;
@@ -113,12 +119,17 @@ export function useBuddyCompanion(open: boolean) {
     document.addEventListener("invalid", invalid, true);
     document.addEventListener("pointermove", resetIdle, { passive: true });
     document.addEventListener("keydown", resetIdle, { passive: true });
+    document.addEventListener("pointerdown", resetIdle, { passive: true });
+    document.addEventListener("scroll", resetIdle, { passive: true });
+    document.addEventListener("visibilitychange", visible);
     window.addEventListener(BUDDY_ISSUE_EVENT, issue);
     return () => {
       clearTimeout(welcomeTimer); clearTimeout(idleTimer); clearHover();
       document.removeEventListener("pointerover", over); document.removeEventListener("pointerout", out);
       document.removeEventListener("focusin", focus); document.removeEventListener("invalid", invalid, true);
       document.removeEventListener("pointermove", resetIdle); document.removeEventListener("keydown", resetIdle);
+      document.removeEventListener("pointerdown", resetIdle); document.removeEventListener("scroll", resetIdle);
+      document.removeEventListener("visibilitychange", visible);
       window.removeEventListener(BUDDY_ISSUE_EVENT, issue);
     };
   }, [context, enabled, open, clearHover]);
