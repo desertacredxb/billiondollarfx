@@ -31,12 +31,19 @@ export default function WithdrawalApprovalModal({
     rejecting,
 }: ModalProps) {
     const isCrypto = selectedWithdrawal.currency === "CRYPTO";
+    const isVnd = selectedWithdrawal.currency === "VND";
     const canProcess = selectedWithdrawal.status === "Pending" || selectedWithdrawal.status === "Failed";
+    const floxy = selectedWithdrawal.floxy;
 
     // Initial state selection logic
-    const [processType, setProcessType] = useState<"rameepay" | "cregis" | "manual">(
-        selectedWithdrawal.isManual ? "manual" : isCrypto ? "cregis" : "rameepay"
+    const [processType, setProcessType] = useState<"rameepay" | "cregis" | "manual" | "floxy">(
+        selectedWithdrawal.isManual ? "manual" : isCrypto ? "cregis" : isVnd ? "floxy" : "rameepay"
     );
+    // Floxy VND balance figures (VND withdrawals only).
+    const [floxyBalance, setFloxyBalance] = useState<
+        { state: "loading" } | { state: "error" } | { state: "ready"; fields: Record<string, number>; payoutAvailable: number | null; payoutField: string | null }
+    >({ state: "loading" });
+    const [refreshingFloxy, setRefreshingFloxy] = useState(false);
 
     const [txId, setTxId] = useState("");
     const [adminNote, setAdminNote] = useState("");
@@ -77,6 +84,47 @@ export default function WithdrawalApprovalModal({
             cancelled = true;
         };
     }, [selectedWithdrawal.accountNo]);
+
+    useEffect(() => {
+        if (!isVnd) return;
+        let cancelled = false;
+        axios
+            .get(`${process.env.NEXT_PUBLIC_API_BASE}/api/payment/floxy/payout-balance`)
+            .then((res) => {
+                if (!cancelled) {
+                    setFloxyBalance({
+                        state: "ready",
+                        fields: res.data.fields || {},
+                        payoutAvailable: res.data.payoutAvailable ?? null,
+                        payoutField: res.data.payoutField ?? null,
+                    });
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setFloxyBalance({ state: "error" });
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isVnd]);
+
+    const handleRefreshFloxy = async () => {
+        setRefreshingFloxy(true);
+        try {
+            const res = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE}/api/payment/floxy/payouts/${selectedWithdrawal._id}/refresh`
+            );
+            toast.success(res.data?.message || "Status refreshed");
+            onSuccess();
+            onClose();
+        } catch (err) {
+            toast.error(
+                (axios.isAxiosError(err) && err.response?.data?.message) || "Couldn't reach Floxy right now."
+            );
+        } finally {
+            setRefreshingFloxy(false);
+        }
+    };
 
     const handleApprove = async () => {
         if (processType === "manual" && !txId.trim()) {
@@ -174,10 +222,27 @@ export default function WithdrawalApprovalModal({
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">Amount</span>
                                 <span className="font-bold text-sm">
-                                    {selectedWithdrawal.amount}{" "}
-                                    {isCrypto ? selectedWithdrawal.cryptoSymbol || "USDT" : selectedWithdrawal.currency}
+                                    {isVnd
+                                        ? `VND ${Number(selectedWithdrawal.amount).toLocaleString("en-US")}`
+                                        : `${selectedWithdrawal.amount} ${isCrypto ? selectedWithdrawal.cryptoSymbol || "USDT" : selectedWithdrawal.currency}`}
                                 </span>
                             </div>
+                            {isVnd && (
+                                <>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-400">Debited from MT5</span>
+                                        <span className="font-semibold">${selectedWithdrawal.amountUSD}</span>
+                                    </div>
+                                    {floxy?.vndPerUsd && (
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-400">Rate (locked)</span>
+                                            <span className="font-semibold text-xs">
+                                                1 USD = VND {Math.round(floxy.vndPerUsd).toLocaleString("en-US")}
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">MT5 Account</span>
                                 <span className="font-mono font-semibold ">{selectedWithdrawal.accountNo}</span>
@@ -232,6 +297,12 @@ export default function WithdrawalApprovalModal({
                                             {selectedWithdrawal.ifsc || selectedWithdrawal.bankName || "N/A"}
                                         </span>
                                     </div>
+                                    {isVnd && (
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-400">Bank Code</span>
+                                            <span className="font-semibold text-xs">{floxy?.routingCode || "N/A"}</span>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -284,18 +355,35 @@ export default function WithdrawalApprovalModal({
                                 Select Payout Gateway / Execution Mode
                             </label>
                             <div className={`grid ${isCrypto ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
-                                {/* RameePay option */}
-                                <button
-                                    type="button"
-                                    className={`p-3 rounded-lg text-sm font-semibold border text-center transition-all ${
-                                        processType === "rameepay"
-                                            ? "bg-blue-600 border-blue-500 text-white shadow-lg"
-                                            : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
-                                    }`}
-                                    onClick={() => setProcessType("rameepay")}
-                                >
-                                    RameePay ({isCrypto ? "Crypto" : "Fiat"})
-                                </button>
+                                {/* RameePay option (cannot pay Vietnamese bank accounts) */}
+                                {!isVnd && (
+                                    <button
+                                        type="button"
+                                        className={`p-3 rounded-lg text-sm font-semibold border text-center transition-all ${
+                                            processType === "rameepay"
+                                                ? "bg-blue-600 border-blue-500 text-white shadow-lg"
+                                                : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
+                                        }`}
+                                        onClick={() => setProcessType("rameepay")}
+                                    >
+                                        RameePay ({isCrypto ? "Crypto" : "Fiat"})
+                                    </button>
+                                )}
+
+                                {/* Floxy option (VND only) */}
+                                {isVnd && (
+                                    <button
+                                        type="button"
+                                        className={`p-3 rounded-lg text-sm font-semibold border text-center transition-all ${
+                                            processType === "floxy"
+                                                ? "bg-rose-600 border-rose-500 text-white shadow-lg"
+                                                : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
+                                        }`}
+                                        onClick={() => setProcessType("floxy")}
+                                    >
+                                        Floxy (VND)
+                                    </button>
+                                )}
 
                                 {/* Cregis option (Crypto only) */}
                                 {isCrypto && (
@@ -356,6 +444,94 @@ export default function WithdrawalApprovalModal({
                         </div>
                     )}
 
+                    {/* Floxy (VND) payout wallet + payout status */}
+                    {isVnd && (
+                        <div className="bg-[#111827] rounded-xl p-4 border border-gray-700 space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Floxy</p>
+                                {floxy?.payoutId && (
+                                    <button
+                                        type="button"
+                                        onClick={handleRefreshFloxy}
+                                        disabled={refreshingFloxy}
+                                        className="text-xs px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:text-white text-gray-300 disabled:opacity-50"
+                                    >
+                                        {refreshingFloxy ? "Checking..." : "Check status with Floxy"}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="text-sm">
+                                <p className="text-gray-400 mb-1">VND balance</p>
+                                {floxyBalance.state === "loading" ? (
+                                    <p className="text-gray-500 text-xs">Loading...</p>
+                                ) : floxyBalance.state === "error" ? (
+                                    <p className="text-gray-500 text-xs">Unavailable. Approving still checks the wallet.</p>
+                                ) : Object.keys(floxyBalance.fields).length === 0 ? (
+                                    <p className="text-gray-500 text-xs">No VND balance reported by Floxy.</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                                        {Object.entries(floxyBalance.fields).map(([field, value]) => (
+                                            <div key={field} className="contents">
+                                                <span className={field === floxyBalance.payoutField ? "text-white font-semibold" : "text-gray-400"}>
+                                                    {field}
+                                                </span>
+                                                <span className="text-right font-mono">VND {value.toLocaleString("en-US")}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {floxyBalance.state === "ready" &&
+                                    floxyBalance.payoutAvailable !== null &&
+                                    canProcess &&
+                                    floxyBalance.payoutAvailable < Number(selectedWithdrawal.amount) && (
+                                        <p className="mt-2 text-xs text-amber-400">
+                                            The payout wallet is short for this withdrawal. Move funds to the payout wallet in the
+                                            Floxy panel before approving.
+                                        </p>
+                                    )}
+                            </div>
+
+                            {(floxy?.payoutId || floxy?.status || floxy?.lastMessage) && (
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs border-t border-gray-700 pt-3">
+                                    {floxy?.payoutId && (
+                                        <>
+                                            <span className="text-gray-400">Payout ID</span>
+                                            <span className="text-right font-mono break-all">{floxy.payoutId}</span>
+                                        </>
+                                    )}
+                                    {floxy?.status && (
+                                        <>
+                                            <span className="text-gray-400">Floxy status</span>
+                                            <span className="text-right font-semibold">
+                                                {floxy.status}
+                                                {floxy.needsReview ? " (under review)" : ""}
+                                            </span>
+                                        </>
+                                    )}
+                                    {floxy?.failureCode && (
+                                        <>
+                                            <span className="text-gray-400">Failure code</span>
+                                            <span className="text-right font-mono">
+                                                {floxy.failureCode}
+                                                {floxy.networkDeclineCode ? ` / bank ${floxy.networkDeclineCode}` : ""}
+                                            </span>
+                                        </>
+                                    )}
+                                    {selectedWithdrawal.transactionReference && (
+                                        <>
+                                            <span className="text-gray-400">Bank reference</span>
+                                            <span className="text-right font-mono break-all">{selectedWithdrawal.transactionReference}</span>
+                                        </>
+                                    )}
+                                    {floxy?.lastMessage && (
+                                        <p className="col-span-2 mt-1 text-amber-400">{floxy.lastMessage}</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {selectedWithdrawal.status === "Failed" && (
                         <p className="text-xs text-amber-400 bg-amber-900/20 border border-amber-700 rounded-xl p-3">
                             The last payout attempt failed and the request is still holding the customer&apos;s funds.
@@ -366,9 +542,9 @@ export default function WithdrawalApprovalModal({
 
                     {selectedWithdrawal.status === "Processing" && (
                         <p className="text-xs text-blue-400 bg-blue-900/20 border border-blue-700 rounded-xl p-3">
-                            Cregis has accepted this payout and is confirming it on-chain. It will automatically move
-                            to Completed or Failed once Cregis sends the final confirmation - no action needed here
-                            yet.
+                            {isVnd
+                                ? "Floxy has accepted this payout and the bank is confirming it. It moves to Completed or Failed automatically when Floxy reports the result. Do not send it again."
+                                : "Cregis has accepted this payout and is confirming it on-chain. It will automatically move to Completed or Failed once Cregis sends the final confirmation - no action needed here yet."}
                         </p>
                     )}
                 </div>

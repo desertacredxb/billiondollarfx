@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import Button from "../Button";
 import { MIN_DEPOSIT_USD } from "../../constants/deposit";
 import { useUserProfile } from "../../lib/userStore";
+import { announceBuddyIssue } from "../../lib/bdfxBuddy";
 
 interface CregisDepositResponse {
   success: boolean;
@@ -62,12 +63,14 @@ export default function Cregis() {
 
     // Minimum deposit check
     if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_USD) {
+      announceBuddyIssue("amount");
       toast.error(`The minimum deposit amount is $${MIN_DEPOSIT_USD} USD.`);
       return;
     }
 
     if (!form.accountNo) {
       toast.error("Please select an account.");
+      announceBuddyIssue("account");
       return;
     }
 
@@ -87,12 +90,14 @@ export default function Cregis() {
 
       if (!data.success || !data.checkout_url) {
         toast.error(data.message || "Cregis did not return a checkout URL.");
+        announceBuddyIssue("payment");
         return;
       }
 
       setShowModal(false);
       window.location.assign(data.checkout_url);
     } catch (error) {
+      announceBuddyIssue("payment");
       console.error("Cregis deposit failed:", error);
       if (axios.isAxiosError(error)) {
         toast.error(

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cregis from "../../../../components/deposits/Cregis";
 import CryptoPay from "../../../../components/deposits/Crypto";
+import Floxy from "../../../../components/deposits/Floxy";
 import RameePay from "../../../../components/deposits/Rameepay";
 import KycAlertModal from "../../../../components/KycAlertModal";
 import Button from "../../../../components/Button";
@@ -55,6 +56,7 @@ function Deposit() {
             <CryptoPay />
 
             <Cregis />
+            <Floxy />
           </div>
         )}
       </div>
