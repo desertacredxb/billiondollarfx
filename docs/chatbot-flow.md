@@ -1,5 +1,15 @@
 # BDFX multilingual support flow
 
+## Mobile engagement and optional OpenAI questions — 26 October 2026
+
+The shared control is now a visible navy/gold BDFX Buddy launcher with the existing character and BDFX logo. A three-second welcome offers contextual getting-started, MT5 and support shortcuts, plus the existing six languages. Cards stack above the launcher within the mobile viewport and safe area. Touch scrolling resets the idle timer; a tab becoming visible can receive its first welcome. Existing pause, dismissal and two-prompt-per-tab limits remain. Field guidance reads only allowlisted field schema and safe error IDs.
+
+The chat contains a separate AI question box when the backend reports a configured connection. Visitors explicitly opt in before submitting a typed question. Only that question, selected language and optional public FAQ index reach the fixed n8n workflow and existing server-side OpenAI provider. Questions, form values, browser tokens and account data are not added to Chat Reports. Revoking AI consent, closing the panel or switching language clears the local AI question/reply and cancels outstanding work. Generated answers are rendered as escaped plain text and have no ability to perform account or payment actions.
+
+The backend uses one-use signed commands, bounded input/output and timeouts, per-IP limits and a durable daily request cap. No provider request runs merely because someone visits. Failure returns the existing guide and support links. A configured connection does not establish provider quota or successful live answers: the first controlled live round trip reached OpenAI but returned HTTP 429; account quota/rate diagnostics must be resolved before describing AI replies as working.
+
+Optional saved sessions, contact consent and the protected Chat Reports remain available. A separate n8n aggregate report endpoint requires its own read-only credential; it does not expose contact details, private transcripts or financial records, and its workflow is not yet published.
+
 ## Website Buddy — owner approved 25 October 2026
 
 The existing BDFX Help control now uses a navy/gold character with pointer-responsive eyes and an error expression. It keeps the same six translated public FAQ catalogs, optional saved-session consent and contact request flow. Related questions and fixed website actions help visitors continue to registration, deposits, MT5 or support.
