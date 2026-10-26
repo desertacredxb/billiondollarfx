@@ -41,7 +41,7 @@ const footerLinks = [
 export default function Footer() {
   return (
     <footer className="bg-[#0A1A25] text-white text-sm font-montserrat px-6 py-10 md:px-16 lg:px-24">
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 justify-center gap-10">
+      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 xl:grid-cols-4 justify-center gap-8 [&>div]:min-w-0">
         {/* Logo and intro */}
         <div>
           <Image
@@ -99,8 +99,8 @@ export default function Footer() {
               <FaWhatsapp className="text-green-400" /> +447999283366
             </li>
             <li className="flex items-center gap-2">
-              <a href="mailto:support@billiondollarfx.com" className="flex items-center gap-2 hover:text-white transition-colors">
-                <FaEnvelope className="text-blue-400" /> support@billiondollarfx.com
+              <a href="mailto:support@billiondollarfx.com" className="flex min-w-0 max-w-full items-start gap-2 hover:text-white transition-colors">
+                <FaEnvelope className="mt-1 shrink-0 text-blue-400" /><span className="min-w-0 break-all">support@billiondollarfx.com</span>
               </a>
             </li>
 
