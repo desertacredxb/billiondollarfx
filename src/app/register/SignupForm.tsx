@@ -273,7 +273,7 @@ export default function SignUpPage() {
 
       <MarketingVideo src="/media/signup.mp4" poster="/media/signup-poster.jpg" className="absolute inset-0 h-full w-full object-cover z-0" />
 
-      <div className="relative z-10 bg-black/30 opacity-85 max-w-3xl w-full mx-4 md:mx-auto rounded-xl p-8 md:p-12 text-white">
+      <div className="relative z-10 bg-black/30 opacity-85 max-w-3xl min-w-0 w-full mx-3 sm:mx-4 md:mx-auto rounded-xl p-4 py-6 sm:p-8 md:p-12 text-white">
         <div className="flex flex-col items-center mb-6">
           <Link href="/">
             <Image
@@ -363,9 +363,9 @@ export default function SignUpPage() {
               />
             </div> */}
 
-            <div className="flex items-center rounded-lg bg-[#0f172a] border border-[#1e293b] focus-within:border-[#00cfff] overflow-hidden">
+            <div className="flex min-w-0 flex-col sm:flex-row sm:items-center rounded-lg bg-[#0f172a] border border-[#1e293b] focus-within:border-[#00cfff] overflow-hidden">
               {automaticKyc ? <select name="countryCode" aria-label="Mobile country calling code" value={formData.countryCode}
-                onChange={handleChange} required className="max-w-40 bg-[#1e293b] px-2 py-3 text-sm text-gray-300">
+                onChange={handleChange} required className="min-h-12 w-full shrink-0 bg-[#1e293b] px-2 py-3 text-base text-gray-300 sm:w-40">
                 <option value="">Calling code</option>
                 {countriesData.map(data => <option key={data.country} value={`+${data.code}`}>{data.country} (+{data.code})</option>)}
               </select> : formData.countryCode && (
@@ -377,7 +377,7 @@ export default function SignUpPage() {
                 name="phone"
                 type="tel"
                 placeholder="Phone Number*"
-                className="w-full bg-transparent p-3 text-white focus:outline-none"
+                className="min-h-12 min-w-0 w-full bg-transparent p-3 text-base text-white focus:outline-none"
                 value={formData.phone}
                 onChange={handleChange}
                 required
@@ -467,15 +467,16 @@ export default function SignUpPage() {
               onChange={handleChange}
               readOnly={!!formData.referralCode}
             />
-            <div className="md:col-span-2 flex items-start text-sm text-gray-300">
+            <div className="md:col-span-2 flex min-h-11 items-start text-sm text-gray-300">
               <input
                 name="agree"
+                id="bdfx-registration-terms"
                 type="checkbox"
-                className="mr-2 mt-1"
+                className="mr-3 mt-1 h-5 w-5 shrink-0"
                 checked={formData.agree}
                 onChange={handleChange}
               />
-              <label>
+              <label htmlFor="bdfx-registration-terms">
                 I agree to the Billion Dollar FX{" "}
                 <Link href="/Privacy-Policy">
                   <span className="text-[var(--primary)] underline cursor-pointer">
@@ -492,11 +493,11 @@ export default function SignUpPage() {
               </label>
             </div>
             <label className="flex items-start gap-3 text-sm text-gray-300">
-              <input type="checkbox" name="marketingConsent" checked={formData.marketingConsent} onChange={handleChange} className="mt-1" />
+              <input type="checkbox" name="marketingConsent" checked={formData.marketingConsent} onChange={handleChange} className="mt-1 h-5 w-5 shrink-0" />
               <span>Email me BDFX educational updates and offers. Optional; unsubscribe anytime in Settings or an email.</span>
             </label>
             {registrationOptions?.mobileOtpRequired && <label className="md:col-span-2 flex items-start gap-2 text-sm text-gray-300">
-              <input type="checkbox" name="whatsappOtpConsent" checked={formData.whatsappOtpConsent} onChange={handleChange} required className="mt-1" />
+              <input type="checkbox" name="whatsappOtpConsent" checked={formData.whatsappOtpConsent} onChange={handleChange} required className="mt-1 h-5 w-5 shrink-0" />
               <span>Send my mobile verification code on WhatsApp. This verifies my number and does not subscribe me to marketing.</span>
             </label>}
             <button
@@ -553,6 +554,9 @@ export default function SignUpPage() {
 
       <style jsx>{`
         .input {
+          min-width: 0;
+          min-height: 48px;
+          font-size: 16px;
           background-color: #0f172a;
           border-radius: 0.5rem;
           padding: 0.75rem;

@@ -26,13 +26,25 @@ export default function SupportGuide() {
   const { record } = tracking;
   const sessionCopy = chatSessionCopy[language];
   const launcher = useRef<HTMLButtonElement>(null);
-  const languageInput = useRef<HTMLSelectElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const copy = chatCopy[language];
   const buddy = useBuddyCompanion(open);
+  const dismissBuddy = buddy.dismiss;
   const companionCopy = buddyCopy[language];
   const engagement = buddyEngagementCopy[language];
   const floating = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<CSSProperties>();
+  const [viewport, setViewport] = useState<CSSProperties>();
+  useEffect(() => {
+    const visible = window.visualViewport;
+    const sync = () => setViewport({
+      "--buddy-visible-height": `${visible?.height ?? window.innerHeight}px`,
+      "--buddy-keyboard-offset": `${Math.max(0, window.innerHeight - (visible?.height ?? window.innerHeight) - (visible?.offsetTop ?? 0))}px`,
+    } as CSSProperties);
+    sync(); visible?.addEventListener("resize", sync); visible?.addEventListener("scroll", sync); window.addEventListener("resize", sync);
+    return () => { visible?.removeEventListener("resize", sync); visible?.removeEventListener("scroll", sync); window.removeEventListener("resize", sync); };
+  }, []);
+  useEffect(() => { if (open) closeButton.current?.focus({ preventScroll: true }); }, [open]);
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("bdfx_buddy_language");
@@ -56,16 +68,19 @@ export default function SupportGuide() {
   }, [open, buddy.cue, language]);
   useEffect(() => {
     if (!open) return;
-    languageInput.current?.focus();
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") { record("close", language); setOpen(false); launcher.current?.focus(); } };
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") { record("close", language); dismissBuddy(); setOpen(false); launcher.current?.focus(); } };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, [open, language, record]);
-  const close = () => { tracking.record("close", language); buddy.dismiss(); setOpen(false); launcher.current?.focus(); };
+  }, [open, language, record, dismissBuddy]);
+  const close = () => { tracking.record("close", language); dismissBuddy(); setOpen(false); launcher.current?.focus(); };
   const showAnswer = (index: number) => {
     if (!open) tracking.record("open", language);
     setOpen(true); setAnswer(index); setTopic(chatTopics.find(item => item.questions.includes(index))?.id || null); setSearch("");
     tracking.record("answer", language, undefined, index);
+  };
+  const openChat = () => {
+    if (!open) tracking.record("open", language);
+    setAnswer(null); setTopic(null); setSearch(""); setContactOpen(false); setOpen(true);
   };
   const reset = () => { setTopic(null); setAnswer(null); setSearch(""); };
   const chooseLanguage = (next: ChatLanguage) => {
@@ -74,12 +89,13 @@ export default function SupportGuide() {
     tracking.record("language", next);
   };
   const questions = search.trim() ? searchChatQuestions(language, search) : chatTopics.find(item => item.id === topic)?.questions || [];
-  return <div ref={floating} style={position} data-bdfx-buddy className={styles.root + " notranslate"} translate="no">
-    {!open && buddy.cue && <section lang={language} aria-label="BDFX Buddy" className={styles.invitation}>
+  return <div ref={floating} style={{ ...viewport, ...position }} data-bdfx-buddy data-open={open} className={styles.root + " notranslate"} translate="no">
+    {!open && buddy.cue && <section lang={language} aria-label="BDFX Buddy" className={styles.invitation + (buddy.cue.kind === "hover" ? " " + styles.contextual : "")}>
       <header className={styles.cardHeader}><Image src={logo} alt="BDFX" className={styles.logo} /><div><p className={styles.eyebrow}>BDFX BUDDY</p><h2 className={styles.title}>{buddy.cue.kind === "issue" ? companionCopy.fix : engagement.title}</h2></div><button type="button" aria-label={companionCopy.dismiss} onClick={buddy.dismiss} className={styles.dismiss}><X size={17} /></button></header>
       <div className={styles.cardBody}>
         <p role={buddy.cue.kind === "issue" ? "status" : undefined}>{buddy.cue.guide ? companionCopy.guides[buddy.cue.guide] : buddy.cue.kind === "welcome" ? companionCopy.hello : buddy.cue.kind === "hover" ? copy.answers[buddy.cue.context.question] : companionCopy.nudge}</p>
         <div className={styles.quickActions}>
+          {buddy.cue.kind === "welcome" || buddy.cue.kind === "idle" ? <button type="button" onClick={openChat} className={styles.quick}><span>{engagement.chat}</span><MessageCircle size={16} className="shrink-0" /></button> : null}
           {buddy.cue.kind === "issue" && buddy.hasField && <button type="button" onClick={buddy.focusField} className={styles.quick}>{companionCopy.field}<ArrowRight size={14} /></button>}
           {(buddy.cue.guide ? [buddyQuestion(buddy.cue.guide)] : buddyStarterQuestions(buddy.cue.context.question)).map(question => <button key={question} type="button" onClick={() => showAnswer(question)} className={styles.quick}><span>{buddy.cue?.guide ? copy.questions[question] : question === 12 ? engagement.support : question === 8 ? engagement.mt5 : engagement.start}</span><ArrowRight size={15} className="shrink-0" /></button>)}
         </div>
@@ -87,9 +103,9 @@ export default function SupportGuide() {
       </div>
     </section>}
     {open && <section id="bdfx-support-guide" role="dialog" aria-modal="false" aria-labelledby="bdfx-support-title" lang={language} className={styles.panel}>
-      <header className="flex items-start justify-between gap-3 border-b border-slate-700 bg-[#171d2b] p-4"><Image src={logo} alt="BDFX" className={styles.logo} /><div className="flex-1"><h2 id="bdfx-support-title" className="font-semibold">BDFX Buddy</h2><p className="mt-1 text-xs text-[#e3c569]">{engagement.subtitle}</p></div><button type="button" onClick={close} aria-label={copy.close} className={styles.dismiss}><X size={20} /></button></header>
-      <div className="flex items-center justify-between gap-3 border-b border-slate-700 px-4 py-3"><label className="text-sm" htmlFor="bdfx-chat-language">{copy.language}</label><select id="bdfx-chat-language" ref={languageInput} value={language} onChange={event => chooseLanguage(event.target.value as ChatLanguage)} className="rounded border border-slate-600 bg-[#101827] p-2 text-sm">{chatLanguages.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></div>
-      <div className="min-h-0 space-y-4 overflow-y-auto p-4">
+      <header className="flex items-start justify-between gap-3 border-b border-slate-700 bg-[#171d2b] p-4"><Image src={logo} alt="BDFX" className={styles.logo} /><div className="flex-1"><h2 id="bdfx-support-title" className="font-semibold">BDFX Buddy</h2><p className="mt-1 text-xs text-[#e3c569]">{engagement.subtitle}</p></div><button type="button" ref={closeButton} onClick={close} aria-label={copy.close} className={styles.dismiss}><X size={20} /></button></header>
+      <div className="flex items-center justify-between gap-3 border-b border-slate-700 px-4 py-3"><label className="text-sm" htmlFor="bdfx-chat-language">{copy.language}</label><select id="bdfx-chat-language" value={language} onChange={event => chooseLanguage(event.target.value as ChatLanguage)} className="rounded border border-slate-600 bg-[#101827] p-2 text-base min-h-11">{chatLanguages.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></div>
+      <div className={styles.scrollBody + " min-h-0 space-y-4 overflow-y-auto p-4"}>
         <p className="rounded-xl bg-[#172033] p-3 text-sm leading-6">{copy.greeting}</p>
         {buddy.context && answer === null && <BuddyAiChat key={language} language={language} contextQuestion={answer} />}
         {buddy.cue?.kind === "issue" && buddy.cue.guide && <aside className="space-y-2 rounded-lg border border-[#927948] p-3 text-sm"><p role="status">{companionCopy.guides[buddy.cue.guide]}</p>{buddy.hasField && <button type="button" onClick={buddy.focusField} className="text-[#e3c569] underline">{companionCopy.field}</button>}<button type="button" onClick={buddy.dismiss} className="ml-3 text-[#e3c569] underline">{companionCopy.dismiss}</button></aside>}
@@ -102,7 +118,7 @@ export default function SupportGuide() {
           {buddyActionHref(answer) && <Link href={buddyActionHref(answer)!} onClick={() => { tracking.record("guide", language, undefined, answer); close(); }} className="ml-3 mt-4 inline-flex items-center gap-2 text-sm text-[#e3c569] underline">{companionCopy.next}<ArrowRight size={14} /></Link>}
           <div className="mt-4 grid gap-2">{(chatTopics.find(item => item.questions.includes(answer))?.questions || []).filter(index => index !== answer).map(index => <button key={index} type="button" onClick={() => showAnswer(index)} className="flex min-h-10 items-center justify-between gap-2 rounded-lg border border-slate-600 p-3 text-left text-sm hover:border-[#d6b659]">{copy.questions[index]}<ArrowRight size={14} className="shrink-0" /></button>)}</div>
         </article> : <>
-          <input type="search" value={search} maxLength={100} onChange={event => setSearch(event.target.value)} aria-label={copy.search} placeholder={copy.search} className="w-full rounded-lg border border-slate-600 bg-[#101827] p-3 text-sm" />
+          <input type="search" value={search} maxLength={100} onChange={event => setSearch(event.target.value)} aria-label={copy.search} placeholder={copy.search} className="w-full rounded-lg border border-slate-600 bg-[#101827] p-3 text-base" />
           {!topic && !search.trim() ? <div className="grid gap-2">{chatTopics.map(item => <button key={item.id} type="button" onClick={() => { setTopic(item.id); setSearch(""); tracking.record("topic", language, item.id); }} className="flex items-center justify-between rounded-lg border border-slate-700 px-3 py-3 text-left text-sm hover:border-[#d6b659]">{copy.topics[item.id]}<ArrowRight size={16} /></button>)}</div> : <div className="grid gap-2">{questions.map(index => <button key={index} type="button" onClick={() => { setAnswer(index); tracking.record("answer", language, undefined, index); }} className="rounded-lg border border-slate-700 px-3 py-3 text-left text-sm hover:border-[#d6b659]">{copy.questions[index]}</button>)}{!questions.length && <p role="status" className="text-sm text-slate-300">{copy.empty}</p>}</div>}
         </>}
         {(topic || answer !== null || search) && <button type="button" onClick={() => { if (answer !== null) setAnswer(null); else reset(); }} className="inline-flex items-center gap-1 text-sm text-[#e3c569]"><ChevronLeft size={16} />{copy.back}</button>}
