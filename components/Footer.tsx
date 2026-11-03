@@ -23,6 +23,7 @@ const navLinks = [
   { label: "About Us", href: "/about" },
   { label: "Our IB", href: "/ib-broker" },
   { label: "Education", href: "/education" },
+  { label: "Country Learning Guides", href: "/learn" },
   { label: "Blogs", href: "/blogs" }, // or use "/insights" if that's your route
   { label: "News", href: "/news" }, // or use "/insights" if that's your route
   { label: "Join Our Team", href: "/career" },
