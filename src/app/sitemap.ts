@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { countryGuides, guideAlternates, guideUpdated, guideUrl } from "../../lib/countryGuides";
 import { publishedBlogs } from "@/app/lib/blogApi";
 import {
   SITE_URL,
@@ -79,5 +80,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Sitemap: published articles are temporarily unavailable.");
   }
 
-  return [...staticEntries, ...blogEntries];
+  const countryEntries: MetadataRoute.Sitemap = countryGuides.map(guide => ({ url: guideUrl(guide), lastModified: guideUpdated, changeFrequency: "monthly", priority: 0.7, alternates: { languages: guideAlternates(guide.country) } }));
+  return [...staticEntries, { url: `${SITE_URL}/learn`, lastModified: guideUpdated, changeFrequency: "monthly", priority: 0.7 }, ...countryEntries, ...blogEntries];
 }

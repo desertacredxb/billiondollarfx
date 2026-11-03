@@ -1,8 +1,10 @@
 import { SITE_ORIGIN } from "./seo";
+import { countryGuidePublicPaths } from "./countryGuidePaths";
 export const analyticsConsentKey = "bdfx_analytics_consent_v1";
 export const gaId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "";
 export const analyticsEnabled = process.env.NEXT_PUBLIC_GA4_ENABLED === "true" && /^G-[A-Z0-9]{4,20}$/.test(gaId);
 export const publicAnalyticsPaths = new Set(["/", "/about", "/accounts", "/platform", "/contact", "/help-centre", "/ib-broker", "/education", "/analytical-tools", "/economic-calendar", "/currency-converter", "/currency-calculator", "/forex", "/metals", "/indices", "/commodities", "/crypto", "/oil", "/blogs", "/news", "/cashback", "/career"]);
+for (const path of countryGuidePublicPaths) publicAnalyticsPaths.add(path);
 declare global { interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void } }
 export function analyticsOriginAllowed() {
   return typeof window !== "undefined" && window.location.origin === SITE_ORIGIN;
