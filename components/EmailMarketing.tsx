@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "../lib/apiClient";
 type Report = { registered: number; optedIn: number; enrolled: number; accepted: number; held: number; unsubscribed: number; paused: boolean; sendingConfigured: boolean; dailyLimit: number; lastSyncAt: string | null; lastRunAt?: string | null; lastOutcome?: string | null; due?: number; scheduled?: number; nextScheduledAt?: string | null; plan: { day: number; subject: string; heading: string; body: string; action: string; path: string; pendingKycOnly?: boolean }[] };
+type DeliveryTest = { recipient: string; availableToday: boolean; test: { requestId: string; recipient: string; status: "sending" | "accepted" | "unconfirmed"; reservedAt: string; acceptedAt: string | null } | null };
 const workerLabels: Record<string, string> = {
   paused: "Delivery paused", outside_window: "Waiting for the 10:00 Dubai sending window", throttled: "Waiting for the next sending slot",
   empty: "No eligible email is due yet", ineligible: "An account no longer meets the campaign requirements",
@@ -16,15 +17,34 @@ export default function EmailMarketing() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [deliveryTest, setDeliveryTest] = useState<DeliveryTest | null>(null);
+  const [testBusy, setTestBusy] = useState(false);
+  const [testError, setTestError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
       try { const { data } = await api.get<Report>(`${endpoint}/report`, { signal: controller.signal, timeout: 15000 }); setReport(data); setError(""); }
       catch { if (!controller.signal.aborted) setError("Unable to load current email marketing status. Refresh to try again."); }
     }
-    load(); const timer = setInterval(load, 60000);
+    async function loadTest() {
+      try {
+        const { data } = await api.get<DeliveryTest>(`${endpoint}/delivery-test`, { signal: controller.signal, timeout: 15000 });
+        setDeliveryTest(data); setTestError("");
+      } catch { if (!controller.signal.aborted) setTestError("Delivery test status is unavailable. Refresh to check."); }
+    }
+    load(); loadTest(); const timer = setInterval(() => { load(); loadTest(); }, 60000);
     return () => { controller.abort(); clearInterval(timer); };
   }, [refresh]);
+  async function sendTest() {
+    if (testBusy || testError || !deliveryTest?.availableToday) return;
+    setTestBusy(true);
+    try {
+      const { data } = await api.post<DeliveryTest>(`${endpoint}/delivery-test`, { requestId: crypto.randomUUID() }, { timeout: 30000 });
+      setDeliveryTest(data); setTestError("");
+    } catch {
+      setTestError("Test delivery could not be confirmed. Refresh to check its status before trying again.");
+    } finally { setTestBusy(false); }
+  }
   async function toggle() {
     if (!report || busy || error) return;
     setBusy(true);
@@ -40,5 +60,24 @@ export default function EmailMarketing() {
       <p>Last delivery check: {report.lastRunAt ? dubaiTime(report.lastRunAt) : "Not recorded yet"}</p>
       {report.lastOutcome && <p>{workerLabels[report.lastOutcome] || "Refresh to check delivery progress"}.</p>}
     </section>}
-    <p className="text-xs text-slate-400">Mail server acceptance does not confirm inbox delivery. Uncertain sends are held for review to avoid duplicate emails. Last enrolment check: {report.lastSyncAt ? dubaiTime(report.lastSyncAt) : "Not run yet"}.</p><section className="space-y-3"><h2 className="text-xl font-semibold">Seven-day email preview</h2>{report.plan.map(day => <details key={day.day} className="rounded-xl border border-slate-700 p-4"><summary className="cursor-pointer font-medium">Day {day.day} · {day.subject}{day.pendingKycOnly ? " · KYC pending only" : ""}</summary><div className="mt-4 space-y-3 text-sm text-slate-300"><p className="font-semibold">{day.heading}</p><p className="whitespace-pre-line leading-6">{day.body}</p><p>{day.action}: https://www.billiondollarfx.com{day.path}</p><p>Every email includes support details, a risk notice and unsubscribe link.</p></div></details>)}</section></>}</div>;
+    <p className="text-xs text-slate-400">Mail server acceptance does not confirm inbox delivery. Uncertain sends are held for review to avoid duplicate emails. Last enrolment check: {report.lastSyncAt ? dubaiTime(report.lastSyncAt) : "Not run yet"}.</p>
+    <section aria-label="Owner delivery test" className="rounded-xl border border-slate-700 bg-[#101827] p-5 space-y-3 text-sm">
+      <h2 className="text-lg font-semibold">Test email delivery</h2>
+      <p>Send a welcome preview to your owner email, then check your Inbox and Spam folders.</p>
+      {testError && <p role="alert" className="text-amber-300">{testError}</p>}
+      {!deliveryTest && !testError && <p role="status">Loading delivery test status…</p>}
+      {deliveryTest && <>
+        <p>Recipient: {deliveryTest.recipient}</p>
+        <button type="button" onClick={sendTest} disabled={testBusy || !!testError || !deliveryTest.availableToday} className="rounded-lg bg-[#d6b659] px-4 py-2 font-semibold text-black disabled:opacity-50">{testBusy ? "Sending test…" : "Send test to my email"}</button>
+        <p className="text-xs text-slate-400">One test per owner per Dubai day.</p>
+        {deliveryTest.test && <div role="status" className="space-y-2 rounded-lg border border-slate-600 p-3">
+          <p>{deliveryTest.test.status === "accepted" ? "Accepted by the mail server. Check your Inbox and Spam folders."
+            : deliveryTest.test.status === "sending" ? "Test reserved. Waiting for confirmation. Refresh to check progress."
+              : "Delivery is unconfirmed. Another test is held for today to avoid duplicate emails."}</p>
+          <p>Test reference: <span className="break-all font-mono">{deliveryTest.test.requestId}</span></p>
+          <p>{dubaiTime(deliveryTest.test.acceptedAt || deliveryTest.test.reservedAt)}</p>
+        </div>}
+      </>}
+    </section>
+    <section className="space-y-3"><h2 className="text-xl font-semibold">Seven-day email preview</h2>{report.plan.map(day => <details key={day.day} className="rounded-xl border border-slate-700 p-4"><summary className="cursor-pointer font-medium">Day {day.day} · {day.subject}{day.pendingKycOnly ? " · KYC pending only" : ""}</summary><div className="mt-4 space-y-3 text-sm text-slate-300"><p className="font-semibold">{day.heading}</p><p className="whitespace-pre-line leading-6">{day.body}</p><p>{day.action}: https://www.billiondollarfx.com{day.path}</p><p>Every email includes support details, a risk notice and unsubscribe link.</p></div></details>)}</section></>}</div>;
 }
