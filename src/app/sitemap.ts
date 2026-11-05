@@ -6,8 +6,10 @@ import {
   blogCanonicalUrl,
 } from "@/app/lib/blogPublishing";
 
-// Match the public article cache so automatic publications reach the sitemap promptly.
-export const revalidate = 60;
+// Scheduled publications happen in the backend, independently of website builds.
+// Generate discovery URLs from the current publication list on every request.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 
@@ -58,9 +60,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let blogEntries: MetadataRoute.Sitemap = [];
   try {
-    const first = await publishedBlogs();
+    const first = await publishedBlogs({}, { fresh: true });
     const posts = [...first.data];
-    for (let page = 2; page <= first.pages; page++) posts.push(...(await publishedBlogs({ page: String(page) })).data);
+    for (let page = 2; page <= first.pages; page++) posts.push(...(await publishedBlogs({ page: String(page) }, { fresh: true })).data);
 
     blogEntries = posts
       // A post whose canonical points elsewhere shouldn't be listed as its own URL
