@@ -9,6 +9,7 @@ import "react-medium-image-zoom/dist/styles.css";
 import { useRouter } from "next/navigation";
 import { X, ShieldCheck, ShieldAlert } from "lucide-react";
 import Button from "../../../../components/Button";
+import { countriesData } from "@/data/IsoCode";
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -50,7 +51,9 @@ interface User {
   address?: string;
   accountType?: string;
   isKycVerified?: boolean;
+  isVerified?: boolean;
   kycProvider?: string;
+  updatedAt?: string;
   veriff?: { status?: string; reasonCode?: number; sessionId?: string; revision?: number };
   profileImage?: string;
   referralCode?: string; // 🔥 added
@@ -78,10 +81,24 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const adminSession = useAdminSession();
   const [manualDecision, setManualDecision] = useState<boolean | null>(null);
+  const [manualSource, setManualSource] = useState<"owner_documents" | "veriff">("owner_documents");
   const [manualReason, setManualReason] = useState("");
+  const [documentCountry, setDocumentCountry] = useState("");
+  const [evidenceReference, setEvidenceReference] = useState("");
   const [reviewedDocuments, setReviewedDocuments] = useState(false);
   const [manualBusy, setManualBusy] = useState(false);
   const [manualMessage, setManualMessage] = useState("");
+  const canReviewVeriff = !!selectedUser?.hasSubmittedDocuments && !!selectedUser.veriff?.sessionId
+    && !["creating", "created", "not_started"].includes(selectedUser.veriff.status || "");
+  const openManualReview = (approved: boolean) => {
+    setManualDecision(approved);
+    setManualSource(canReviewVeriff && (!approved || selectedUser?.isKycVerified) ? "veriff" : "owner_documents");
+    setManualReason("");
+    setDocumentCountry("");
+    setEvidenceReference("");
+    setReviewedDocuments(false);
+    setManualMessage("");
+  };
   const syncVeriff = async () => {
     if (!selectedUser || manualBusy) return;
     setManualBusy(true); setManualMessage("");
@@ -89,23 +106,26 @@ export default function UsersPage() {
       const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/veriff/admin/sync/${selectedUser._id}`, {
         sessionId: selectedUser.veriff?.sessionId, expectedRevision: selectedUser.veriff?.revision,
       }, { timeout: 20000 });
-      const updated = { ...selectedUser, isKycVerified: data.approved, veriff: data.veriff };
+      const updated = { ...selectedUser, isKycVerified: data.approved, veriff: data.veriff, updatedAt: data.updatedAt ?? selectedUser.updatedAt };
       setUsers(values => values.map(value => value._id === updated._id ? updated : value));
       setSelectedUser(updated); setManualDecision(null); setManualMessage(data.message);
     } catch (error) { setManualMessage(axios.isAxiosError(error) && typeof error.response?.data?.message === "string" ? error.response.data.message : "Veriff sync could not be confirmed. Refresh to check before retrying."); }
     finally { setManualBusy(false); }
   };
-  useEffect(() => { setManualDecision(null); setManualReason(""); setReviewedDocuments(false); setManualMessage(""); }, [selectedUser?._id]);
+  useEffect(() => { setManualDecision(null); setManualMessage(""); }, [selectedUser?._id]);
   const saveManualReview = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedUser || manualDecision === null || manualBusy) return;
     setManualBusy(true); setManualMessage("");
     try {
       const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE}/api/auth/manual-kyc/${encodeURIComponent(selectedUser.email)}`, {
-        approved: manualDecision, reason: manualReason, reviewedDocuments, sessionId: selectedUser.veriff?.sessionId,
-        expectedRevision: selectedUser.veriff?.revision,
+        approved: manualDecision, reason: manualReason, reviewedDocuments,
+        ...(manualSource === "owner_documents"
+          ? { source: manualSource, expectedUserId: selectedUser._id, expectedUpdatedAt: selectedUser.updatedAt ?? null, documentCountry, evidenceReference: evidenceReference.trim() }
+          : { sessionId: selectedUser.veriff?.sessionId, expectedRevision: selectedUser.veriff?.revision }),
       });
-      const updated = { ...selectedUser, isKycVerified: data.approved, veriff: { ...selectedUser.veriff, revision: (selectedUser.veriff?.revision || 0) + 1 } };
+      const updated = { ...selectedUser, isKycVerified: data.approved, updatedAt: data.updatedAt ?? selectedUser.updatedAt,
+        veriff: selectedUser.veriff ? { ...selectedUser.veriff, revision: data.veriffRevision ?? (selectedUser.veriff.revision || 0) + 1 } : undefined };
       setUsers(values => values.map(value => value._id === updated._id ? updated : value));
       setSelectedUser(updated); setManualDecision(null); setManualReason(""); setReviewedDocuments(false); setManualMessage(data.message);
     } catch (error) { setManualMessage(axios.isAxiosError(error) && typeof error.response?.data?.message === "string" ? error.response.data.message : "Review could not be confirmed. Refresh to check before trying again."); }
@@ -487,18 +507,51 @@ export default function UsersPage() {
 
               {selectedUser.kycProvider === "veriff" && <section className="rounded-xl border border-amber-600/40 bg-amber-950/20 p-4 space-y-2">
                 <h3 className="font-semibold text-amber-200">Verification managed by Veriff</h3>
-                <p className="text-sm text-gray-300">Review the identity documents and provider result in Veriff. An owner can record a manual approval or rejection below; the original Veriff result remains in history.</p>
+                <p className="text-sm text-gray-300">The Veriff result is recorded separately from an owner document review.</p>
                 <p className="text-sm">BDFX verification status: {selectedUser.veriff?.status || "Not started"}{selectedUser.veriff?.reasonCode ? ` · Reason code: ${selectedUser.veriff.reasonCode}` : ""}</p>
                 {selectedUser.veriff?.sessionId && <p className="text-xs text-gray-400 break-all">Veriff session: {selectedUser.veriff.sessionId}</p>}
-                {adminSession?.role === "owner" && selectedUser.veriff?.sessionId && <div className="space-y-3 pt-3">
-                  {!selectedUser.isKycVerified && <button type="button" disabled={manualBusy} onClick={() => void syncVeriff()} className="rounded-lg bg-[#c6a15b] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{manualBusy ? "Checking…" : "Sync current Veriff result"}</button>}
-                  <div className="flex flex-wrap gap-3"><button type="button" disabled={manualBusy} onClick={() => { setManualDecision(true); setManualMessage(""); }} className="rounded-lg bg-green-700 px-4 py-2 text-sm">Manual approve</button><button type="button" disabled={manualBusy} onClick={() => { setManualDecision(false); setManualMessage(""); }} className="rounded-lg border border-amber-600 px-4 py-2 text-sm">Manual reject</button></div>
+                {adminSession?.role === "owner" && <div className="space-y-3 pt-3">
+                  {!selectedUser.isKycVerified && selectedUser.veriff?.sessionId && <button type="button" disabled={manualBusy} onClick={() => void syncVeriff()} className="rounded-lg bg-[#c6a15b] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{manualBusy ? "Checking…" : "Sync current Veriff result"}</button>}
+                  {selectedUser.isVerified ? <div className="flex flex-wrap gap-3">
+                    {(!selectedUser.isKycVerified || canReviewVeriff) && <button type="button" disabled={manualBusy} onClick={() => openManualReview(true)} className="rounded-lg bg-green-700 px-4 py-2 text-sm">Manual approve</button>}
+                    {(selectedUser.isKycVerified || canReviewVeriff) && <button type="button" disabled={manualBusy} onClick={() => openManualReview(false)} className="rounded-lg border border-amber-600 px-4 py-2 text-sm">Manual reject</button>}
+                  </div> : <p className="text-sm text-gray-300">The client must verify their BDFX account before manual review.</p>}
                   {manualDecision !== null && <form onSubmit={saveManualReview} className="space-y-3 rounded-xl border border-gray-600 p-4">
                     <h4 className="font-semibold">{manualDecision ? "Confirm manual approval" : "Confirm manual rejection"}</h4>
-                    <p className="text-sm text-gray-300">This records your decision for this client. Check the documents and provider result before confirming, including any risk flag.</p>
+                    {canReviewVeriff && <label className="block text-sm">
+                      Review source
+                      <select value={manualSource} disabled={manualBusy} onChange={event => {
+                        setManualSource(event.target.value === "veriff" ? "veriff" : "owner_documents");
+                        setReviewedDocuments(false);
+                      }} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3">
+                        <option value="owner_documents">Independent owner document review</option>
+                        <option value="veriff">Submitted Veriff documents</option>
+                      </select>
+                    </label>}
+                    {manualSource === "owner_documents" && <>
+                      <p className="text-sm text-gray-300">Record your own identity review and the case reference for the evidence you checked.</p>
+                      <label className="block text-sm">Document issuing country
+                        <select required value={documentCountry} disabled={manualBusy} onChange={event => setDocumentCountry(event.target.value)} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3">
+                          <option value="">Select country</option>
+                          {countriesData.map(({ country, iso }) => <option key={iso} value={iso}>{country}</option>)}
+                        </select>
+                      </label>
+                      <label className="block text-sm">KYC evidence reference
+                        <input required minLength={3} maxLength={80} disabled={manualBusy}
+                          value={evidenceReference} onChange={event => setEvidenceReference(event.target.value)}
+                          placeholder="Internal KYC case reference" className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3" />
+                      </label>
+                    </>}
                     <label className="block text-sm">Review reason<textarea required minLength={20} maxLength={1000} disabled={manualBusy} value={manualReason} onChange={event => setManualReason(event.target.value)} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3" placeholder="Record what you reviewed and why you are making this decision." /></label>
-                    <label className="flex gap-3 text-sm"><input type="checkbox" required checked={reviewedDocuments} disabled={manualBusy} onChange={event => setReviewedDocuments(event.target.checked)} /><span>I have reviewed this client's identity documents and Veriff result and take responsibility for this decision.</span></label>
-                    <div className="flex gap-3"><button type="submit" disabled={manualBusy || !reviewedDocuments || manualReason.trim().length < 20} className="rounded-lg bg-[#c6a15b] px-4 py-2 font-semibold text-black disabled:opacity-50">{manualBusy ? "Saving review…" : manualDecision ? "Confirm approval" : "Confirm rejection"}</button><button type="button" disabled={manualBusy} onClick={() => setManualDecision(null)}>Cancel</button></div>
+                    <label className="flex gap-3 text-sm"><input type="checkbox" required checked={reviewedDocuments} disabled={manualBusy} onChange={event => setReviewedDocuments(event.target.checked)} /><span>{manualSource === "owner_documents" ? "I checked the original government photo ID and matched it to this client in person or on live video." : "I reviewed the client's identity documents, Veriff result and any risk flags."}</span></label>
+                    <div className="flex gap-3">
+                      <button type="submit" disabled={manualBusy || !reviewedDocuments || manualReason.trim().length < 20
+                        || (manualSource === "owner_documents" && (!documentCountry || evidenceReference.trim().length < 3))}
+                        className="rounded-lg bg-[#c6a15b] px-4 py-2 font-semibold text-black disabled:opacity-50">
+                        {manualBusy ? "Saving review…" : manualDecision ? "Confirm approval" : "Confirm rejection"}
+                      </button>
+                      <button type="button" disabled={manualBusy} onClick={() => setManualDecision(null)}>Cancel</button>
+                    </div>
                   </form>}
                 </div>}
                 {adminSession?.role !== "owner" && <p className="text-sm text-gray-400">Only an owner can record a manual KYC decision.</p>}
