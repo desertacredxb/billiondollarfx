@@ -1,0 +1,9 @@
+# BDFX KYC lock and approval files
+/.github/CODEOWNERS @desertacredxb
+/.github/bdfx-kyc-lock.cjs @desertacredxb
+/.github/workflows/ @desertacredxb
+/components/settings/IdentityNameCorrection.tsx @desertacredxb
+/components/settings/IdentityVerificationGuidance.tsx @desertacredxb
+/components/settings/VeriffVerification.tsx @desertacredxb
+/lib/verificationActions.ts @desertacredxb
+/src/app/verify-identity/page.tsx @desertacredxb
