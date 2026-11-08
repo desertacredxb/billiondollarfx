@@ -524,13 +524,13 @@ export default function UsersPage() {
                         setManualSource(event.target.value === "veriff" ? "veriff" : "owner_documents");
                         setReviewedDocuments(false);
                       }} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3">
-                        <option value="owner_documents">Independent owner document review</option>
+                        <option value="owner_documents">Owner review of KYC evidence</option>
                         <option value="veriff">Submitted Veriff documents</option>
                       </select>
                     </label>}
                     {manualSource === "owner_documents" && <>
-                      <p className="text-sm text-gray-300">Record your own identity review and the case reference for the evidence you checked.</p>
-                      <label className="block text-sm">Document issuing country
+                      <p className="text-sm text-gray-300">Use your completed identity check or an existing verified KYC record for this client. Enter the issuing country and case reference from that record.</p>
+                      <label className="block text-sm">Issuing country on KYC record
                         <select required value={documentCountry} disabled={manualBusy} onChange={event => setDocumentCountry(event.target.value)} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3">
                           <option value="">Select country</option>
                           {countriesData.map(({ country, iso }) => <option key={iso} value={iso}>{country}</option>)}
@@ -543,7 +543,7 @@ export default function UsersPage() {
                       </label>
                     </>}
                     <label className="block text-sm">Review reason<textarea required minLength={20} maxLength={1000} disabled={manualBusy} value={manualReason} onChange={event => setManualReason(event.target.value)} className="mt-1 block w-full rounded-lg border border-gray-600 bg-gray-900 p-3" placeholder="Record what you reviewed and why you are making this decision." /></label>
-                    <label className="flex gap-3 text-sm"><input type="checkbox" required checked={reviewedDocuments} disabled={manualBusy} onChange={event => setReviewedDocuments(event.target.checked)} /><span>{manualSource === "owner_documents" ? "I checked the original government photo ID and matched it to this client in person or on live video." : "I reviewed the client's identity documents, Veriff result and any risk flags."}</span></label>
+                    <label className="flex gap-3 text-sm"><input type="checkbox" required checked={reviewedDocuments} disabled={manualBusy} onChange={event => setReviewedDocuments(event.target.checked)} /><span>{manualSource === "owner_documents" ? "I reviewed the identity verification evidence for this client in the referenced KYC record." : "I reviewed the client's identity documents, Veriff result and any risk flags."}</span></label>
                     <div className="flex gap-3">
                       <button type="submit" disabled={manualBusy || !reviewedDocuments || manualReason.trim().length < 20
                         || (manualSource === "owner_documents" && (!documentCountry || evidenceReference.trim().length < 3))}
