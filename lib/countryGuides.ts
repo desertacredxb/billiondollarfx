@@ -14,11 +14,11 @@ export type Guide = {
   terms: { term: string; meaning: string }[];
   notice: string;
   sources: { label: string; url: string }[];
-  ui: { home: string; languages: string; glossary: string; sources: string; education: string; help: string; risk: string; sourceDate: string };
+  ui: { home: string; languages: string; glossary: string; sources: string; education: string; help: string; enquiry: string; risk: string; sourceDate: string };
 };
 
 export const guideUpdated = "2026-11-04";
-const enUi = { home: "Country learning guides", languages: "Read in", glossary: "Three terms to understand", sources: "Official sources", education: "Explore the education centre", help: "Help with this guide", risk: "Read the risk disclosure", sourceDate: "Guide updated: 4 November 2026. Refer to the relevant authority for current guidance." };
+const enUi = { home: "Country learning guides", languages: "Read in", glossary: "Three terms to understand", sources: "Official sources", education: "Explore the education centre", help: "Help with this guide", enquiry: "Ask BDFX about this guide", risk: "Read the risk disclosure", sourceDate: "Guide updated: 4 November 2026. Refer to the relevant authority for current guidance." };
 const rbi = { label: "RBI: notice on unauthorised forex platforms (3 February 2022)", url: "https://www.rbi.org.in/commonman/Upload/English/PressRelease/PDFs/PR166003022022.pdf" };
 const sbp = { label: "SBP: offshore forex and CFD platform advisory (18 May 2022)", url: "https://www.sbp.org.pk/press/2022/Pr-18-May-2022.pdf" };
 const secp = { label: "SECP: warning about illegal offshore trading platforms (9 April 2025)", url: "https://www.secp.gov.pk/wp-content/uploads/2025/04/Press-Release-SECP-Cautions-Public-Against-Illegal-Offshore-Trading-and-Investment-Platforms-002.pdf" };
@@ -54,7 +54,7 @@ export const countryGuides: readonly Guide[] = [
     terms: [{ term: "मुद्रा जोड़ी", meaning: "एक मुद्रा का भाव दूसरी मुद्रा में। केवल नाम से लेनदेन की पात्रता तय नहीं होती।" }, { term: "मार्जिन", meaning: "एक्सपोज़र के लिए ज़रूरी गिरवी राशि; यह अधिकतम संभावित नुकसान से अलग है।" }, { term: "MT5", meaning: "ट्रेडिंग सॉफ़्टवेयर। सॉफ़्टवेयर की उपलब्धता सेवा प्रदाता की अनुमति का प्रमाण नहीं है।" }],
     notice: "यह शैक्षिक जानकारी है। इससे स्थानीय अनुमति, लाइव खाते की पात्रता या धन भेजने की अनुमति की पुष्टि नहीं होती। किसी रिटर्न की गारंटी नहीं है।",
     sources: [{ ...rbi, label: "RBI: अनधिकृत फ़ॉरेक्स प्लेटफ़ॉर्म संबंधी सूचना (3 फ़रवरी 2022)" }],
-    ui: { home: "देश के अनुसार शिक्षा", languages: "भाषा चुनें", glossary: "तीन ज़रूरी शब्द", sources: "आधिकारिक स्रोत", education: "शिक्षा केंद्र देखें", help: "इस मार्गदर्शिका को समझने में सहायता", risk: "जोखिम संबंधी जानकारी पढ़ें", sourceDate: "मार्गदर्शिका अपडेट: 4 नवंबर 2026। वर्तमान निर्देशों के लिए संबंधित प्राधिकरण देखें।" },
+    ui: { home: "देश के अनुसार शिक्षा", languages: "भाषा चुनें", glossary: "तीन ज़रूरी शब्द", sources: "आधिकारिक स्रोत", education: "शिक्षा केंद्र देखें", help: "इस मार्गदर्शिका को समझने में सहायता", enquiry: "इस मार्गदर्शिका के बारे में सवाल पूछें", risk: "जोखिम संबंधी जानकारी पढ़ें", sourceDate: "मार्गदर्शिका अपडेट: 4 नवंबर 2026। वर्तमान निर्देशों के लिए संबंधित प्राधिकरण देखें।" },
   },
   {
     country: "pakistan", language: "en", locale: "en-PK", countryName: "Pakistan", languageName: "English",
@@ -85,7 +85,7 @@ export const countryGuides: readonly Guide[] = [
     terms: [{ term: "CFD", meaning: "قیمت کے فرق کا معاہدہ؛ اس سے بنیادی اثاثے کی ملکیت حاصل نہیں ہوتی۔" }, { term: "غیر حاصل شدہ نفع یا نقصان", meaning: "کھلی پوزیشن کی بدلتی قیمت، جو بند سودے کے نتیجے یا نکلوائی گئی رقم سے الگ ہے۔" }, { term: "ریگولیٹری اجازت", meaning: "متعلقہ ادارے کی طرف سے فراہم کنندہ اور سرگرمی کی اجازت؛ تعریفی بیانات اس کا ثبوت نہیں۔" }],
     notice: "یہ صرف تعلیمی معلومات ہیں۔ یہ کسی ادارے کی اجازت یا اس کی خدمات استعمال کرنے کی اہلیت کی تصدیق نہیں کرتا، اور کسی منافع کا وعدہ نہیں کیا جاتا۔",
     sources: [{ ...sbp, label: "SBP: آف شور فاریکس اور CFD پلیٹ فارم کی ہدایت (18 مئی 2022)" }, { ...secp, label: "SECP: غیر قانونی آف شور پلیٹ فارم کا انتباہ (9 اپریل 2025)" }],
-    ui: { home: "ملک کے لحاظ سے تعلیمی رہنما", languages: "زبان منتخب کریں", glossary: "تین اہم اصطلاحات", sources: "سرکاری ذرائع", education: "تعلیمی مرکز دیکھیں", help: "اس رہنما کو سمجھنے میں مدد", risk: "خطرات کی تفصیل پڑھیں", sourceDate: "رہنما کی تازہ کاری: 4 نومبر 2026۔ موجودہ رہنمائی کے لیے متعلقہ سرکاری ادارے سے رجوع کریں۔" },
+    ui: { home: "ملک کے لحاظ سے تعلیمی رہنما", languages: "زبان منتخب کریں", glossary: "تین اہم اصطلاحات", sources: "سرکاری ذرائع", education: "تعلیمی مرکز دیکھیں", help: "اس رہنما کو سمجھنے میں مدد", enquiry: "اس رہنما کے بارے میں سوال پوچھیں", risk: "خطرات کی تفصیل پڑھیں", sourceDate: "رہنما کی تازہ کاری: 4 نومبر 2026۔ موجودہ رہنمائی کے لیے متعلقہ سرکاری ادارے سے رجوع کریں۔" },
   },
   {
     country: "vietnam", language: "en", locale: "en-VN", countryName: "Vietnam", languageName: "English",
@@ -116,7 +116,7 @@ export const countryGuides: readonly Guide[] = [
     terms: [{ term: "Tỷ giá tham khảo", meaning: "Tỷ giá phục vụ thông tin, khác với mức giá có thể thực hiện giao dịch." }, { term: "Giá trị tài khoản", meaning: "Giá trị có thể phản ánh kết quả của các vị thế mở; không đồng nghĩa với số dư." }, { term: "Quy mô hợp đồng", meaning: "Số lượng được thể hiện bởi một đơn vị hoặc lot; cần kiểm tra theo đúng mã sản phẩm." }],
     notice: "Trang này giải thích kiến thức. Nội dung không xác nhận quyền giao dịch, giấy phép của nhà cung cấp hay việc dịch vụ được cung cấp tại Việt Nam. Kết quả thực hành không bảo đảm kết quả tương lai.",
     sources: [{ ...vietnam, label: "Báo Điện tử Chính phủ: câu hỏi về tài khoản Forex ở nước ngoài (10/7/2026)" }],
-    ui: { home: "Hướng dẫn theo quốc gia", languages: "Đọc bằng", glossary: "Ba thuật ngữ cần hiểu", sources: "Nguồn thông tin chính thức", education: "Khám phá trung tâm kiến thức", help: "Hỗ trợ tìm hiểu hướng dẫn", risk: "Đọc thông tin về rủi ro", sourceDate: "Cập nhật hướng dẫn: 4/11/2026. Tham khảo cơ quan có thẩm quyền để có hướng dẫn hiện hành." },
+    ui: { home: "Hướng dẫn theo quốc gia", languages: "Đọc bằng", glossary: "Ba thuật ngữ cần hiểu", sources: "Nguồn thông tin chính thức", education: "Khám phá trung tâm kiến thức", help: "Hỗ trợ tìm hiểu hướng dẫn", enquiry: "Đặt câu hỏi về hướng dẫn này", risk: "Đọc thông tin về rủi ro", sourceDate: "Cập nhật hướng dẫn: 4/11/2026. Tham khảo cơ quan có thẩm quyền để có hướng dẫn hiện hành." },
   },
 ];
 

@@ -54,7 +54,7 @@ export default function ContactPage() {
           <div><h2 className="font-semibold text-white">Postal address</h2><p className="mt-2">P.O. Box 838, Castries, Saint Lucia.</p></div>
           <div><h2 className="font-semibold text-white">Already a client?</h2><Link href="/support" className="mt-2 inline-block text-[#ffd700] underline">Open a support ticket</Link></div>
         </aside>
-        <form onSubmit={submit} className="rounded-2xl border border-white/15 bg-[#101827] p-5 sm:p-7 space-y-5">
+        <form id="send-an-enquiry" onSubmit={submit} className="scroll-mt-28 rounded-2xl border border-white/15 bg-[#101827] p-5 sm:p-7 space-y-5">
           <h2 className="text-xl font-semibold">Send an enquiry</h2>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block" htmlFor="contact-name">Full name<input id="contact-name" required minLength={2} maxLength={120} autoComplete="name" value={form.name} onChange={event => setForm(value => ({ ...value, name: event.target.value }))} className={input} /></label>

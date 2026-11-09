@@ -37,6 +37,9 @@ export default async function CountryGuide({ params }: Props) {
       <p className="mt-10 text-sm font-semibold tracking-wider text-[#d6b659]">BDFX · {guide.countryName}</p>
       <h1 className="mt-4 max-w-4xl text-3xl font-semibold leading-tight md:text-5xl md:leading-tight">{guide.heading}</h1>
       <p className="mt-6 max-w-4xl text-lg leading-9 text-slate-300">{guide.intro}</p>
+      <Link href="/contact#send-an-enquiry" className="mt-6 inline-flex min-h-11 items-center rounded-lg border border-[#d6b659] px-5 py-3 text-sm font-semibold text-[#f1d683] hover:bg-[#d6b659]/10">
+        {guide.ui.enquiry}
+      </Link>
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_290px]">
         <div className="space-y-9">{guide.sections.map(section => <section key={section.title}><h2 className="text-2xl font-semibold leading-normal">{section.title}</h2><p className="mt-4 leading-9 text-slate-300">{section.text}</p></section>)}</div>
         <aside className="self-start rounded-2xl border border-slate-700 bg-[#101827] p-6"><h2 className="text-xl font-semibold leading-normal">{guide.ui.glossary}</h2><dl className="mt-5 space-y-5">{guide.terms.map(term => <div key={term.term}><dt className="font-semibold text-[#e3c877]">{term.term}</dt><dd className="mt-2 text-sm leading-7 text-slate-300">{term.meaning}</dd></div>)}</dl></aside>
