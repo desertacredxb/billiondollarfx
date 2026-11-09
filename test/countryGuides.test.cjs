@@ -55,6 +55,7 @@ test('real server-rendered guides include native content, Urdu direction, offici
     assert.ok(html.includes(guide.heading)); assert.ok(html.includes(guide.sections[0].text));
     assert.ok(html.includes('"@type":"Article"')); assert.ok(html.includes(`"inLanguage":"${locale}"`));
     assert.ok(html.includes('href="/education"')); assert.ok(html.includes('href="/help-centre"'));
+    assert.ok(html.includes('href="/contact#send-an-enquiry"')); assert.ok(html.includes(guide.ui.enquiry));
     assert.equal(html.includes('href="/register"'), false); assert.equal(html.includes('href="/deposits"'), false);
     for (const source of guide.sources) assert.ok(html.includes(source.url));
   }

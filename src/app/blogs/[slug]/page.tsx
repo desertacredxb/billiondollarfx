@@ -201,7 +201,10 @@ export default async function BlogDetails({ params }: PageProps) {
 
       <Navbar />
 
-      <main className="pt-32 pb-24 px-4 md:px-8 max-w-7xl mx-auto w-full flex-grow">
+      <main
+        data-bdfx-blog-path={canonical === `${SITE_URL}/blogs/${blog.slug}` ? `/blogs/${blog.slug}` : undefined}
+        className="pt-32 pb-24 px-4 md:px-8 max-w-7xl mx-auto w-full flex-grow"
+      >
         {/* Navigation Breadcrumb */}
         <div className="mb-8">
           <Link

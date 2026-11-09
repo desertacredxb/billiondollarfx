@@ -7,7 +7,7 @@ require.extensions[".ts"] = (module, filename) => module._compile(ts.transpileMo
 process.env.NEXT_PUBLIC_GA4_ENABLED = "true";
 process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = "G-TEST123456";
 const { validateTicket } = require("../lib/supportForms.ts");
-const { analyticsConsentKey, publicAnalyticsPaths, trackConversion } = require("../lib/analytics.ts");
+const { analyticsConsentKey, landingAttribution, publicAnalyticsPaths, publicBlogPath, trackConversion } = require("../lib/analytics.ts");
 if (originalLoader) require.extensions[".ts"] = originalLoader; else delete require.extensions[".ts"];
 test("support fields reject whitespace, invalid categories and excessive input while accepting trimmed client text", () => {
   assert.deepEqual(validateTicket({ category: "MT5 Support", subject: " Help with MT5 ", description: " Connection is failing. " }), {});
@@ -40,4 +40,36 @@ test("a saved consent choice cannot send production conversions from a preview, 
   assert.equal(captured.length, 1);
   global.localStorage = { getItem: () => { throw new Error("Storage unavailable"); } };
   trackConversion("sign_up"); assert.equal(captured.length, 1);
+});
+
+test("Google Search attribution uses fixed metadata for the supported domains", () => {
+  for (const host of ["www.google.com", "www.google.co.in", "google.com.pk", "www.google.com.vn"]) {
+    assert.deepEqual(landingAttribution(`https://${host}/search?q=private`, "?email=private"), {
+      page_referrer: "https://www.google.com/",
+      campaign_source: "google",
+      campaign_medium: "organic",
+    });
+  }
+  for (const referrer of ["", "https://google.com.example.invalid/", "https://www.billiondollarfx.com/verify-identity?token=private", "ftp://google.com/"]) {
+    assert.deepEqual(landingAttribution(referrer, ""), { page_referrer: "" });
+  }
+});
+
+test("the tagged staff link and tagged ad landings stay separate from organic traffic", () => {
+  const google = "https://www.google.com/";
+  assert.deepEqual(landingAttribution(google, "?utm_source=bdfx_team&utm_medium=internal&email=private"), {
+    page_referrer: "",
+    campaign_source: "bdfx_team",
+    campaign_medium: "internal",
+  });
+  for (const search of ["?gclid=private", "?wbraid=private", "?utm_medium=cpc", "?utm_source=bdfx_team", "?utm_source=unknown&utm_medium=internal"]) {
+    assert.deepEqual(landingAttribution(google, search), { page_referrer: "" });
+  }
+});
+
+test("article path candidates match canonical public slug syntax", () => {
+  assert.equal(publicBlogPath.test("/blogs/mt5-symbol-specifications"), true);
+  for (const path of ["/blogs", "/blogs/a/b", "/blogs/%40example", "/blogs/slug?email=private", "/blogs/slug#fragment"]) {
+    assert.equal(publicBlogPath.test(path), false);
+  }
 });
