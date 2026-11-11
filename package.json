@@ -18,7 +18,7 @@
     "fuse.js": "^7.1.0",
     "keen-slider": "^6.8.6",
     "lucide-react": "^0.525.0",
-    "mongoose": "^9.11.3",
+    "mongoose": "^9.11.4",
     "next": "^16.4.2",
     "openai": "^6.45.0",
     "react": "19.3.1",

@@ -208,11 +208,15 @@ export default function CrmPage() {
           <Metric label="Outcomes logged" value={number.format(logged)} />
           <Metric label={owner ? "Available in data bank" : "Connected calls"} value={number.format(owner ? overview.bank || 0 : agents[0]?.connected || 0)} />
         </section>
-        <p className="flex items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
+        <p className="flex flex-wrap items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
           {dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
             dialerMode === "developer" ? "Hashmi developer mode is configured for call tests." : "Hashmi click-to-call is configured."}
           {overview.reportEnabled && " Call report webhook configured."}
           {!owner && !agents[0]?.hashmiId && dialerMode !== "unconfigured" && " Your Hashmi agent ID needs mapping."}
+          {!owner && dialerMode === "unconfigured" && (
+            <a className="text-[#e0bf65] underline underline-offset-4" href="https://cloud.hashmiinfonet.net/user/telephony/agent"
+              target="_blank" rel="noreferrer">Open Hashmi dialer</a>
+          )}
         </p>
       </>}
 
