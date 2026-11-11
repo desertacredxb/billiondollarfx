@@ -62,9 +62,20 @@ test("the tagged staff link and tagged ad landings stay separate from organic tr
     campaign_source: "bdfx_team",
     campaign_medium: "internal",
   });
-  for (const search of ["?gclid=private", "?wbraid=private", "?utm_medium=cpc", "?utm_source=bdfx_team", "?utm_source=unknown&utm_medium=internal"]) {
+  for (const search of ["?gclid=private", "?wbraid=private", "?fbclid=private", "?utm_medium=cpc", "?utm_source=bdfx_team", "?utm_source=unknown&utm_medium=internal"]) {
     assert.deepEqual(landingAttribution(google, search), { page_referrer: "" });
   }
+});
+
+test("paid Meta tags are normalized without forwarding click IDs or other URL values", () => {
+  for (const [query, source] of [["utm_source=Facebook&utm_medium=cpc", "facebook"], ["utm_source=ig&utm_medium=paid-social", "ig"], ["utm_source=meta&utm_medium=paid_social", "meta"]]) {
+    assert.deepEqual(landingAttribution("https://www.google.com/", `?${query}&fbclid=private&email=private&utm_campaign=private`), {
+      page_referrer: "",
+      campaign_source: source,
+      campaign_medium: "paid_social",
+    });
+  }
+  assert.deepEqual(landingAttribution("", "?utm_source=facebook&utm_medium=referral"), { page_referrer: "" });
 });
 
 test("article path candidates match canonical public slug syntax", () => {
