@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { analyticsAllowed, analyticsConsentKey, analyticsEnabled, analyticsOriginAllowed, gaId, landingAttribution, publicAnalyticsPaths, publicBlogPath } from "../lib/analytics";
+import { analyticsAllowed, analyticsConsentKey, analyticsEnabled, analyticsOriginAllowed, gaId, landingAttribution, metaLandingEvent, publicAnalyticsPaths, publicBlogPath } from "../lib/analytics";
 import { SITE_ORIGIN } from "../lib/seo";
 
 export default function Analytics() {
@@ -13,9 +13,17 @@ export default function Analytics() {
   const [settings, setSettings] = useState(false);
   const [productionOrigin, setProductionOrigin] = useState(false);
   const attribution = useRef<ReturnType<typeof landingAttribution> | null>(null);
+  const metaLanding = useRef<{ path: string; event: NonNullable<ReturnType<typeof metaLandingEvent>> } | null>(null);
   useEffect(() => {
     if (!analyticsOriginAllowed()) return;
     attribution.current ??= landingAttribution(document.referrer, window.location.search);
+    const path = window.location.pathname;
+    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (navigation?.type !== "reload" && navigation?.type !== "back_forward" &&
+        (publicAnalyticsPaths.has(path) || publicBlogPath.test(path))) {
+      const event = metaLandingEvent(document.referrer, window.location.search);
+      if (event) metaLanding.current = { path, event };
+    }
     setProductionOrigin(true);
     try {
       const value = localStorage.getItem(analyticsConsentKey);
@@ -26,13 +34,19 @@ export default function Analytics() {
     if (!ready || consent !== "granted" || !pathname || !analyticsAllowed()) return;
     const path = pathname;
     const sendPageView = () => {
-      if (!analyticsAllowed()) return;
-      window.gtag?.("event", "page_view", {
+      if (!analyticsAllowed() || !window.gtag) return;
+      const page = {
         send_to: gaId,
         page_location: `${SITE_ORIGIN}${path}`,
         page_referrer: attribution.current?.page_referrer ?? "",
         page_title: path === "/" ? "Billion Dollar FX" : path.slice(1),
-      });
+      };
+      window.gtag("event", "page_view", page);
+      if (metaLanding.current?.path === path) {
+        const { event } = metaLanding.current;
+        metaLanding.current = null;
+        window.gtag("event", event, { ...page, page_referrer: "" });
+      }
     };
     if (publicAnalyticsPaths.has(path)) {
       sendPageView();

@@ -8,9 +8,32 @@ for (const path of countryGuidePublicPaths) publicAnalyticsPaths.add(path);
 
 const googleSearchHosts = new Set(["google.com", "google.co.in", "google.com.pk", "google.com.vn"]);
 const paidClickParameters = new Set(["gclid", "dclid", "gbraid", "wbraid", "gclsrc", "msclkid"]);
+const metaSources = new Set(["meta", "facebook", "instagram", "messenger", "threads", "fb", "ig", "msg", "an", "th"]);
+const paidMedia = new Set(["paid", "paid_social", "paidsocial", "social_paid", "cpc", "ppc", "cpm", "cpv"]);
+const metaDomains = ["facebook.com", "instagram.com", "messenger.com", "threads.net", "threads.com"];
 export const officeTestCampaign = { campaign_source: "bdfx_team", campaign_medium: "internal" } as const;
 export const officeTestUrl = `${SITE_ORIGIN}/?utm_source=${officeTestCampaign.campaign_source}&utm_medium=${officeTestCampaign.campaign_medium}`;
 export const publicBlogPath = /^\/blogs\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function isMetaHost(host: string) {
+  return metaDomains.some(domain => host === domain || host.endsWith(`.${domain}`));
+}
+
+export function metaLandingEvent(referrer: string, search: string) {
+  const parameters = new URLSearchParams(search);
+  const source = parameters.get("utm_source")?.trim().toLowerCase() || "";
+  const medium = parameters.get("utm_medium")?.trim().toLowerCase().replace(/[\s-]+/g, "_") || "";
+  if (metaSources.has(source) || isMetaHost(source)) {
+    return paidMedia.has(medium) ? "bdfx_meta_paid_landing" : "bdfx_meta_landing";
+  }
+  if (source || Array.from(paidClickParameters).some(key => parameters.has(key))) return null;
+  if (parameters.get("fbclid")?.trim()) return "bdfx_meta_landing";
+  try {
+    const url = new URL(referrer);
+    if (["https:", "http:"].includes(url.protocol) && isMetaHost(url.hostname)) return "bdfx_meta_landing";
+  } catch { /* Without a recognized referral the landing has no Meta signal. */ }
+  return null;
+}
 
 export function landingAttribution(referrer: string, search: string) {
   const parameters = new URLSearchParams(search);
@@ -20,7 +43,7 @@ export function landingAttribution(referrer: string, search: string) {
   // Keep tagged campaigns separate from search and never send raw landing data.
   const taggedCampaign = Array.from(parameters.keys()).some(key => {
     const name = key.toLowerCase();
-    return name.startsWith("utm_") || paidClickParameters.has(name);
+    return name.startsWith("utm_") || name === "fbclid" || paidClickParameters.has(name);
   });
   if (taggedCampaign) return { page_referrer: "" };
   try {

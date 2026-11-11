@@ -6,9 +6,14 @@ interface ConnectedReport {
   connected: true; generatedAt: string; range: { from: string; to: string; timezone: string };
   totals: { users: number; sessions: number; views: number; leads: number; signups: number; activeUsers30Minutes: number };
   daily: { date: string; views: number }[]; pages: { path: string; views: number }[]; channels: { channel: string; sessions: number }[]; thresholded: boolean;
+  countryTraffic?: {
+    metaTrackingStart: string;
+    rows: { country: string; users: number | null; sessions: number | null; paidMetaLandings: number | null; otherMetaLandings: number | null }[];
+  };
 }
 type Report = ConnectedReport | { connected: false };
 const count = (value: number) => new Intl.NumberFormat("en-GB").format(value);
+const reportCount = (value: number | null) => value === null ? "—" : count(value);
 const reportingErrors: Record<string, string> = {
   GA4_CREDENTIALS_INVALID: "The saved Google reporting credential is invalid. Check that the complete service-account JSON was saved in the server settings.",
   GA4_API_DISABLED: "Google Analytics Data API needs to be enabled in the reporting service account's Google Cloud project.",
@@ -20,7 +25,7 @@ const reportingErrors: Record<string, string> = {
   GA4_RESPONSE_INVALID: "Google returned an unexpected report format. Please contact support.",
 };
 export default function WebsiteAnalytics() {
-  const [days, setDays] = useState("7"), [refresh, setRefresh] = useState(0);
+  const [days, setDays] = useState("1"), [refresh, setRefresh] = useState(0);
   const [report, setReport] = useState<Report | null>(null), [loading, setLoading] = useState(true), [error, setError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
@@ -49,16 +54,53 @@ export default function WebsiteAnalytics() {
     return () => { controller.abort(); window.clearInterval(timer); };
   }, [days, refresh]);
   const connected = report?.connected ? report : null;
+  const countryTraffic = connected?.countryTraffic;
   const maximum = Math.max(1, ...(connected?.daily.map(row => row.views) || []));
   return <div className="mx-auto max-w-7xl space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-[#d6b659]">Billion Dollar FX · GA4</p><h1 className="mt-2 text-3xl font-semibold">Website Analytics</h1><p className="mt-2 text-sm text-slate-400">Consented website traffic and completed lead/signup events. Reporting dates use Dubai time.</p></div></header>
-    <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-700 bg-[#101827] p-4"><label htmlFor="analytics-period" className="text-sm text-slate-300">Period</label><select id="analytics-period" value={days} onChange={event => setDays(event.target.value)} className="rounded-lg border border-slate-600 bg-[#080f1c] px-3 py-2"><option value="7">Last 7 days</option><option value="28">Last 28 days</option><option value="90">Last 90 days</option></select><button type="button" disabled={loading} onClick={() => setRefresh(value => value + 1)} className="rounded-lg bg-[#d6b659] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{loading ? "Loading…" : "Refresh"}</button><p className="text-xs text-slate-400">Refreshes every minute while this page is visible.</p></div>
+    <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-700 bg-[#101827] p-4">
+      <label htmlFor="analytics-period" className="text-sm text-slate-300">Period</label>
+      <select id="analytics-period" value={days} onChange={event => setDays(event.target.value)} className="rounded-lg border border-slate-600 bg-[#080f1c] px-3 py-2">
+        <option value="1">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="7">Last 7 days</option>
+        <option value="28">Last 28 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <button type="button" disabled={loading} onClick={() => setRefresh(value => value + 1)} className="rounded-lg bg-[#d6b659] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{loading ? "Loading…" : "Refresh"}</button>
+      <p className="text-xs text-slate-400">Refreshes every minute while this page is visible.</p>
+    </div>
     {error && <p role="alert" className="rounded-xl border border-red-900 bg-red-950/30 p-5 text-sm">{error}</p>}
     {loading && !report && <p role="status" className="text-sm text-slate-300">Loading website analytics…</p>}
     {report && !report.connected && <section role="status" className="rounded-xl border border-amber-700/60 bg-[#101827] p-6"><h2 className="text-xl font-semibold">Google reporting connection required</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Website tracking is active. A secure server connection is needed to show live reports here. This page uses your existing BDFX administrator login; no separate Google login is needed.</p><p className="mt-3 text-xs text-slate-400">Numbers appear after a successful connection. This page does not use sample visitor or conversion counts.</p></section>}
     {connected && <>
       <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-400"><p>{connected.range.from} – {connected.range.to} · {connected.range.timezone}</p><p>Updated {new Date(connected.generatedAt).toLocaleString("en-GB", { timeZone: "Asia/Dubai" })} Dubai</p></div>
       <section aria-label="Website traffic totals" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{[["Users", connected.totals.users, "Google's distinct users for the selected period"], ["Page views", connected.totals.views, "Includes repeat views"], ["Sessions", connected.totals.sessions, "Sessions in the selected period"], ["Lead events", connected.totals.leads, "After successful contact submission"], ["Signup events", connected.totals.signups, "After successful email verification"], ["Active users · last 30 minutes", connected.totals.activeUsers30Minutes, "Current activity, independent of the selected period"]].map(([label, value, note]) => <article key={label} className="rounded-xl border border-slate-700 bg-[#101827] p-5"><h2 className="text-sm text-slate-400">{label}</h2><p className="mt-3 text-3xl font-semibold text-white">{count(value as number)}</p><p className="mt-2 text-xs text-slate-400">{note}</p></article>)}</section>
+      {countryTraffic && <section className="rounded-xl border border-slate-700 bg-[#101827] p-5" aria-labelledby="traffic-by-country">
+        <h2 id="traffic-by-country" className="text-lg font-semibold">Traffic by country</h2>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="text-slate-300">
+              <th scope="col" className="py-2 pr-4 text-left">Country</th>
+              <th scope="col" className="px-3 py-2 text-right">Active users</th>
+              <th scope="col" className="px-3 py-2 text-right">Sessions</th>
+              <th scope="col" className="px-3 py-2 text-right">Meta paid landings</th>
+              <th scope="col" className="py-2 pl-3 text-right">Other Meta landings</th>
+            </tr></thead>
+            <tbody>{countryTraffic.rows.map(row => <tr key={row.country} className="border-t border-slate-700 tabular-nums">
+              <th scope="row" className="py-3 pr-4 text-left font-medium">{row.country}</th>
+              <td className="px-3 py-3 text-right">{reportCount(row.users)}</td>
+              <td className="px-3 py-3 text-right">{reportCount(row.sessions)}</td>
+              <td className="px-3 py-3 text-right">{reportCount(row.paidMetaLandings)}</td>
+              <td className="py-3 pl-3 text-right">{reportCount(row.otherMetaLandings)}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-slate-400">
+          Meta landings are tracked from {countryTraffic.metaTrackingStart}. Paid landings use paid Meta campaign tags.
+          Other Meta landings include Meta link arrivals and referrals without paid tags. A dash means data is unavailable for that period or metric.
+        </p>
+      </section>}
       <section className="rounded-xl border border-slate-700 bg-[#101827] p-5"><h2 className="text-lg font-semibold">Daily page views</h2><div role="img" aria-label={`Daily page views from ${connected.range.from} to ${connected.range.to}. Exact values are in the table below.`} className="mt-5 flex h-36 items-end gap-1 border-b border-slate-700">{connected.daily.map(row => <div key={row.date} aria-hidden="true" title={`${row.date}: ${count(row.views)} views`} className="min-w-0 flex-1 rounded-t bg-[#d6b659]" style={{ height: `${row.views / maximum * 100}%` }} />)}</div><div className="mt-2 flex justify-between text-xs text-slate-400"><span>{connected.range.from}</span><span>{connected.range.to}</span></div><details className="mt-5"><summary className="cursor-pointer text-sm text-[#d6b659]">View daily numbers</summary><div className="mt-3 max-h-64 overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Dubai date</th><th className="p-2 text-right">Page views</th></tr></thead><tbody>{connected.daily.map(row => <tr key={row.date} className="border-t border-slate-800"><td className="p-2">{row.date}</td><td className="p-2 text-right">{count(row.views)}</td></tr>)}</tbody></table></div></details></section>
       <div className="grid gap-6 lg:grid-cols-2"><section className="rounded-xl border border-slate-700 bg-[#101827] p-5"><h2 className="text-lg font-semibold">Top public pages</h2>{connected.pages.length ? <table className="mt-4 w-full text-left text-sm"><thead><tr><th className="py-2">Page</th><th className="py-2 text-right">Views</th></tr></thead><tbody>{connected.pages.map(row => <tr key={row.path} className="border-t border-slate-800"><td className="py-3 break-all">{row.path}</td><td className="py-3 text-right">{count(row.views)}</td></tr>)}</tbody></table> : <p className="mt-4 text-sm text-slate-400">No public page views reported for this period.</p>}</section><section className="rounded-xl border border-slate-700 bg-[#101827] p-5"><h2 className="text-lg font-semibold">Traffic channels</h2>{connected.channels.length ? <table className="mt-4 w-full text-left text-sm"><thead><tr><th className="py-2">Channel</th><th className="py-2 text-right">Sessions</th></tr></thead><tbody>{connected.channels.map(row => <tr key={row.channel} className="border-t border-slate-800"><td className="py-3">{row.channel}</td><td className="py-3 text-right">{count(row.sessions)}</td></tr>)}</tbody></table> : <p className="mt-4 text-sm text-slate-400">No traffic channels reported for this period.</p>}</section></div>
       <section className="rounded-xl border border-slate-700 bg-[#101827] p-5">

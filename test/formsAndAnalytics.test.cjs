@@ -7,7 +7,7 @@ require.extensions[".ts"] = (module, filename) => module._compile(ts.transpileMo
 process.env.NEXT_PUBLIC_GA4_ENABLED = "true";
 process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID = "G-TEST123456";
 const { validateTicket } = require("../lib/supportForms.ts");
-const { analyticsConsentKey, landingAttribution, publicAnalyticsPaths, publicBlogPath, trackConversion } = require("../lib/analytics.ts");
+const { analyticsConsentKey, landingAttribution, metaLandingEvent, publicAnalyticsPaths, publicBlogPath, trackConversion } = require("../lib/analytics.ts");
 if (originalLoader) require.extensions[".ts"] = originalLoader; else delete require.extensions[".ts"];
 test("support fields reject whitespace, invalid categories and excessive input while accepting trimmed client text", () => {
   assert.deepEqual(validateTicket({ category: "MT5 Support", subject: " Help with MT5 ", description: " Connection is failing. " }), {});
@@ -62,9 +62,20 @@ test("the tagged staff link and tagged ad landings stay separate from organic tr
     campaign_source: "bdfx_team",
     campaign_medium: "internal",
   });
-  for (const search of ["?gclid=private", "?wbraid=private", "?utm_medium=cpc", "?utm_source=bdfx_team", "?utm_source=unknown&utm_medium=internal"]) {
+  for (const search of ["?gclid=private", "?wbraid=private", "?fbclid=private", "?utm_medium=cpc", "?utm_source=bdfx_team", "?utm_source=unknown&utm_medium=internal"]) {
     assert.deepEqual(landingAttribution(google, search), { page_referrer: "" });
   }
+});
+
+test("Meta landings return only fixed event names and reserve paid for explicit Meta campaign tags", () => {
+  assert.equal(metaLandingEvent("", "?utm_source=IG&utm_medium=paid-social&fbclid=private-click-id"), "bdfx_meta_paid_landing");
+  assert.equal(metaLandingEvent("", "?utm_source=facebook&utm_medium=cpc&email=private"), "bdfx_meta_paid_landing");
+  assert.equal(metaLandingEvent("", "?fbclid=private-click-id"), "bdfx_meta_landing");
+  assert.equal(metaLandingEvent("https://l.facebook.com/l.php?u=private", ""), "bdfx_meta_landing");
+  assert.equal(metaLandingEvent("", "?utm_source=instagram&utm_medium=organic"), "bdfx_meta_landing");
+  assert.equal(metaLandingEvent("https://instagram.com.example.invalid/", ""), null);
+  assert.equal(metaLandingEvent("https://l.instagram.com/", "?utm_source=bdfx_team&utm_medium=internal&fbclid=private"), null);
+  assert.equal(metaLandingEvent("https://facebook.com/", "?gclid=private"), null);
 });
 
 test("article path candidates match canonical public slug syntax", () => {
