@@ -102,6 +102,7 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
             icon={Briefcase}
             pathname={pathname}
           />
+          <NavLink href="/crm" label="CRM" icon={Briefcase} pathname={pathname} />
           <NavLink href="/enquiries" label="Enquiries" icon={MessageSquare} pathname={pathname} />
           <NavLink href="/chat-reports" label="Chat Reports" icon={MessageSquare} pathname={pathname} />
           <NavLink
