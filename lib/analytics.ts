@@ -7,7 +7,9 @@ export const publicAnalyticsPaths = new Set(["/", "/about", "/accounts", "/platf
 for (const path of countryGuidePublicPaths) publicAnalyticsPaths.add(path);
 
 const googleSearchHosts = new Set(["google.com", "google.co.in", "google.com.pk", "google.com.vn"]);
-const paidClickParameters = new Set(["gclid", "dclid", "gbraid", "wbraid", "gclsrc", "msclkid"]);
+const paidClickParameters = new Set(["gclid", "dclid", "gbraid", "wbraid", "gclsrc", "msclkid", "fbclid"]);
+const metaSources = new Set(["meta", "facebook", "instagram", "fb", "ig", "msg", "messenger", "an", "audience_network"]);
+const paidMedia = new Set(["paid_social", "paid-social", "paidsocial", "paid social", "paid", "cpc", "ppc", "cpm"]);
 export const officeTestCampaign = { campaign_source: "bdfx_team", campaign_medium: "internal" } as const;
 export const officeTestUrl = `${SITE_ORIGIN}/?utm_source=${officeTestCampaign.campaign_source}&utm_medium=${officeTestCampaign.campaign_medium}`;
 export const publicBlogPath = /^\/blogs\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -16,6 +18,11 @@ export function landingAttribution(referrer: string, search: string) {
   const parameters = new URLSearchParams(search);
   if (parameters.get("utm_source") === officeTestCampaign.campaign_source && parameters.get("utm_medium") === officeTestCampaign.campaign_medium) {
     return { page_referrer: "", ...officeTestCampaign };
+  }
+  const source = parameters.get("utm_source")?.trim().toLowerCase();
+  const medium = parameters.get("utm_medium")?.trim().toLowerCase();
+  if (source && medium && metaSources.has(source) && paidMedia.has(medium)) {
+    return { page_referrer: "", campaign_source: source, campaign_medium: "paid_social" };
   }
   // Keep tagged campaigns separate from search and never send raw landing data.
   const taggedCampaign = Array.from(parameters.keys()).some(key => {
