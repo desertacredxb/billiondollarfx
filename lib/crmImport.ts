@@ -23,6 +23,17 @@ export type ImportOutcome = {
   callId: string;
   note: string;
 };
+export type ImportHashmi = {
+  row: number;
+  callId: string;
+  phone: string;
+  type: string;
+  date: string;
+  time: string;
+  status: string;
+  talkDuration: string;
+  agents: string[];
+};
 
 const phoneHeaders = ["hashmiphone", "phone", "phonenumber", "mobilenumber", "mobile", "contactnumber", "number", "contactphone"];
 const headerKey = (value: Row[number]) => String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -159,9 +170,26 @@ function parseOutcomes(rows: Row[]): ImportOutcome[] {
   });
 }
 
+function parseHashmi(rows: Row[]): ImportHashmi[] {
+  const header = rows.findIndex((row, index) => index < 30 && ["callid", "callernumber", "calltype", "calldate", "calltime",
+    "status", "talkduration", "directconnectedagents", "directnotconnectedagents"].every(key => row.some(value => headerKey(value) === key)));
+  if (header < 0) return [];
+  const find = columnsFor(rows[header]);
+  const agentColumns = ["directconnectedagents", "directnotconnectedagents", "forwardedconnectedagents", "forwardednotconnectedagents"].map(key => find(key));
+  return rows.slice(header + 1).flatMap((row, index) => {
+    const callId = cellText(row, find("callid"));
+    if (!callId && !row.some(value => cellText([value], 0))) return [];
+    const agents = [...new Set(agentColumns.flatMap(column => [...cellText(row, column).matchAll(/#([1-9]\d{0,11})\b/g)].map(match => match[1])))];
+    return [{ row: header + index + 2, callId, phone: cellText(row, find("callernumber")), type: cellText(row, find("calltype")),
+      date: cellText(row, find("calldate")), time: cellText(row, find("calltime")), status: cellText(row, find("status")),
+      talkDuration: cellText(row, find("talkduration")), agents }];
+  });
+}
+
 export async function readCrmFile(file: File) {
   let leads: ImportLead[];
   let outcomes: ImportOutcome[];
+  let hashmi: ImportHashmi[] = [];
   if (/\.xlsx$/i.test(file.name)) {
     const { default: readExcelFile } = await import("read-excel-file/browser");
     const sheets = await readExcelFile(file);
@@ -173,13 +201,14 @@ export async function readCrmFile(file: File) {
     outcomes = parseOutcomes(callSheet?.data || []);
   } else if (/\.csv$/i.test(file.name)) {
     const rows = parseCsv(await file.text());
+    hashmi = parseHashmi(rows);
     leads = parseLeads(rows);
     outcomes = parseOutcomes(rows);
   } else throw new Error("Choose an Excel .xlsx or .csv file.");
-  if (!leads.length && !outcomes.length) {
-    throw new Error("Choose a lead list with a Phone column or a Calls export with a Lead ID and call time.");
+  if (!leads.length && !outcomes.length && !hashmi.length) {
+    throw new Error("Choose a lead list, a Calls export with a Lead ID, or a Hashmi call report CSV.");
   }
-  return { leads, outcomes };
+  return { leads, outcomes, hashmi };
 }
 
 export function* importBatches<T extends { row: number }>(rows: T[]) {

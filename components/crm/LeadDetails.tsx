@@ -6,7 +6,8 @@ import api from "../../lib/apiClient";
 import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, hashmiMessage, OUTCOME_LABELS, secondaryClass, type HashmiResponse, type Lead, type Overview } from "../../lib/crm";
 
 type Outcome = keyof typeof OUTCOME_LABELS;
-type Activity = { _id: string; kind: "outcome" | "hashmi"; occurredAt: string; outcome?: Outcome; note?: string; connected?: boolean; talkSeconds?: number };
+type Activity = { _id: string; kind: "outcome" | "hashmi"; occurredAt: string; outcome?: Outcome; note?: string; attempted?: boolean;
+  connected?: boolean; talkSeconds?: number; hashmiExportStatus?: string };
 const closedOutcomes = new Set<Outcome>(["wrong_number", "number_not_in_use", "not_interested", "do_not_call"]);
 
 export default function LeadDetails({ lead, owner, readOnly = false, mode, onClose, onChange }: {
@@ -144,7 +145,7 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, onClo
       {historyError ? <p role="alert" className="mt-2 text-sm text-red-300">{historyError}</p> :
         history.length ? <ul className="mt-2 divide-y divide-slate-700 text-sm">
           {history.map(event => <li key={event._id} className="py-2">
-            <p className="text-slate-200">{event.kind === "hashmi" ? event.connected ? "Hashmi · connected" : "Hashmi · attempted" : event.outcome ? OUTCOME_LABELS[event.outcome] : "Call outcome"} <span className="text-slate-400">· {dubaiTime(event.occurredAt)}</span></p>
+            <p className="text-slate-200">{event.kind === "hashmi" ? "Hashmi · " + (event.hashmiExportStatus || (event.connected ? "connected" : event.attempted ? "attempted" : "unconfirmed")) : event.outcome ? OUTCOME_LABELS[event.outcome] : "Call outcome"} <span className="text-slate-400">· {dubaiTime(event.occurredAt)}</span>{Boolean(event.connected && event.talkSeconds) && <span className="text-slate-400"> · {event.talkSeconds} s talk time</span>}</p>
             {event.note && <p className="mt-1 whitespace-pre-wrap text-slate-300">{event.note}</p>}
           </li>)}
         </ul> : <p className="mt-2 text-sm text-slate-400">No calls logged yet.</p>}
