@@ -8,6 +8,7 @@ export const managerPermissions = {
   reports: "Business reports",
   website_analytics: "Website Analytics",
   crm: "CRM Agent · assigned leads and own clients",
+  crm_view: "CRM View-only · lead lists and team reports",
 } as const;
 export type AdminPermission = keyof typeof managerPermissions;
 export interface AdminSession { email: string; fullName: string; role: "owner" | "manager"; permissions: AdminPermission[] }
@@ -17,7 +18,9 @@ const routes: Record<string, AdminPermission | "owner"> = {
 };
 export function canAccessAdminPath(session: AdminSession, path: string) {
   if (session.role === "owner") return true;
-  const permission = routes[path.split("/")[1]];
+  const section = path.split("/")[1];
+  if (section === "crm" && session.permissions.includes("crm_view")) return true;
+  const permission = routes[section];
   return !!permission && permission !== "owner" && session.permissions.includes(permission);
 }
 export function adminHome(session: AdminSession) {

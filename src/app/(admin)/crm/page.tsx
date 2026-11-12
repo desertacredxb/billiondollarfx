@@ -6,6 +6,8 @@ import { Phone, RefreshCw, Upload } from "lucide-react";
 import api from "../../../../lib/apiClient";
 import { useAdminSession } from "../../../../lib/adminSession";
 import LeadDetails from "../../../../components/crm/LeadDetails";
+import DialPad from "../../../../components/crm/DialPad";
+import CallAssistant from "../../../../components/crm/CallAssistant";
 import { importBatches, readCrmFile } from "../../../../lib/crmImport";
 import {
   buttonClass, cardClass, crmApi, crmError, dubaiDate, dubaiTime, fieldClass,
@@ -23,7 +25,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
   return <div className={cardClass}><p className="text-sm text-slate-400">{label}</p><p className="mt-2 text-2xl font-semibold tabular-nums text-slate-100">{value}</p></div>;
 }
 
-function AgentRow({ agent, target, onSave }: { agent: Agent; target: number; onSave: () => void }) {
+function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: number; editable: boolean; onSave: () => void }) {
   const [hashmiId, setHashmiId] = useState(agent.hashmiId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -44,19 +46,22 @@ function AgentRow({ agent, target, onSave }: { agent: Agent; target: number; onS
     <td className="px-3 py-3 tabular-nums">{Math.max(0, target - agent.verified)}</td>
     <td className="px-3 py-3 tabular-nums">{agent.connected}</td>
     <td className="px-3 py-3 tabular-nums">{Math.floor(agent.talkSeconds / 60)}m {agent.talkSeconds % 60}s</td>
-    <td className="min-w-52 px-3 py-3">
+    {editable && <td className="min-w-52 px-3 py-3">
       <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); void save(); }}>
         <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />
         <button type="submit" className={secondaryClass} disabled={busy || hashmiId.trim() === agent.hashmiId}>Save</button>
       </form>
       {error && <p role="alert" className="mt-1 text-xs text-red-300">{error}</p>}
-    </td>
+    </td>}
   </tr>;
 }
 
 export default function CrmPage() {
   const session = useAdminSession();
   const owner = session?.role === "owner";
+  const readOnly = !owner && !!session?.permissions?.includes("crm_view") && !session.permissions.includes("crm");
+  const team = owner || readOnly;
+  const canAssign = Boolean(session) && !readOnly;
   const [day, setDay] = useState(dubaiDate);
   const [view, setView] = useState<View>("queue");
   const [leadList, setLeadList] = useState<LeadList | "all">("all");
@@ -82,12 +87,13 @@ export default function CrmPage() {
   const requestedView = view === "leads" && leadList !== "all" ? leadList : view;
 
   useEffect(() => {
+    if (!canAssign) return;
     const controller = new AbortController();
     api.post(crmApi + "/distribute", undefined, { signal: controller.signal })
       .then(() => setVersion(current => current + 1))
       .catch(error => { if (!controller.signal.aborted) setActionError(crmError(error, "Automatic assignment could not run.")); });
     return () => controller.abort();
-  }, []);
+  }, [canAssign]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -191,8 +197,8 @@ export default function CrmPage() {
   }
   const views: { id: View; name: string }[] = [
     { id: "queue", name: "Work queue" },
-    { id: "leads", name: owner ? "Data bank" : "My leads" },
-    { id: "clients", name: owner ? "Clients" : "My clients" },
+    { id: "leads", name: team ? "Data bank" : "My leads" },
+    { id: "clients", name: team ? "Clients" : "My clients" },
   ];
   const listTitle = view === "leads" && leadList !== "all" ? LEAD_LISTS[leadList] : null;
 
@@ -201,7 +207,7 @@ export default function CrmPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">BDFX CRM</h1>
-          <p className="mt-2 text-sm text-slate-300">{owner ? "Assign leads, monitor callbacks and track verified calling progress." : "Work your assigned leads and see your client conversions."}</p>
+          <p className="mt-2 text-sm text-slate-300">{owner ? "Assign leads, monitor callbacks and track verified calling progress." : readOnly ? "View lead lists and team calling reports." : "Work your assigned leads and see your client conversions."}</p>
         </div>
         <div className="flex items-end gap-2">
           <label className="block text-xs text-slate-300">Report date · Dubai
@@ -214,22 +220,26 @@ export default function CrmPage() {
       {notice && <p role="status" className="rounded-lg border border-emerald-800 bg-emerald-950/40 p-3 text-sm text-emerald-200">{notice}</p>}
       {overview && <>
         <section aria-label="Calling progress" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Hashmi verified attempts" value={number.format(verified) + " / " + number.format(owner ? agents.length * target : target)} />
+          <Metric label="Hashmi verified attempts" value={number.format(verified) + " / " + number.format(team ? agents.length * target : target)} />
           <Metric label="Ready leads and callbacks" value={number.format(ready)} />
           <Metric label="Outcomes logged" value={number.format(logged)} />
-          <Metric label={owner ? "Available in data bank" : "Connected calls"} value={number.format(owner ? overview.bank || 0 : agents[0]?.connected || 0)} />
+          <Metric label={team ? "Available in data bank" : "Connected calls"} value={number.format(team ? overview.bank || 0 : agents[0]?.connected || 0)} />
         </section>
         <p className="flex flex-wrap items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
           {dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
             dialerMode === "developer" ? "Hashmi developer mode is configured for call tests." : "Hashmi click-to-call is configured."}
           {overview.reportEnabled && " Call report webhook configured."}
-          {!owner && !agents[0]?.hashmiId && dialerMode !== "unconfigured" && " Your Hashmi agent ID needs mapping."}
-          {!owner && dialerMode === "unconfigured" && (
+          {!team && !agents[0]?.hashmiId && dialerMode !== "unconfigured" && " Your Hashmi agent ID needs mapping before leads can be assigned."}
+          {!team && dialerMode === "unconfigured" && (
             <a className="text-[#e0bf65] underline underline-offset-4" href="https://cloud.hashmiinfonet.net/user/telephony/agent"
               target="_blank" rel="noreferrer">Open Hashmi dialer</a>
           )}
         </p>
+        {!verified && logged > 0 && <p className="text-sm text-amber-200">CRM outcomes are logged. Hashmi has yet to verify call results for this report.</p>}
       </>}
+
+      {!team && Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured" && <DialPad />}
+      {canAssign && <CallAssistant />}
 
       {owner && (
         <section className={cardClass} aria-labelledby="crm-import">
@@ -237,7 +247,7 @@ export default function CrmPage() {
             <div>
               <h2 id="crm-import" className="text-lg font-semibold">Upload leads and call history</h2>
               <p className="mt-1 text-sm text-slate-300">Excel or CSV. Lead rows need a phone with country code. Call history uses the existing Lead ID and caller.</p>
-              {Boolean(overview?.pending) && <p className="mt-2 text-sm text-amber-200">{number.format(overview?.pending || 0)} leads are waiting for a matching CRM staff name or email.</p>}
+              {Boolean(overview?.pending) && <p className="mt-2 text-sm text-amber-200">{number.format(overview?.pending || 0)} leads are waiting for a matching CRM caller with a saved Hashmi Agent ID.</p>}
             </div>
             <button type="button" className={secondaryClass} onClick={assign} disabled={assigning || importing}>{assigning ? "Assigning…" : "Distribute available leads"}</button>
           </div>
@@ -258,21 +268,24 @@ export default function CrmPage() {
         </section>
       )}
 
-      {owner && overview && <section className={cardClass} aria-labelledby="crm-team">
+      {team && overview && <section className={cardClass} aria-labelledby="crm-team">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="crm-team" className="text-lg font-semibold">Team calling report</h2>
-          <Link href="/staff-users" className={secondaryClass}>Manage CRM agents</Link>
+          {owner && <Link href="/staff-users" className={secondaryClass}>Manage CRM agents</Link>}
         </div>
         {agents.length ? <div className="mt-4 overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-sm">
-            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Hashmi verified", "Calls left", "Connected", "Talk time", "Hashmi agent ID"].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
-            <tbody>{agents.map(agent => <AgentRow key={agent.id + ":" + agent.hashmiId} agent={agent} target={target} onSave={refresh} />)}</tbody>
+            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Hashmi verified", "Calls left", "Connected", "Talk time", ...(owner ? ["Hashmi agent ID"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
+            <tbody>{agents.map(agent => <AgentRow key={agent.id + ":" + agent.hashmiId} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
           </table>
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
       </section>}
 
       <div ref={detail}>
-        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} mode={dialerMode} onClose={() => setSelected(null)} onChange={refresh} />}
+        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} readOnly={readOnly} mode={dialerMode} onClose={() => setSelected(null)} onChange={name => {
+          if (name !== undefined) setSelected(current => current?.id === selected.id ? { ...current, name } : current);
+          refresh();
+        }} />}
       </div>
       <section className={cardClass} aria-label="CRM records">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -289,7 +302,7 @@ export default function CrmPage() {
             </label>
           </nav>
           <form className="flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); setPage(1); setSelected(null); }}>
-            {owner && <label className="block text-xs text-slate-300">Assigned agent
+            {team && <label className="block text-xs text-slate-300">Assigned agent
               <select className={fieldClass + " mt-1"} value={agentFilter} onChange={event => { setAgentFilter(event.target.value); setPage(1); setSelected(null); }}>
                 <option value="">All agents</option>{agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
               </select>
@@ -307,7 +320,7 @@ export default function CrmPage() {
             <table className="w-full text-left text-sm">
               <thead className="text-xs text-slate-300"><tr>
                 <th scope="col" className="px-3 py-2">Lead</th>
-                {owner && <th scope="col" className="px-3 py-2">Agent</th>}
+                {team && <th scope="col" className="px-3 py-2">Agent</th>}
                 <th scope="col" className="px-3 py-2">Source</th>
                 <th scope="col" className="px-3 py-2">{view === "clients" ? "Conversion" : "Status"}</th>
                 <th scope="col" className="px-3 py-2">Callback · Dubai</th>
@@ -315,28 +328,28 @@ export default function CrmPage() {
               </tr></thead>
               <tbody>{leads.rows.map(lead => <tr key={lead.id} className="border-t border-slate-700">
                 <th scope="row" className="min-w-40 px-3 py-3 font-medium">
-                  <p>{lead.client?.name || lead.name || "Lead"}</p>
+                  <p>{lead.name || lead.client?.name || "Lead"}</p>
                   <p className="text-xs font-normal text-slate-300">{lead.phone}</p>
                   <p className="break-all text-xs font-normal text-slate-400">{lead.leadId}</p>
                 </th>
-                {owner && <td className="px-3 py-3">{lead.assignmentPending ? "Awaiting " + lead.originalAgent : lead.assignedTo ? agentNames.get(lead.assignedTo) || "Inactive agent" : "Unassigned"}</td>}
+                {team && <td className="px-3 py-3">{lead.assignmentPending ? "Awaiting " + lead.originalAgent : lead.assignedTo ? agentNames.get(lead.assignedTo) || "Inactive agent" : "Unassigned"}</td>}
                 <td className="px-3 py-3">
                   {lead.source}
                   {lead.registeredAt && <p className="mt-1 text-xs text-slate-300">{lead.source === "Website registration" ? "" : "Registered · "}{dubaiTime(lead.registeredAt)}</p>}
                 </td>
-                <td className="px-3 py-3">{lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}</td>
+                <td className="px-3 py-3">{lead.outcome === "do_not_call" ? "Do not call back" : lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}</td>
                 <td className="whitespace-nowrap px-3 py-3">{lead.followUpAt ? dubaiTime(lead.followUpAt) : "—"}</td>
-                <td className="whitespace-nowrap px-3 py-3"><button type="button" className={secondaryClass} onClick={() => setSelected(lead)}>{owner || view === "clients" || lead.status === "closed" ? "View" : "Open to call"}</button></td>
+                <td className="whitespace-nowrap px-3 py-3"><button type="button" className={secondaryClass} onClick={() => setSelected(lead)}>{team || view === "clients" || lead.status === "closed" || lead.outcome === "do_not_call" ? "View" : "Open to call"}</button></td>
               </tr>)}</tbody>
             </table>
           </div>}
-        {!loading && !readError && leads.total > leads.limit && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-          <p>{number.format(leads.total)} records · Page {leads.page} of {Math.ceil(leads.total / leads.limit)}</p>
+        {!loading && !readError && (page > 1 || leads.total > leads.limit) && <nav aria-label="Lead pages" className="mt-4 flex flex-wrap items-center gap-3 text-sm">
           <div className="flex gap-2">
             <button type="button" className={secondaryClass} disabled={page <= 1} onClick={() => { setPage(page - 1); setSelected(null); }}>Previous</button>
             <button type="button" className={secondaryClass} disabled={page * leads.limit >= leads.total} onClick={() => { setPage(page + 1); setSelected(null); }}>Next</button>
           </div>
-        </div>}
+          <p>{number.format(leads.total)} records · Page {leads.page} of {Math.max(1, Math.ceil(leads.total / leads.limit))}</p>
+        </nav>}
       </section>
     </div>
   );

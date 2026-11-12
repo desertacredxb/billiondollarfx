@@ -48,8 +48,8 @@ test("a selected lead list stays selected when Data bank is opened again", async
   };
   const pageApi = { async get(url, { params }) {
     if (url.endsWith("/overview")) return { data: { agents: [], dialerMode: "live" } };
-    requests.push(params.view);
-    return { data: { rows: [lead], page: 1, limit: 50, total: 1 } };
+    requests.push([params.view, params.page]);
+    return { data: { rows: [lead], page: params.page, limit: 50, total: 301 } };
   } };
   const Page = load("../src/app/(admin)/crm/page.tsx", {
     react: hooks,
@@ -58,6 +58,8 @@ test("a selected lead list stays selected when Data bank is opened again", async
     "../../../../lib/crm": crm,
     "../../../../lib/crmImport": {},
     "../../../../components/crm/LeadDetails": LeadDetails,
+    "../../../../components/crm/DialPad": () => null,
+    "../../../../components/crm/CallAssistant": () => null,
   }).default;
   function render() { cursor = 0; effects = []; return Page(); }
   async function loadRows() { effects[1](); await new Promise(setImmediate); }
@@ -68,6 +70,12 @@ test("a selected lead list stays selected when Data bank is opened again", async
   let tree = render();
   assert.equal(select(tree).props.value, "follow_ups");
   await loadRows();
+  click(render(), "Next");
+  render();
+  await loadRows();
+  click(render(), "Next");
+  render();
+  await loadRows();
   click(render(), "Work queue");
   click(render(), "Data bank");
   tree = render();
@@ -76,7 +84,7 @@ test("a selected lead list stays selected when Data bank is opened again", async
   select(render()).props.onChange({ target: { value: "all" } });
   render();
   await loadRows();
-  assert.deepEqual(requests, ["follow_ups", "follow_ups", "leads"]);
+  assert.deepEqual(requests, [["follow_ups", 1], ["follow_ups", 2], ["follow_ups", 3], ["follow_ups", 1], ["leads", 1]]);
 });
 
 test("the caller sees the dial action for an open lead before the dialer overview is loaded", () => {

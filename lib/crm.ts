@@ -9,7 +9,7 @@ export const OUTCOME_LABELS = {
   connected: "Connected",
   not_interested: "Not interested",
   qualified: "Interested",
-  do_not_call: "Do not call",
+  do_not_call: "Do not call back",
 };
 export const STATUS_LABELS: Record<string, string> = {
   new: "New",
@@ -26,6 +26,7 @@ export const LEAD_LISTS = {
   account_opened: "Account opened",
   purchased: "Purchased data",
   number_not_in_use: "Number not in use",
+  do_not_call: "Do not call back",
 } as const;
 export const fieldClass = "w-full rounded-lg border border-slate-600 bg-[#0b1423] px-3 py-2 text-sm text-white";
 export const buttonClass = "rounded-lg bg-[#d6b659] px-4 py-2 text-sm font-semibold text-black hover:bg-[#e8cc80] disabled:opacity-50";
@@ -74,6 +75,14 @@ export type Lead = {
 };
 
 export type LeadPage = { rows: Lead[]; total: number; page: number; limit: number };
+
+export type HashmiResponse = { state: string; mode: Overview["dialerMode"] };
+
+export function hashmiMessage(response: HashmiResponse) {
+  if (response.state === "accepted") return response.mode === "developer" ? "Hashmi accepted the test request." : "Hashmi accepted the call request.";
+  if (response.state === "rejected") return "Hashmi declined the call request. Check your Hashmi agent login and try again.";
+  return "Hashmi has not confirmed this request. Check your dialer before placing another call.";
+}
 
 export function crmError(error: unknown, fallback: string) {
   return api.isAxiosError(error) && typeof error.response?.data?.message === "string"
