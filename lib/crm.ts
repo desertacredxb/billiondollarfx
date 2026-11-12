@@ -5,18 +5,28 @@ export const OUTCOME_LABELS = {
   no_answer: "No answer",
   busy: "Busy",
   wrong_number: "Wrong number",
+  number_not_in_use: "Number not in use",
   connected: "Connected",
   not_interested: "Not interested",
-  qualified: "Qualified",
+  qualified: "Interested",
   do_not_call: "Do not call",
 };
 export const STATUS_LABELS: Record<string, string> = {
   new: "New",
   follow_up: "Callback",
   worked: "Attempted",
-  qualified: "Qualified",
+  qualified: "Interested",
   closed: "Closed",
 };
+
+export const LEAD_LISTS = {
+  registrations: "Website registrations",
+  follow_ups: "Follow-ups",
+  interested: "Interested",
+  account_opened: "Account opened",
+  purchased: "Purchased data",
+  number_not_in_use: "Number not in use",
+} as const;
 export const fieldClass = "w-full rounded-lg border border-slate-600 bg-[#0b1423] px-3 py-2 text-sm text-white";
 export const buttonClass = "rounded-lg bg-[#d6b659] px-4 py-2 text-sm font-semibold text-black hover:bg-[#e8cc80] disabled:opacity-50";
 export const secondaryClass = "rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-slate-100 hover:border-[#d6b659] disabled:opacity-50";
@@ -57,6 +67,8 @@ export type Lead = {
   status: string;
   followUpAt: string | null;
   note: string;
+  registeredAt?: string;
+  accountOpened?: boolean;
   outcome?: keyof typeof OUTCOME_LABELS;
   client?: { id: string; name: string; registeredAt: string; kycApproved: boolean; firstDeposit: boolean };
 };

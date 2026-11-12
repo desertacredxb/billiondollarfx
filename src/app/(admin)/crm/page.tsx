@@ -9,10 +9,11 @@ import LeadDetails from "../../../../components/crm/LeadDetails";
 import { importBatches, readCrmFile } from "../../../../lib/crmImport";
 import {
   buttonClass, cardClass, crmApi, crmError, dubaiDate, dubaiTime, fieldClass,
-  secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
+  LEAD_LISTS, secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
 } from "../../../../lib/crm";
 
-type View = "queue" | "leads" | "clients";
+type LeadList = keyof typeof LEAD_LISTS;
+type View = "queue" | "leads" | "clients" | LeadList;
 type ImportResult = { imported: number; duplicates: number; rejected: { row: number; reason: string }[] };
 type ImportSummary = { leads: number; calls: number; duplicates: number; rejected: { row: number; reason: string; area: string }[] };
 const blank: LeadPage = { rows: [], total: 0, page: 1, limit: 50 };
@@ -179,6 +180,7 @@ export default function CrmPage() {
   const logged = agents.reduce((sum, agent) => sum + agent.logged, 0);
   const agentNames = new Map(agents.map(agent => [agent.id, agent.name]));
   const dialerMode = overview?.dialerMode || "unconfigured";
+  const changeView = (next: View) => { setView(next); setPage(1); setSelected(null); };
   const views: { id: View; name: string }[] = [
     { id: "queue", name: "Work queue" },
     { id: "leads", name: owner ? "Data bank" : "My leads" },
@@ -265,9 +267,16 @@ export default function CrmPage() {
       </div>
       <section className={cardClass} aria-label="CRM records">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <nav className="flex flex-wrap gap-2" aria-label="CRM views">
+          <nav className="flex flex-wrap items-end gap-2" aria-label="CRM views">
             {views.map(item => <button key={item.id} type="button" aria-pressed={view === item.id} className={view === item.id ? buttonClass : secondaryClass}
-              onClick={() => { setView(item.id); setPage(1); setSelected(null); }}>{item.name}</button>)}
+              onClick={() => changeView(item.id)}>{item.name}</button>)}
+            <label className="block text-xs text-slate-300">Lead list
+              <select className={fieldClass + " mt-1"} value={Object.hasOwn(LEAD_LISTS, view) ? view : ""}
+                onChange={event => changeView((event.target.value || "leads") as View)}>
+                <option value="">Choose a list</option>
+                {Object.entries(LEAD_LISTS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </select>
+            </label>
           </nav>
           <form className="flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); setPage(1); setSelected(null); }}>
             {owner && <label className="block text-xs text-slate-300">Assigned agent
@@ -300,8 +309,11 @@ export default function CrmPage() {
                   <p className="break-all text-xs font-normal text-slate-400">{lead.leadId}</p>
                 </th>
                 {owner && <td className="px-3 py-3">{lead.assignmentPending ? "Awaiting " + lead.originalAgent : lead.assignedTo ? agentNames.get(lead.assignedTo) || "Inactive agent" : "Unassigned"}</td>}
-                <td className="px-3 py-3">{lead.source}</td>
-                <td className="px-3 py-3">{lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : STATUS_LABELS[lead.status] || lead.status}</td>
+                <td className="px-3 py-3">
+                  {lead.source}
+                  {lead.registeredAt && <p className="mt-1 text-xs text-slate-300">{lead.source === "Website registration" ? "" : "Registered · "}{dubaiTime(lead.registeredAt)}</p>}
+                </td>
+                <td className="px-3 py-3">{lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}</td>
                 <td className="whitespace-nowrap px-3 py-3">{lead.followUpAt ? dubaiTime(lead.followUpAt) : "—"}</td>
                 <td className="px-3 py-3"><button type="button" className={secondaryClass} onClick={() => setSelected(lead)}>{owner || view === "clients" ? "View" : "Open"}</button></td>
               </tr>)}</tbody>
