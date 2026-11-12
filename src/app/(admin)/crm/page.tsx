@@ -17,7 +17,9 @@ import {
 type LeadList = keyof typeof LEAD_LISTS;
 type View = "queue" | "leads" | "clients";
 type ImportResult = { imported: number; duplicates: number; rejected: { row: number; reason: string }[] };
-type ImportSummary = { leads: number; calls: number; duplicates: number; rejected: { row: number; reason: string; area: string }[] };
+type HashmiImportResult = { added: number; updated: number; existing: number; leadsAdded: number; skipped: number; rejected: { row: number; reason: string }[] };
+type ImportSummary = { leads: number; calls: number; duplicates: number; rejected: { row: number; reason: string; area: string }[];
+  hashmi?: { updated: number; skipped: number } };
 const blank: LeadPage = { rows: [], total: 0, page: 1, limit: 50 };
 const number = new Intl.NumberFormat("en-GB");
 
@@ -158,6 +160,24 @@ export default function CrmPage() {
     let processed = 0;
     try {
       const rows = await readCrmFile(file);
+      if (rows.hashmi.length) {
+        summary.hashmi = { updated: 0, skipped: 0 };
+        for (const batch of importBatches(rows.hashmi)) {
+          const { data } = await api.post<HashmiImportResult>(crmApi + "/import/hashmi", { rows: batch });
+          summary.leads += data.leadsAdded;
+          summary.calls += data.added;
+          summary.duplicates += data.existing;
+          summary.hashmi.updated += data.updated;
+          summary.hashmi.skipped += data.skipped;
+          summary.rejected.push(...data.rejected.map(row => ({ ...row, area: "Hashmi" })));
+          processed += batch.length;
+          setImportProgress(number.format(processed) + " of " + number.format(rows.hashmi.length) + " Hashmi rows checked");
+        }
+        setImportResult(summary);
+        setNotice("Hashmi history imported.");
+        setFile(null);
+        return;
+      }
       const total = rows.leads.length + rows.outcomes.length;
       for (const [area, field, endpoint, group] of [
         ["Leads", "leads", "/import", rows.leads],
@@ -252,7 +272,7 @@ export default function CrmPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 id="crm-import" className="text-lg font-semibold">Upload leads and call history</h2>
-              <p className="mt-1 text-sm text-slate-300">Excel or CSV. Lead rows need a phone with country code. Call history uses the existing Lead ID and caller.</p>
+              <p className="mt-1 text-sm text-slate-300">Upload leads or call history as Excel or CSV. A Hashmi report CSV updates verified calls and adds missing numbers to Data Bank.</p>
               {Boolean(overview?.pending) && <p className="mt-2 text-sm text-amber-200">{number.format(overview?.pending || 0)} leads are waiting for a matching CRM caller with a saved Hashmi Agent ID.</p>}
             </div>
             <button type="button" className={secondaryClass} onClick={assign} disabled={assigning || importing}>{assigning ? "Assigning…" : "Distribute available leads"}</button>
@@ -262,11 +282,12 @@ export default function CrmPage() {
               <input type="file" accept=".xlsx,.csv" className={fieldClass + " mt-1 block max-w-full"} disabled={importing}
                 onChange={event => setFile(event.target.files?.[0] || null)} />
             </label>
-            <button type="submit" disabled={!file || importing || assigning} className={buttonClass + " inline-flex items-center gap-2"}><Upload size={16} />Import and distribute</button>
+            <button type="submit" disabled={!file || importing || assigning} className={buttonClass + " inline-flex items-center gap-2"}><Upload size={16} />Import file</button>
           </form>
           {importProgress && <p role="status" className="mt-3 text-sm text-slate-300">{importProgress}</p>}
           {importResult && <div className="mt-3 text-sm">
-            <p>{number.format(importResult.leads)} leads added · {number.format(importResult.calls)} call outcomes added · {number.format(importResult.duplicates)} duplicates · {number.format(importResult.rejected.length)} rows to review</p>
+            {importResult.hashmi ? <p>{number.format(importResult.leads)} leads added · {number.format(importResult.calls)} Hashmi calls added · {number.format(importResult.hashmi.updated)} calls updated · {number.format(importResult.duplicates)} already current · {number.format(importResult.hashmi.skipped)} other call types skipped · {number.format(importResult.rejected.length)} rows to review</p> :
+              <p>{number.format(importResult.leads)} leads added · {number.format(importResult.calls)} call outcomes added · {number.format(importResult.duplicates)} duplicates · {number.format(importResult.rejected.length)} rows to review</p>}
             {importResult.rejected.length > 0 && <ul className="mt-2 space-y-1 text-amber-200">
               {importResult.rejected.slice(0, 10).map((item, index) => <li key={item.row + "-" + index}>{item.area} row {item.row} · {item.reason}</li>)}
             </ul>}
