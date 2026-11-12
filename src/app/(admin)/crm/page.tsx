@@ -46,6 +46,11 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
     <td className="px-3 py-3 tabular-nums">{Math.max(0, target - agent.verified)}</td>
     <td className="px-3 py-3 tabular-nums">{agent.connected}</td>
     <td className="px-3 py-3 tabular-nums">{Math.floor(agent.talkSeconds / 60)}m {agent.talkSeconds % 60}s</td>
+    <td className="px-3 py-3 tabular-nums">{agent.overdue ?? 0}</td>
+    <td className="px-3 py-3">
+      <p>{(agent.dialerMapped ?? Boolean(agent.hashmiId)) ? "Dialer mapped" : "Dialer setup pending"}</p>
+      <p className="text-xs text-slate-300">{agent.lastActivityAt ? "Last CRM activity " + dubaiTime(agent.lastActivityAt) : "No CRM activity on report date"}</p>
+    </td>
     {editable && <td className="min-w-52 px-3 py-3">
       <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); void save(); }}>
         <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />
@@ -60,8 +65,9 @@ export default function CrmPage() {
   const session = useAdminSession();
   const owner = session?.role === "owner";
   const readOnly = !owner && !!session?.permissions?.includes("crm_view") && !session.permissions.includes("crm");
-  const team = owner || readOnly;
-  const canAssign = Boolean(session) && !readOnly;
+  const reportOnly = !owner && !readOnly && !!session?.permissions?.includes("crm_team") && !session.permissions.includes("crm");
+  const team = owner || readOnly || reportOnly;
+  const canAssign = Boolean(session) && !readOnly && !reportOnly;
   const [day, setDay] = useState(dubaiDate);
   const [view, setView] = useState<View>("queue");
   const [leadList, setLeadList] = useState<LeadList | "all">("all");
@@ -101,7 +107,7 @@ export default function CrmPage() {
     setReadError("");
     Promise.all([
       api.get<Overview>(crmApi + "/overview", { params: { day }, signal: controller.signal }),
-      api.get<LeadPage>(crmApi + "/leads", {
+      reportOnly ? Promise.resolve({ data: blank }) : api.get<LeadPage>(crmApi + "/leads", {
         params: { view: requestedView, page, search, ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
       }),
     ]).then(([report, data]) => {
@@ -112,7 +118,7 @@ export default function CrmPage() {
       if (!controller.signal.aborted) setReadError(crmError(error, "CRM could not load."));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [day, requestedView, page, search, agentFilter, version]);
+  }, [day, requestedView, page, search, agentFilter, version, reportOnly]);
 
   useEffect(() => {
     if (selected) detail.current?.scrollIntoView({ block: "nearest" });
@@ -207,7 +213,7 @@ export default function CrmPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">BDFX CRM</h1>
-          <p className="mt-2 text-sm text-slate-300">{owner ? "Assign leads, monitor callbacks and track verified calling progress." : readOnly ? "View lead lists and team calling reports." : "Work your assigned leads and see your client conversions."}</p>
+          <p className="mt-2 text-sm text-slate-300">{owner ? "Assign leads, monitor callbacks and track verified calling progress." : reportOnly ? "View team calling activity and overdue follow-ups." : readOnly ? "View lead lists and team calling reports." : "Work your assigned leads and see your client conversions."}</p>
         </div>
         <div className="flex items-end gap-2">
           <label className="block text-xs text-slate-300">Report date · Dubai
@@ -275,7 +281,7 @@ export default function CrmPage() {
         </div>
         {agents.length ? <div className="mt-4 overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-sm">
-            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Hashmi verified", "Calls left", "Connected", "Talk time", ...(owner ? ["Hashmi agent ID"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
+            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Hashmi verified", "Calls left", "Connected", "Talk time", "Overdue now", "Member status", ...(owner ? ["Hashmi agent ID"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
             <tbody>{agents.map(agent => <AgentRow key={agent.id + ":" + agent.hashmiId} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
           </table>
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
@@ -287,7 +293,7 @@ export default function CrmPage() {
           refresh();
         }} />}
       </div>
-      <section className={cardClass} aria-label="CRM records">
+      {!reportOnly && <section className={cardClass} aria-label="CRM records">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <nav className="flex flex-wrap items-end gap-2" aria-label="CRM views">
             {views.map(item => <button key={item.id} type="button" aria-pressed={view === item.id} className={view === item.id ? buttonClass : secondaryClass}
@@ -350,7 +356,7 @@ export default function CrmPage() {
           </div>
           <p>{number.format(leads.total)} records · Page {leads.page} of {Math.max(1, Math.ceil(leads.total / leads.limit))}</p>
         </nav>}
-      </section>
+      </section>}
     </div>
   );
 }

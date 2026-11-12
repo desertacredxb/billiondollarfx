@@ -37,6 +37,9 @@ export type Agent = {
   id: string;
   name: string;
   hashmiId: string;
+  dialerMapped?: boolean;
+  lastActivityAt?: string | null;
+  overdue?: number;
   ready: number;
   logged: number;
   verified: number;
