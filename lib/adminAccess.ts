@@ -6,12 +6,13 @@ export const managerPermissions = {
   enquiries: "Contact enquiries",
   content: "Blog publishing",
   reports: "Business reports",
+  website_analytics: "Website Analytics",
   crm: "CRM Agent · assigned leads and own clients",
 } as const;
 export type AdminPermission = keyof typeof managerPermissions;
 export interface AdminSession { email: string; fullName: string; role: "owner" | "manager"; permissions: AdminPermission[] }
 const routes: Record<string, AdminPermission | "owner"> = {
-  adminDashboard: "reports", "business-report": "reports", users: "clients", bankapproval: "finance", brokers: "partners", tickets: "support", "chat-reports": "support", IB: "partners", "payout-requests": "finance", "all-transactions": "finance", "blog-management": "content", enquiries: "enquiries", "staff-users": "owner", "activity-log": "owner", "email-marketing": "owner", "website-analytics": "owner",
+  adminDashboard: "reports", "business-report": "reports", users: "clients", bankapproval: "finance", brokers: "partners", tickets: "support", "chat-reports": "support", IB: "partners", "payout-requests": "finance", "all-transactions": "finance", "blog-management": "content", enquiries: "enquiries", "staff-users": "owner", "activity-log": "owner", "email-marketing": "owner", "website-analytics": "website_analytics",
   crm: "crm",
 };
 export function canAccessAdminPath(session: AdminSession, path: string) {

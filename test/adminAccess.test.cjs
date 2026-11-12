@@ -24,5 +24,9 @@ test("owners retain staff/history access while managers only receive their selec
   assert.equal(canAccessAdminPath(owner, "/activity-log"), true);
   assert.equal(canAccessAdminPath(owner, "/website-analytics"), true);
   assert.equal(canAccessAdminPath({ role: "manager", permissions: ["reports"] }, "/website-analytics"), false);
+  const marketing = { role: "manager", permissions: ["website_analytics"] };
+  assert.equal(adminHome(marketing), "/website-analytics");
+  assert.equal(canAccessAdminPath(marketing, "/website-analytics"), true);
+  for (const path of ["/staff-users", "/business-report", "/users", "/payout-requests", "/email-marketing"]) assert.equal(canAccessAdminPath(marketing, path), false);
   assert.equal(canAccessAdminPath({ role: "manager", permissions: ["content"] }, "/blog-management/add"), true);
 });

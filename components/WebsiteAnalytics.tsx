@@ -37,7 +37,7 @@ export default function WebsiteAnalytics() {
           if (api.isAxiosError<{ code?: unknown }>(failure)) {
             const status = failure.response?.status, code = failure.response?.data?.code;
             if (status === 401) message = "Your admin session has expired. Please sign in again to view website reporting.";
-            else if (status === 403) message = "Website reporting is available to the BDFX owner account.";
+            else if (status === 403) message = "Ask the BDFX owner to enable Website Analytics for your staff account.";
             else if (status === 503 && typeof code === "string" && Object.hasOwn(reportingErrors, code)) message = reportingErrors[code];
             else if (failure.code === "ECONNABORTED") message = "The reporting server took too long to respond. Please refresh shortly.";
             else if (!failure.response) message = "The reporting server could not be reached. Please check your connection and refresh.";
