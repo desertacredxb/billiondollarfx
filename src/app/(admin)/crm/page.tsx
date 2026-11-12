@@ -45,7 +45,7 @@ function AgentRow({ agent, target, onSave }: { agent: Agent; target: number; onS
     <td className="px-3 py-3 tabular-nums">{Math.floor(agent.talkSeconds / 60)}m {agent.talkSeconds % 60}s</td>
     <td className="min-w-52 px-3 py-3">
       <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); void save(); }}>
-        <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => setHashmiId(event.target.value)} />
+        <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />
         <button type="submit" className={secondaryClass} disabled={busy || hashmiId.trim() === agent.hashmiId}>Save</button>
       </form>
       {error && <p role="alert" className="mt-1 text-xs text-red-300">{error}</p>}
