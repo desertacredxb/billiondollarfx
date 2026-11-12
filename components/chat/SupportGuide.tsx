@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { MessageCircle, X, ChevronLeft, ArrowRight } from "lucide-react";
 import logo from "../../assets/logo.webp";
@@ -16,6 +17,11 @@ import BuddyAiChat from "./BuddyAiChat";
 import styles from "./BuddyEngagement.module.css";
 
 export default function SupportGuide() {
+  const pathname = usePathname();
+  return pathname?.replace(/\/$/, "") === "/crm" ? null : <PublicSupportGuide />;
+}
+
+function PublicSupportGuide() {
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState<ChatLanguage>("en");
   const [topic, setTopic] = useState<TopicId | null>(null);
