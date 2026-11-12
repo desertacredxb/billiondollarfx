@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Mic, Square } from "lucide-react";
 import api from "../../lib/apiClient";
 import { buttonClass, cardClass, crmApi, crmError, fieldClass, secondaryClass } from "../../lib/crm";
 
 const MAX_RECORDING_MS = 20_000;
+const HELP_CENTRE = "https://www.billiondollarfx.com/help-centre";
 const audioFormats = ["audio/webm", "audio/mp4", "audio/ogg"];
 type VoiceState = "idle" | "starting" | "recording" | "transcribing";
+type Source = { url: string; title: string; end: number };
+type AssistantReply = { reply: string; sources?: Source[] };
 
 export default function CallAssistant() {
   const [question, setQuestion] = useState("");
-  const [turns, setTurns] = useState<{ question: string; reply: string }[]>([]);
+  const [turns, setTurns] = useState<(AssistantReply & { question: string })[]>([]);
   const [voice, setVoice] = useState<VoiceState>("idle");
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
@@ -123,33 +126,46 @@ export default function CallAssistant() {
     setAsking(true);
     setError("");
     try {
-      const { data } = await api.post<{ reply: string }>(crmApi + "/assistant", { question: text });
-      setTurns(previous => [{ question: text, reply: data.reply }, ...previous].slice(0, 5));
+      const { data } = await api.post<AssistantReply>(crmApi + "/assistant", { question: text });
+      setTurns(previous => [{ question: text, reply: data.reply, sources: data.sources }, ...previous].slice(0, 5));
       setQuestion("");
     } catch (error) { setError(crmError(error, "The call assistant could not answer right now.")); }
     finally { setAsking(false); }
   }
 
   return <details className={cardClass} onToggle={event => { if (!event.currentTarget.open) discardVoice(); }}>
-    <summary className="cursor-pointer font-semibold">Call assistant</summary>
+    <summary className="cursor-pointer font-semibold">BDFX Call assistant</summary>
     <form className="mt-4 space-y-3" onSubmit={event => { event.preventDefault(); void ask(); }}>
       <label className="block text-sm">Your question
         <textarea className={fieldClass + " mt-1"} rows={2} value={question} maxLength={1000} disabled={asking || voice !== "idle"} onChange={event => setQuestion(event.target.value)} />
       </label>
-      <p className="text-sm text-slate-300">Ask in your own words and leave out client details.</p>
+      <p className="text-sm text-slate-300">Ask about BDFX in your own words. Replies use the official website. Leave out client details.</p>
       <div className="flex flex-wrap gap-2">
         <button type="submit" className={buttonClass} disabled={asking || voice !== "idle" || !question.trim()}>{asking ? "Getting reply…" : "Get suggested reply"}</button>
         <button type="button" className={secondaryClass + " inline-flex items-center gap-2"} disabled={asking || voice === "starting" || voice === "transcribing"} onClick={() => voice === "recording" ? stopVoice() : void startVoice()}>
           {voice === "recording" ? <><Square size={16} /> Stop recording</> : <><Mic size={16} /> {voice === "transcribing" ? "Transcribing…" : voice === "starting" ? "Starting microphone…" : "Speak question"}</>}
         </button>
       </div>
-      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}{" "}
+        <a href={HELP_CENTRE} target="_blank" rel="noopener noreferrer" className="text-slate-200 underline">BDFX Help Centre</a>
+      </p>}
     </form>
     {turns.length > 0 && <div aria-live="polite" className="mt-4 space-y-4">
-      {turns.map((turn, index) => <article key={index} className="rounded-lg border border-slate-700 p-3">
-        <p className="text-sm text-slate-300">{turn.question}</p>
-        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-100">{turn.reply}</p>
-      </article>)}
+      {turns.map((turn, index) => {
+        const characters = Array.from(turn.reply);
+        const sources = turn.sources ?? [];
+        return <article key={index} className="rounded-lg border border-slate-700 p-3">
+          <p className="text-sm text-slate-300">{turn.question}</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-100">
+            {sources.map((source, sourceIndex) => <Fragment key={source.url}>
+              {characters.slice(sources[sourceIndex - 1]?.end ?? 0, source.end).join("")}
+              {" "}<a className="text-amber-200 underline" href={source.url} target="_blank" rel="noopener noreferrer"
+                title={source.title} aria-label={`Source ${sourceIndex + 1} ${source.title}`}>[{sourceIndex + 1}]</a>
+            </Fragment>)}
+            {characters.slice(sources.at(-1)?.end ?? 0).join("")}
+          </p>
+        </article>;
+      })}
     </div>}
   </details>;
 }
