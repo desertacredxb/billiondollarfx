@@ -26,7 +26,7 @@ export default function LeadDetails({ lead, owner, mode, mapped, onClose, onChan
   const [busy, setBusy] = useState(false);
   const [requestId, setRequestId] = useState("");
   const [dialRequestId, setDialRequestId] = useState("");
-  const closed = ["wrong_number", "not_interested", "do_not_call"].includes(outcome);
+  const closed = ["wrong_number", "number_not_in_use", "not_interested", "do_not_call"].includes(outcome);
   const canDial = !owner && mode !== "unconfigured" && mapped && lead.status !== "closed";
 
   useEffect(() => {
@@ -84,13 +84,15 @@ export default function LeadDetails({ lead, owner, mode, mapped, onClose, onChan
         <div>
           <h2 id="crm-lead-detail" className="text-xl font-semibold">{lead.name || lead.client?.name || "Lead"} <span className="text-sm font-normal text-slate-400">{lead.leadId}</span></h2>
           <p className="mt-1 break-words text-slate-300">{lead.phone}{lead.email ? " · " + lead.email : ""}</p>
+          {lead.registeredAt && <p className="mt-1 text-sm text-slate-300">Website registration · {dubaiTime(lead.registeredAt)}</p>}
+          {lead.accountOpened && <p className="mt-1 text-sm text-slate-300">Live account opened</p>}
         </div>
         <button type="button" aria-label="Close lead details" onClick={onClose} className={secondaryClass}><X size={18} /></button>
       </div>
       {lead.note && <p className="mt-4 whitespace-pre-wrap text-sm text-slate-300">{lead.note}</p>}
       {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
       {result && <p role="status" className="mt-4 text-sm text-emerald-300">{result}</p>}
-      {!owner && lead.outcome !== "do_not_call" && (
+      {!owner && lead.outcome !== "do_not_call" && lead.outcome !== "number_not_in_use" && (
         <div className="mt-5 space-y-4">
           {canDial && <button type="button" onClick={dial} disabled={busy} className={buttonClass + " inline-flex items-center gap-2"}>
             <Phone size={16} /> {mode === "developer" ? "Test Hashmi" : "Call via Hashmi"}
