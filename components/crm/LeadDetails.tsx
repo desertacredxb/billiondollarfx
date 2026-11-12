@@ -8,11 +8,10 @@ import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, OUTCOM
 type Outcome = keyof typeof OUTCOME_LABELS;
 type Activity = { _id: string; kind: "outcome" | "hashmi"; occurredAt: string; outcome?: Outcome; note?: string; connected?: boolean; talkSeconds?: number };
 
-export default function LeadDetails({ lead, owner, mode, mapped, onClose, onChange }: {
+export default function LeadDetails({ lead, owner, mode, onClose, onChange }: {
   lead: Lead;
   owner: boolean;
   mode: Overview["dialerMode"];
-  mapped: boolean;
   onClose: () => void;
   onChange: () => void;
 }) {
@@ -27,7 +26,7 @@ export default function LeadDetails({ lead, owner, mode, mapped, onClose, onChan
   const [requestId, setRequestId] = useState("");
   const [dialRequestId, setDialRequestId] = useState("");
   const closed = ["wrong_number", "number_not_in_use", "not_interested", "do_not_call"].includes(outcome);
-  const canDial = !owner && mode !== "unconfigured" && mapped && lead.status !== "closed";
+  const canDial = lead.status !== "closed";
 
   useEffect(() => {
     const controller = new AbortController();

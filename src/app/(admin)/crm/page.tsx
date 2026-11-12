@@ -13,7 +13,7 @@ import {
 } from "../../../../lib/crm";
 
 type LeadList = keyof typeof LEAD_LISTS;
-type View = "queue" | "leads" | "clients" | LeadList;
+type View = "queue" | "leads" | "clients";
 type ImportResult = { imported: number; duplicates: number; rejected: { row: number; reason: string }[] };
 type ImportSummary = { leads: number; calls: number; duplicates: number; rejected: { row: number; reason: string; area: string }[] };
 const blank: LeadPage = { rows: [], total: 0, page: 1, limit: 50 };
@@ -59,6 +59,7 @@ export default function CrmPage() {
   const owner = session?.role === "owner";
   const [day, setDay] = useState(dubaiDate);
   const [view, setView] = useState<View>("queue");
+  const [leadList, setLeadList] = useState<LeadList | "all">("all");
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -78,6 +79,7 @@ export default function CrmPage() {
   const [assigning, setAssigning] = useState(false);
   const detail = useRef<HTMLDivElement>(null);
   const refresh = () => setVersion(current => current + 1);
+  const requestedView = view === "leads" && leadList !== "all" ? leadList : view;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -94,7 +96,7 @@ export default function CrmPage() {
     Promise.all([
       api.get<Overview>(crmApi + "/overview", { params: { day }, signal: controller.signal }),
       api.get<LeadPage>(crmApi + "/leads", {
-        params: { view, page, search, ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
+        params: { view: requestedView, page, search, ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
       }),
     ]).then(([report, data]) => {
       if (controller.signal.aborted) return;
@@ -104,7 +106,7 @@ export default function CrmPage() {
       if (!controller.signal.aborted) setReadError(crmError(error, "CRM could not load."));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [day, view, page, search, agentFilter, version]);
+  }, [day, requestedView, page, search, agentFilter, version]);
 
   useEffect(() => {
     if (selected) detail.current?.scrollIntoView({ block: "nearest" });
@@ -180,12 +182,19 @@ export default function CrmPage() {
   const logged = agents.reduce((sum, agent) => sum + agent.logged, 0);
   const agentNames = new Map(agents.map(agent => [agent.id, agent.name]));
   const dialerMode = overview?.dialerMode || "unconfigured";
-  const changeView = (next: View) => { setView(next); setPage(1); setSelected(null); };
+  function changeView(next: View, list = leadList) {
+    if (next !== view || list !== leadList || page !== 1) setLoading(true);
+    setView(next);
+    setLeadList(list);
+    setPage(1);
+    setSelected(null);
+  }
   const views: { id: View; name: string }[] = [
     { id: "queue", name: "Work queue" },
     { id: "leads", name: owner ? "Data bank" : "My leads" },
     { id: "clients", name: owner ? "Clients" : "My clients" },
   ];
+  const listTitle = view === "leads" && leadList !== "all" ? LEAD_LISTS[leadList] : null;
 
   return (
     <div className="mx-auto max-w-[1450px] space-y-5">
@@ -263,7 +272,7 @@ export default function CrmPage() {
       </section>}
 
       <div ref={detail}>
-        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} mode={dialerMode} mapped={Boolean(agents[0]?.hashmiId)} onClose={() => setSelected(null)} onChange={refresh} />}
+        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} mode={dialerMode} onClose={() => setSelected(null)} onChange={refresh} />}
       </div>
       <section className={cardClass} aria-label="CRM records">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -271,9 +280,10 @@ export default function CrmPage() {
             {views.map(item => <button key={item.id} type="button" aria-pressed={view === item.id} className={view === item.id ? buttonClass : secondaryClass}
               onClick={() => changeView(item.id)}>{item.name}</button>)}
             <label className="block text-xs text-slate-300">Lead list
-              <select className={fieldClass + " mt-1"} value={Object.hasOwn(LEAD_LISTS, view) ? view : ""}
-                onChange={event => changeView((event.target.value || "leads") as View)}>
-                <option value="">Choose a list</option>
+              <select className={fieldClass + " mt-1"} value={view === "leads" ? leadList : ""}
+                onChange={event => changeView("leads", event.target.value as LeadList | "all")}>
+                <option value="" disabled>Choose a list</option>
+                <option value="all">All leads</option>
                 {Object.entries(LEAD_LISTS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
               </select>
             </label>
@@ -290,7 +300,8 @@ export default function CrmPage() {
             <button type="submit" className={secondaryClass}>Search</button>
           </form>
         </div>
-        {loading ? <p role="status" className="mt-4 text-sm text-slate-300">Loading CRM records…</p> :
+        {listTitle && <h2 className="mt-4 text-base font-semibold">{listTitle}{!loading && !readError && <span className="ml-2 text-sm font-normal text-slate-300">{number.format(leads.total)} leads</span>}</h2>}
+        {loading ? <p role="status" className="mt-4 text-sm text-slate-300">Loading CRM records…</p> : readError ? null :
           leads.rows.length === 0 ? <p className="mt-4 text-sm text-slate-300">{view === "queue" ? "No leads or callbacks are due in this queue." : view === "clients" ? "No verified clients linked to these leads yet." : "No leads match this view."}</p> :
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -315,11 +326,11 @@ export default function CrmPage() {
                 </td>
                 <td className="px-3 py-3">{lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}</td>
                 <td className="whitespace-nowrap px-3 py-3">{lead.followUpAt ? dubaiTime(lead.followUpAt) : "—"}</td>
-                <td className="px-3 py-3"><button type="button" className={secondaryClass} onClick={() => setSelected(lead)}>{owner || view === "clients" ? "View" : "Open"}</button></td>
+                <td className="whitespace-nowrap px-3 py-3"><button type="button" className={secondaryClass} onClick={() => setSelected(lead)}>{owner || view === "clients" || lead.status === "closed" ? "View" : "Open to call"}</button></td>
               </tr>)}</tbody>
             </table>
           </div>}
-        {!loading && leads.total > leads.limit && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+        {!loading && !readError && leads.total > leads.limit && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
           <p>{number.format(leads.total)} records · Page {leads.page} of {Math.ceil(leads.total / leads.limit)}</p>
           <div className="flex gap-2">
             <button type="button" className={secondaryClass} disabled={page <= 1} onClick={() => { setPage(page - 1); setSelected(null); }}>Previous</button>
