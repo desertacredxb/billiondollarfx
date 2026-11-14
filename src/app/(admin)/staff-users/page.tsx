@@ -3,6 +3,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import api from "../../../../lib/apiClient";
 import { managerPermissions, type AdminPermission } from "../../../../lib/adminAccess";
 import { useAdminSession } from "../../../../lib/adminSession";
+import CrmStaffDrafts from "../../../../components/CrmStaffDrafts";
 
 interface StaffUser { id: string; email: string; fullName: string; role: "owner" | "manager"; enabled: boolean; permissions: AdminPermission[]; setupComplete: boolean; lastLoginAt: string | null }
 const fieldClass = "mt-2 w-full rounded-lg border border-slate-600 bg-[#080f1c] p-3 text-white";
@@ -43,6 +44,7 @@ export default function StaffUsers() {
     <header><h1 className="text-3xl font-semibold">Staff users</h1><p className="mt-2 max-w-3xl leading-7 text-slate-300">Give each manager their own email login and selected permissions. They verify their own email and set a password at first sign-in. Only owners can manage staff and read activity history.</p></header>
     {error && <p role="alert" className="rounded-lg border border-red-500/40 bg-red-950/30 p-4">{error}</p>}
     {message && <p role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-4">{message}</p>}
+    <CrmStaffDrafts onActivated={load} />
     <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_380px]">
       <section className="min-w-0 rounded-xl border border-slate-700 bg-[#101827] p-5"><h2 className="text-xl font-semibold">Administrator accounts</h2><p className="mt-2 text-sm text-slate-400">Disabling a manager or changing permissions invalidates their sessions and pending sign-in codes.</p>
         {loading ? <p role="status" className="py-8">Loading accounts…</p> : users.length === 0 ? <p className="py-8 text-slate-400">No staff accounts found.</p> : <ul className="mt-5 divide-y divide-slate-700">{users.map(user => <li key={user.id} className="py-5">
