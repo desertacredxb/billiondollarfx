@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MessageCircle, Phone, Send, X } from "lucide-react";
+import WorkChat from "./WorkChat";
 import api from "../../lib/apiClient";
 import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, dialMessage, leadChatLinks, OUTCOME_LABELS, secondaryClass, type DialResponse, type Lead, type Overview } from "../../lib/crm";
 
@@ -157,6 +158,7 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
           </form>
         </div>
       )}
+      {!readOnly && <WorkChat key={lead.id} lead={lead.id} agent={canContact} />}
       <h3 className="mt-5 text-sm font-semibold">Recent activity</h3>
       {historyError ? <p role="alert" className="mt-2 text-sm text-red-300">{historyError}</p> :
         history.length ? <ul className="mt-2 divide-y divide-slate-700 text-sm">

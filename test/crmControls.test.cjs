@@ -29,7 +29,7 @@ function find(tree, predicate) {
 
 const api = { get() {}, post() {} };
 const crm = load("../lib/crm.ts", { "./apiClient": api });
-const LeadDetails = load("../components/crm/LeadDetails.tsx", { "../../lib/crm": crm, "../../lib/apiClient": api }).default;
+const LeadDetails = load("../components/crm/LeadDetails.tsx", { "../../lib/crm": crm, "../../lib/apiClient": api, "./WorkChat": () => null }).default;
 const lead = { id: "lead-1", leadId: "BDFX-test", name: "Fixture", phone: "+12025550101", status: "new", source: "COMEXFOREX" };
 
 test("a selected lead list stays selected when Data bank is opened again", async () => {
@@ -60,6 +60,7 @@ test("a selected lead list stays selected when Data bank is opened again", async
     "../../../../components/crm/LeadDetails": LeadDetails,
     "../../../../components/crm/DialPad": () => null,
     "../../../../components/crm/CallAssistant": () => null,
+    "../../../../components/crm/WorkConnections": () => null,
   }).default;
   function render() { cursor = 0; effects = []; return Page(); }
   async function loadRows() { effects[1](); await new Promise(setImmediate); }
