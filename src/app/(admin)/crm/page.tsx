@@ -7,6 +7,7 @@ import api from "../../../../lib/apiClient";
 import { useAdminSession } from "../../../../lib/adminSession";
 import LeadDetails from "../../../../components/crm/LeadDetails";
 import DialPad from "../../../../components/crm/DialPad";
+import OwnerChannels from "../../../../components/crm/OwnerChannels";
 import WorkConnections from "../../../../components/crm/WorkConnections";
 import CallAssistant from "../../../../components/crm/CallAssistant";
 import { importBatches, readCrmFile } from "../../../../lib/crmImport";
@@ -289,6 +290,7 @@ export default function CrmPage() {
       </>}
 
       {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} />}
+      {owner && <OwnerChannels day={day} key={version} />}
       {canAssign && <WorkConnections owner={owner} />}
       {canAssign && <CallAssistant />}
 

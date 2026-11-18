@@ -60,6 +60,7 @@ test("a selected lead list stays selected when Data bank is opened again", async
     "../../../../components/crm/LeadDetails": LeadDetails,
     "../../../../components/crm/DialPad": () => null,
     "../../../../components/crm/CallAssistant": () => null,
+    "../../../../components/crm/OwnerChannels": () => null,
     "../../../../components/crm/WorkConnections": () => null,
   }).default;
   function render() { cursor = 0; effects = []; return Page(); }

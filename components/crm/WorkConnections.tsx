@@ -177,7 +177,10 @@ export default function WorkConnections({ owner }: {
     I agree to share messages with my assigned BDFX clients in this CRM. The BDFX owner can read client messages and my replies.</label>}
    {s && (["telegram", "whatsapp"] as const).map(channel => <div key={channel} className="flex flex-wrap items-center gap-2">
     <strong>{channel === "telegram" ? "Telegram" : "WhatsApp Business"}</strong>
-    <span>{!s[channel] ? "Provider setup pending" : s.state[channel] || "Ready to connect"}</span>
+    {channel === "whatsapp" && !s.whatsapp ? <>
+      {!owner && <a className={secondaryClass} href="https://web.whatsapp.com/" target="_blank" rel="noopener noreferrer">Open WhatsApp Web</a>}
+      <span>{owner ? "Agents use WhatsApp Web on their own devices. Chats stay in WhatsApp." : "Scan the WhatsApp Web QR from Linked devices on your work phone. Chats stay in WhatsApp."}</span>
+    </> : <span>{!s[channel] ? "Provider setup pending" : s.state[channel] || "Ready to connect"}</span>}
     {!owner && s[channel] && s.state[channel] !== "connected" && <>
      {channel === "whatsapp" && <input className={fieldClass} type="tel" value={phone} placeholder="Work number with +country code" aria-label="WhatsApp work number" onChange={e => number(e.target.value)}/>}
      <button className={secondaryClass} disabled={!consent || busy || (channel === "whatsapp" && (!sdk || !/^\+[1-9]\d{6,14}$/.test(phone.trim())))} onClick={() => void begin(channel)}>Connect</button>
