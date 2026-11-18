@@ -270,6 +270,13 @@ export default function CrmPage() {
         <p className="flex flex-wrap items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
           {myDialer === "9ance" ? (overview.indiaVoiceConfigured ? "9ance click-to-call is configured." : "9ance is awaiting provider API access.") : dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
             dialerMode === "developer" ? "Hashmi developer mode is configured for call tests." : "Hashmi click-to-call is configured."}
+          {myDialer === "9ance" && overview.indiaVoiceConfigured && agents[0]?.dialerMapped && (
+            <span>
+              Using a headset? <a className="text-[#e0bf65] underline underline-offset-4"
+                href="https://crm.9ance.com/telephony/web-dialer" target="_blank" rel="noopener noreferrer">Open 9ance Web Dialer</a>
+              {" "}with your agent login. Keep it open with the status Registered and microphone access enabled.
+            </span>
+          )}
           {myDialer === "hashmi" && overview.reportEnabled && " Hashmi report webhook configured."}
           {!team && !agents[0]?.dialerMapped && " Ask the owner to check your dialer mapping."}
           {!team && myDialer === "hashmi" && dialerMode === "unconfigured" && (

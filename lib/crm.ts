@@ -96,7 +96,7 @@ export function leadChatLinks(phone: string) {
 
 export function dialMessage(response: DialResponse) {
   if (response.provider === "9ance") {
-    if (response.state === "accepted") return "9ance accepted the call request. Answer your agent phone.";
+    if (response.state === "accepted") return "9ance accepted the call request. Answer on your registered 9ance phone or headset.";
     if (response.state === "rejected") return "9ance declined the call request. Check your dialer account.";
     return "Check 9ance call history before dialing again. The call request has not been confirmed.";
   }
