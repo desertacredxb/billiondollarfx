@@ -28,6 +28,9 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 }
 
 function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: number; editable: boolean; onSave: () => void }) {
+  const [provider, setProvider] = useState<"hashmi" | "9ance">(agent.dialer || "hashmi");
+  const [deskphone, setDeskphone] = useState(agent.indiaVoiceDeskphone || "");
+  const [agentNumber, setAgentNumber] = useState(agent.indiaVoiceAgentNumber || "");
   const [hashmiId, setHashmiId] = useState(agent.hashmiId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -35,7 +38,8 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
     setBusy(true);
     setError("");
     try {
-      await api.patch(crmApi + "/team/" + agent.id + "/hashmi", { hashmiId: hashmiId.trim() });
+      const payload = provider === "9ance" ? { deskphone: deskphone.trim(), agentNumber: agentNumber.trim() } : { hashmiId: hashmiId.trim() };
+      await api.patch(crmApi + "/team/" + agent.id + "/" + provider, payload);
       onSave();
     } catch (error) { setError(crmError(error, "Mapping could not be saved.")); }
     finally { setBusy(false); }
@@ -50,13 +54,24 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
     <td className="px-3 py-3 tabular-nums">{Math.floor(agent.talkSeconds / 60)}m {agent.talkSeconds % 60}s</td>
     <td className="px-3 py-3 tabular-nums">{agent.overdue ?? 0}</td>
     <td className="px-3 py-3">
-      <p>{(agent.dialerMapped ?? Boolean(agent.hashmiId)) ? "Dialer mapped" : "Dialer setup pending"}</p>
+      <p>{agent.dialer === "9ance" ? (agent.dialerMapped ? "9ance mapped" : "9ance awaiting API setup") : (agent.dialerMapped ?? Boolean(agent.hashmiId)) ? "Dialer mapped" : "Dialer setup pending"}</p>
       <p className="text-xs text-slate-300">{agent.lastActivityAt ? "Last CRM activity " + dubaiTime(agent.lastActivityAt) : "No CRM activity on report date"}</p>
     </td>
     {editable && <td className="min-w-52 px-3 py-3">
-      <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); void save(); }}>
-        <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />
-        <button type="submit" className={secondaryClass} disabled={busy || hashmiId.trim() === agent.hashmiId}>Save</button>
+      <form className="grid gap-2" onSubmit={event => { event.preventDefault(); void save(); }}>
+        <select className={fieldClass} aria-label={"Dialer for " + agent.name} value={provider} disabled={busy}
+          onChange={event => { setProvider(event.target.value === "9ance" ? "9ance" : "hashmi"); setError(""); }}>
+          <option value="hashmi" disabled={Boolean(agent.indiaVoiceDeskphone)}>Hashmi</option>
+          <option value="9ance" disabled={Boolean(agent.hashmiId)}>9ance</option>
+        </select>
+        {provider === "9ance" ? <>
+          <label className="text-xs">Provider deskphone<input className={fieldClass} maxLength={17} value={deskphone} onChange={event => setDeskphone(event.target.value)} /></label>
+          <label className="text-xs">Agent number with country code<input className={fieldClass} type="tel" maxLength={24} value={agentNumber} onChange={event => setAgentNumber(event.target.value)} /></label>
+        </> :
+        <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />}
+        <button type="submit" className={secondaryClass} disabled={busy || (provider === "9ance"
+          ? deskphone.trim() === (agent.indiaVoiceDeskphone || "") && agentNumber.trim() === (agent.indiaVoiceAgentNumber || "")
+          : hashmiId.trim() === agent.hashmiId)}>Save</button>
       </form>
       {error && <p role="alert" className="mt-1 text-xs text-red-300">{error}</p>}
     </td>}
@@ -214,6 +229,7 @@ export default function CrmPage() {
   const logged = agents.reduce((sum, agent) => sum + agent.logged, 0);
   const agentNames = new Map(agents.map(agent => [agent.id, agent.name]));
   const dialerMode = overview?.dialerMode || "unconfigured";
+  const myDialer = !team && agents[0]?.dialer === "9ance" ? "9ance" : "hashmi";
   function changeView(next: View, list = leadList) {
     if (next !== view || list !== leadList || page !== 1) setLoading(true);
     setView(next);
@@ -246,25 +262,25 @@ export default function CrmPage() {
       {notice && <p role="status" className="rounded-lg border border-emerald-800 bg-emerald-950/40 p-3 text-sm text-emerald-200">{notice}</p>}
       {overview && <>
         <section aria-label="Calling progress" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Hashmi verified attempts" value={number.format(verified) + " / " + number.format(team ? agents.length * target : target)} />
+          <Metric label="Verified call attempts" value={number.format(verified) + " / " + number.format(team ? agents.length * target : target)} />
           <Metric label="Ready leads and callbacks" value={number.format(ready)} />
           <Metric label="Outcomes logged" value={number.format(logged)} />
           <Metric label={team ? "Available in data bank" : "Connected calls"} value={number.format(team ? overview.bank || 0 : agents[0]?.connected || 0)} />
         </section>
         <p className="flex flex-wrap items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
-          {dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
+          {myDialer === "9ance" ? (overview.indiaVoiceConfigured ? "9ance click-to-call is configured." : "9ance is awaiting provider API access.") : dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
             dialerMode === "developer" ? "Hashmi developer mode is configured for call tests." : "Hashmi click-to-call is configured."}
-          {overview.reportEnabled && " Call report webhook configured."}
-          {!team && !agents[0]?.hashmiId && dialerMode !== "unconfigured" && " Your Hashmi agent ID needs mapping before leads can be assigned."}
-          {!team && dialerMode === "unconfigured" && (
+          {myDialer === "hashmi" && overview.reportEnabled && " Hashmi report webhook configured."}
+          {!team && !agents[0]?.dialerMapped && " Ask the owner to check your dialer mapping."}
+          {!team && myDialer === "hashmi" && dialerMode === "unconfigured" && (
             <a className="text-[#e0bf65] underline underline-offset-4" href="https://cloud.hashmiinfonet.net/user/telephony/agent"
               target="_blank" rel="noreferrer">Open Hashmi dialer</a>
           )}
         </p>
-        {!verified && logged > 0 && <p className="text-sm text-amber-200">CRM outcomes are logged. Hashmi has yet to verify call results for this report.</p>}
+        {!verified && logged > 0 && <p className="text-sm text-amber-200">CRM outcomes are logged. No provider-confirmed calls for this report yet.</p>}
       </>}
 
-      {!team && Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured" && <DialPad />}
+      {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} />}
       {canAssign && <CallAssistant />}
 
       {owner && (
@@ -273,7 +289,7 @@ export default function CrmPage() {
             <div>
               <h2 id="crm-import" className="text-lg font-semibold">Upload leads and call history</h2>
               <p className="mt-1 text-sm text-slate-300">Upload leads or call history as Excel or CSV. A Hashmi report CSV updates verified calls and adds missing numbers to Data Bank.</p>
-              {Boolean(overview?.pending) && <p className="mt-2 text-sm text-amber-200">{number.format(overview?.pending || 0)} leads are waiting for a matching CRM caller with a saved Hashmi Agent ID.</p>}
+              {Boolean(overview?.pending) && <p className="mt-2 text-sm text-amber-200">{number.format(overview?.pending || 0)} leads are waiting for a matching CRM caller with a configured dialer.</p>}
             </div>
             <button type="button" className={secondaryClass} onClick={assign} disabled={assigning || importing}>{assigning ? "Assigning…" : "Distribute available leads"}</button>
           </div>
@@ -302,14 +318,14 @@ export default function CrmPage() {
         </div>
         {agents.length ? <div className="mt-4 overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-sm">
-            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Hashmi verified", "Calls left", "Connected", "Talk time", "Overdue now", "Member status", ...(owner ? ["Hashmi agent ID"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
-            <tbody>{agents.map(agent => <AgentRow key={agent.id + ":" + agent.hashmiId} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
+            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Verified calls", "Calls left", "Connected", "Talk time", "Overdue now", "Member status", ...(owner ? ["Agent dialer"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
+            <tbody>{agents.map(agent => <AgentRow key={[agent.id, agent.hashmiId, agent.indiaVoiceDeskphone, agent.indiaVoiceAgentNumber].join(":")} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
           </table>
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
       </section>}
 
       <div ref={detail}>
-        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} readOnly={readOnly} mode={dialerMode} onClose={() => setSelected(null)} onChange={name => {
+        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} readOnly={readOnly} mode={dialerMode} dialer={myDialer} onClose={() => setSelected(null)} onChange={name => {
           if (name !== undefined) setSelected(current => current?.id === selected.id ? { ...current, name } : current);
           refresh();
         }} />}

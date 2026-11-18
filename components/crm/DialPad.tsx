@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Phone } from "lucide-react";
 import api from "../../lib/apiClient";
-import { buttonClass, cardClass, crmApi, crmError, fieldClass, hashmiMessage, secondaryClass, type HashmiResponse } from "../../lib/crm";
+import { buttonClass, cardClass, crmApi, crmError, fieldClass, dialMessage, secondaryClass, type DialResponse } from "../../lib/crm";
 
-export default function DialPad() {
+export default function DialPad({ dialer }: { dialer?: "hashmi" | "9ance" }) {
   const [phone, setPhone] = useState("");
   const [requestId, setRequestId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,9 +26,9 @@ export default function DialPad() {
     setError("");
     setResult("");
     try {
-      const { data } = await api.post<HashmiResponse>(crmApi + "/dial-by-number", { phone: phone.trim(), requestId: key });
-      if (data.state === "accepted") setResult(hashmiMessage(data));
-      else setError(hashmiMessage(data));
+      const { data } = await api.post<DialResponse>(crmApi + "/dial-by-number", { phone: phone.trim(), requestId: key });
+      if (data.state === "accepted") setResult(dialMessage(data));
+      else setError(dialMessage(data));
       if (data.state === "accepted" || data.state === "rejected") setRequestId("");
     } catch (error) { setError(crmError(error, "The call request could not be confirmed.")); }
     finally { setBusy(false); }
@@ -45,7 +45,7 @@ export default function DialPad() {
           <button key={key} type="button" className={secondaryClass} disabled={busy} onClick={() => changePhone(key === "Backspace" ? phone.slice(0, -1) : phone + key)}>{key}</button>)}
       </div>
       <button type="submit" className={buttonClass + " inline-flex items-center gap-2"} disabled={busy || !phone.trim()}>
-        <Phone size={16} /> {busy ? "Requesting call…" : "Call via Hashmi"}
+        <Phone size={16} /> {busy ? "Requesting call…" : dialer === "9ance" ? "Call via 9ance" : "Call via Hashmi"}
       </button>
       {result && <p role="status" className="text-sm text-emerald-300">{result}</p>}
       {error && <p role="alert" className="text-sm text-red-300">{error}</p>}

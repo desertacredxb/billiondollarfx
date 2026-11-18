@@ -116,3 +116,13 @@ test("eligible callers can open both apps from a no-answer lead using its intern
     assert.doesNotMatch(blocked, /href="https:\/\/(?:t\.me|wa\.me)\//);
   }
 });
+
+test("9ance agents see their dialer on an assigned lead and cannot call an opted-out lead", () => {
+  const view = record => renderToStaticMarkup(React.createElement(LeadDetails, {
+    lead: record, owner: false, dialer: "9ance", mode: "live", onClose() {}, onChange() {},
+  }));
+  assert.match(view(lead), /Call via 9ance/);
+  assert.doesNotMatch(view(lead), /Call via Hashmi/);
+  assert.doesNotMatch(view({ ...lead, outcome: "do_not_call" }), /Call via 9ance/);
+  assert.match(crm.dialMessage({ provider: "9ance", state: "unconfirmed", mode: "live" }), /not been confirmed/);
+});

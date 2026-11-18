@@ -37,6 +37,9 @@ export type Agent = {
   id: string;
   name: string;
   hashmiId: string;
+  dialer?: "hashmi" | "9ance";
+  indiaVoiceDeskphone?: string;
+  indiaVoiceAgentNumber?: string;
   dialerMapped?: boolean;
   lastActivityAt?: string | null;
   overdue?: number;
@@ -56,6 +59,7 @@ export type Overview = {
   agents: Agent[];
   dialerMode: "unconfigured" | "developer" | "live";
   reportEnabled: boolean;
+  indiaVoiceConfigured?: boolean;
 };
 
 export type Lead = {
@@ -79,7 +83,7 @@ export type Lead = {
 
 export type LeadPage = { rows: Lead[]; total: number; page: number; limit: number };
 
-export type HashmiResponse = { state: string; mode: Overview["dialerMode"] };
+export type DialResponse = { provider?: Agent["dialer"]; state: string; mode: Overview["dialerMode"] };
 
 export function leadChatLinks(phone: string) {
   const international = phone.trim().replace(/^00/, "+");
@@ -90,7 +94,12 @@ export function leadChatLinks(phone: string) {
   return { telegram: `https://t.me/+${digits}`, whatsapp: `https://wa.me/${digits}` };
 }
 
-export function hashmiMessage(response: HashmiResponse) {
+export function dialMessage(response: DialResponse) {
+  if (response.provider === "9ance") {
+    if (response.state === "accepted") return "9ance accepted the call request. Answer your agent phone.";
+    if (response.state === "rejected") return "9ance declined the call request. Check your dialer account.";
+    return "Check 9ance call history before dialing again. The call request has not been confirmed.";
+  }
   if (response.state === "accepted") return response.mode === "developer" ? "Hashmi accepted the test request." : "Hashmi accepted the call request.";
   if (response.state === "rejected") return "Hashmi declined the call request. Check your Hashmi agent login and try again.";
   return "Hashmi has not confirmed this request. Check your dialer before placing another call.";
