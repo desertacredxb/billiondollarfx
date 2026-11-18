@@ -106,6 +106,42 @@ function Team({ channel, day }: { channel: Channel; day: string }) {
   </div>;
 }
 
+type LiveStats = { onCall: number; ringing: number; signedIn: number; onBreak: number; checkedAt: string };
+
+function DialerDashboard({ channel }: { channel: "hashmi" | "9ance" }) {
+  const [stats, setStats] = useState<LiveStats | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (channel !== "hashmi") return;
+    const ctl = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    async function refresh() {
+      try {
+        const result = await api.get<LiveStats>(base + "hashmi/live-status", { signal: ctl.signal, timeout: 12000 });
+        if (!ctl.signal.aborted) { setStats(result.data); setFailed(false); }
+      } catch {
+        if (!ctl.signal.aborted) { setStats(null); setFailed(true); }
+      } finally {
+        if (!ctl.signal.aborted) timer = setTimeout(refresh, 15000);
+      }
+    }
+    void refresh();
+    return () => { ctl.abort(); clearTimeout(timer); };
+  }, [channel]);
+  const hashmi = channel === "hashmi";
+  const dashboard = hashmi ? "https://cloud.hashmiinfonet.net/user/telephony/0/dashboard" : "https://indiavoice.rpdigitalphone.com/admin/live-call";
+  const reports = hashmi ? "https://cloud.hashmiinfonet.net/user/telephony/0/callLog/listCallLogs" : "https://indiavoice.rpdigitalphone.com/admin/call-metrics";
+  return <section className="my-4 space-y-2" aria-label="Dialer live status">
+    {hashmi && (stats ? <div><p>Hashmi agents on calls: <strong>{stats.onCall}</strong> · Ringing: {stats.ringing} · Logged in: {stats.signedIn} · On break: {stats.onBreak}</p>
+      <small>Updated {dubaiTime(stats.checkedAt)} Dubai</small></div> : <p>{failed ? "Hashmi live status unavailable." : "Loading Hashmi live status…"}</p>)}
+    <div className="flex flex-wrap gap-3">
+      <a className={secondaryClass} href={dashboard} target="_blank" rel="noopener noreferrer">{hashmi ? "Hashmi dashboard" : "9ance live calls and queue"}</a>
+      <a className={secondaryClass} href={reports} target="_blank" rel="noopener noreferrer">{channels[channel]} call reports</a>
+      {hashmi && <a className={secondaryClass} href="https://cloud.hashmiinfonet.net/user/telephony/0/agent/agentLiveAction" target="_blank" rel="noopener noreferrer">Hashmi agent activity</a>}
+    </div>
+  </section>;
+}
+
 export default function OwnerChannels({ day }: { day: string }) {
   const [channel, select] = useState<Channel | null>(null);
   return <section className={cardClass} aria-label="Team communications">
@@ -113,6 +149,7 @@ export default function OwnerChannels({ day }: { day: string }) {
     <div className="flex flex-wrap gap-2">{(Object.keys(channels) as Channel[]).map(key =>
       <button key={key} aria-pressed={channel === key} className={secondaryClass + (channel === key ? " border-amber-400" : "")}
         onClick={() => select(key)}>{channels[key]}</button>)}</div>
+    {(channel === "hashmi" || channel === "9ance") && <DialerDashboard key={channel} channel={channel} />}
     {channel && <Team key={channel} channel={channel} day={day} />}
   </section>;
 }
