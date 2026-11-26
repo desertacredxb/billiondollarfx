@@ -78,7 +78,7 @@ function RameePay() {
       <div className="max-w-md border border-gray-700 bg-[#111827] rounded-2xl shadow-lg p-6 flex flex-col space-y-4">
         <div className="flex justify-between items-center">
           <CreditCard size={40} className="text-[var(--primary-color)]" />
-          <h2 className="text-xl font-semibold">RaamiPay</h2>
+          <h2 className="text-xl font-semibold">India (INR)</h2>
         </div>
         <p className="text-gray-300 text-sm">
           Secure and fast deposit using RaamiPay. Click below to proceed.
