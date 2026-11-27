@@ -11,17 +11,19 @@ type Activity = { _id: string; kind: "outcome" | "hashmi" | "indiavoice"; occurr
   connected?: boolean; talkSeconds?: number; hashmiExportStatus?: string };
 const closedOutcomes = new Set<Outcome>(["wrong_number", "number_not_in_use", "not_interested", "do_not_call"]);
 
-export default function LeadDetails({ lead, owner, readOnly = false, mode, dialer = "hashmi", onClose, onChange }: {
+export default function LeadDetails({ lead, owner, readOnly = false, mode, dialer = "hashmi", onClose, onChange, onSaved, allowNext = false }: {
   lead: Lead;
   owner: boolean;
   readOnly?: boolean;
   mode: Overview["dialerMode"];
   dialer?: "hashmi" | "9ance";
   onClose: () => void;
-  onChange: (name?: string) => void;
+  onChange: (fields: Partial<Pick<Lead, "name" | "email">>) => void;
+  onSaved: (next: boolean) => void;
+  allowNext?: boolean;
 }) {
   const [history, setHistory] = useState<Activity[]>([]);
-  const [outcome, setOutcome] = useState<Outcome>("connected");
+  const [outcome, setOutcome] = useState<Outcome | "">("");
   const [callback, setCallback] = useState("");
   const [note, setNote] = useState("");
   const [result, setResult] = useState("");
@@ -32,8 +34,10 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
   const [dialRequestId, setDialRequestId] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState("");
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [email, setEmail] = useState("");
   const displayName = lead.name || lead.client?.name || "";
-  const closed = closedOutcomes.has(outcome);
+  const closed = !!outcome && closedOutcomes.has(outcome);
   const optedOut = lead.outcome === "do_not_call";
   const canLog = !owner && !readOnly && !optedOut && lead.outcome !== "number_not_in_use";
   const canContact = canLog && lead.status !== "closed";
@@ -55,14 +59,32 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
       const { data } = await api.patch<{ name: string }>(crmApi + "/leads/" + lead.id + "/name", { name: name.trim() });
       setEditingName(false);
       setResult("Lead name saved.");
-      onChange(data.name);
+      onChange({ name: data.name });
     } catch (error) { setError(crmError(error, "The lead name could not be saved.")); }
     finally { setBusy(false); }
   }
 
-  async function save(nextOutcome = outcome) {
+  async function saveEmail() {
+    setBusy(true);
+    setError("");
+    setResult("");
+    try {
+      const { data } = await api.patch<{ email: string }>(crmApi + "/leads/" + lead.id + "/email", { email: email.trim() });
+      onChange({ email: data.email });
+      setEditingEmail(false);
+      setResult("Lead email saved.");
+    } catch (error) { setError(crmError(error, "The lead email could not be saved.")); }
+    finally { setBusy(false); }
+  }
+
+  async function save(nextOutcome = outcome, next = false) {
+    if (!nextOutcome) return;
     const data = { outcome: nextOutcome, note, followUpAt: !closedOutcomes.has(nextOutcome) && callback ? callback + "+04:00" : "" };
     const payload = JSON.stringify(data);
+    if (data.followUpAt && Date.parse(data.followUpAt) <= Date.now() && outcomeRequest?.payload !== payload) {
+      setError("Choose a future callback time in Dubai.");
+      return;
+    }
     const key = outcomeRequest?.payload === payload ? outcomeRequest.key : crypto.randomUUID();
     setOutcomeRequest({ key, payload });
     setBusy(true);
@@ -71,8 +93,7 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
     try {
       await api.post(crmApi + "/leads/" + lead.id + "/outcome", { requestId: key, ...data });
       setOutcomeRequest(undefined);
-      onChange();
-      onClose();
+      onSaved(next);
     } catch (error) {
       setError(crmError(error, "The outcome could not be saved."));
     } finally { setBusy(false); }
@@ -112,9 +133,17 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
       {result && <p role="status" className="mt-4 text-sm text-emerald-300">{result}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         {!readOnly && !editingName && <button type="button" className={secondaryClass} disabled={busy} onClick={() => { setName(displayName); setEditingName(true); }}>{displayName ? "Edit name" : "Add name"}</button>}
+        {!readOnly && !editingEmail && <button type="button" className={secondaryClass} disabled={busy} onClick={() => { setEmail(lead.email || ""); setEditingEmail(true); }}>{lead.email ? "Edit email" : "Add email"}</button>}
         {!readOnly && !canLog && !optedOut && <button type="button" className={secondaryClass} disabled={busy} onClick={() => void save("do_not_call")}>Do not call back</button>}
         {optedOut && <p className="text-sm font-medium text-amber-300">Do not call back</p>}
       </div>
+      {editingEmail && <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); void saveEmail(); }}>
+        <label className="block w-full max-w-sm text-sm">CRM lead email
+          <input type="email" className={fieldClass + " mt-1"} required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} />
+        </label>
+        <button type="submit" className={buttonClass} disabled={busy || !email.trim()}>Save email</button>
+        <button type="button" className={secondaryClass} disabled={busy} onClick={() => setEditingEmail(false)}>Cancel</button>
+      </form>}
       {editingName && <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); void saveName(); }}>
         <label className="block w-full max-w-sm text-sm">CRM lead name
           <input className={fieldClass + " mt-1"} required maxLength={150} value={name} onChange={event => setName(event.target.value)} />
@@ -140,10 +169,15 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
             </div>
             {chatLinks && <p className="mt-2 text-xs text-slate-300">No answer? Open a chat using your own signed-in Telegram or WhatsApp account.</p>}
           </div>}
-          <form onSubmit={event => { event.preventDefault(); void save(); }} className="space-y-4">
+          <form onSubmit={event => {
+            event.preventDefault();
+            const submitter = (event.nativeEvent as SubmitEvent).submitter;
+            void save(outcome, submitter?.getAttribute("value") === "next");
+          }} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm">Call outcome
-                <select className={fieldClass + " mt-1"} value={outcome} onChange={event => setOutcome(event.target.value as Outcome)}>
+                <select required className={fieldClass + " mt-1"} value={outcome} onChange={event => setOutcome(event.target.value as Outcome)}>
+                  <option value="" disabled>Choose an outcome</option>
                   {Object.entries(OUTCOME_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </label>
@@ -154,7 +188,10 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
             <label className="block text-sm">Call note
               <textarea className={fieldClass + " mt-1"} rows={2} maxLength={1500} value={note} onChange={event => setNote(event.target.value)} />
             </label>
-            <button type="submit" disabled={busy} className={buttonClass}>Save outcome</button>
+            <div className="flex flex-wrap gap-2">
+              {allowNext && <button type="submit" value="next" disabled={busy || !outcome} className={buttonClass}>Save &amp; open next lead</button>}
+              <button type="submit" disabled={busy || !outcome} className={allowNext ? secondaryClass : buttonClass}>Save outcome</button>
+            </div>
           </form>
         </div>
       )}

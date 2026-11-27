@@ -18,9 +18,9 @@ import {
 
 type LeadList = keyof typeof LEAD_LISTS;
 type View = "queue" | "leads" | "clients";
-type ImportResult = { imported: number; duplicates: number; rejected: { row: number; reason: string }[] };
+type ImportResult = { imported: number; duplicates: number; emailsAdded?: number; rejected: { row: number; reason: string }[] };
 type HashmiImportResult = { added: number; updated: number; existing: number; leadsAdded: number; skipped: number; rejected: { row: number; reason: string }[] };
-type ImportSummary = { leads: number; calls: number; duplicates: number; rejected: { row: number; reason: string; area: string }[];
+type ImportSummary = { leads: number; calls: number; duplicates: number; emailsAdded: number; rejected: { row: number; reason: string; area: string }[];
   hashmi?: { updated: number; skipped: number } };
 const blank: LeadPage = { rows: [], total: 0, page: 1, limit: 50 };
 const number = new Intl.NumberFormat("en-GB");
@@ -103,11 +103,21 @@ export default function CrmPage() {
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [emailOnly, setEmailOnly] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState("");
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [assigning, setAssigning] = useState(false);
   const detail = useRef<HTMLDivElement>(null);
+  const activeLead = useRef<string | null>(null);
+  const advanceAfter = useRef<string | null>(null);
+  const [countsCheckedAt, setCountsCheckedAt] = useState("");
+  const [countsDelayed, setCountsDelayed] = useState(false);
+  function openLead(lead: Lead | null) {
+    activeLead.current = lead?.id ?? null;
+    advanceAfter.current = null;
+    setSelected(lead);
+  }
   const refresh = () => setVersion(current => current + 1);
   const requestedView = view === "leads" && leadList !== "all" ? leadList : view;
 
@@ -124,20 +134,48 @@ export default function CrmPage() {
     const controller = new AbortController();
     setLoading(true);
     setReadError("");
-    Promise.all([
-      api.get<Overview>(crmApi + "/overview", { params: { day }, signal: controller.signal }),
-      reportOnly ? Promise.resolve({ data: blank }) : api.get<LeadPage>(crmApi + "/leads", {
-        params: { view: requestedView, page, search, ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
-      }),
-    ]).then(([report, data]) => {
+    const request = reportOnly ? Promise.resolve({ data: blank }) : api.get<LeadPage>(crmApi + "/leads", {
+      params: { view: requestedView, page, search, ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
+    });
+    request.then(data => {
       if (controller.signal.aborted) return;
-      setOverview(report.data);
+      if (!data.data.rows.length && data.data.total > 0 && page > 1) {
+        setPage(Math.max(1, Math.ceil(data.data.total / data.data.limit)));
+        return;
+      }
       setLeads(data.data);
+      if (advanceAfter.current && requestedView === "queue") {
+        const next = data.data.rows.find(lead => lead.id !== advanceAfter.current);
+        openLead(next || null);
+        if (!next) setNotice("Outcome saved. No more leads match this queue.");
+      }
     }).catch(error => {
       if (!controller.signal.aborted) setReadError(crmError(error, "CRM could not load."));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [day, requestedView, page, search, agentFilter, version, reportOnly]);
+  }, [requestedView, page, search, agentFilter, version, reportOnly, session?.email]);
+
+  useEffect(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    let reading = false;
+    async function refreshCounts() {
+      if (document.hidden || reading) return;
+      reading = true;
+      try {
+        const { data } = await api.get<Overview>(crmApi + "/overview", { params: { day }, signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setOverview(data);
+          setCountsCheckedAt(new Date().toISOString());
+          setCountsDelayed(false);
+        }
+      } catch { if (!controller.signal.aborted) setCountsDelayed(true); }
+      finally { reading = false; }
+    }
+    void refreshCounts();
+    const timer = day === dubaiDate() ? window.setInterval(refreshCounts, 15_000) : undefined;
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, [day, session?.email, session?.role, version]);
 
   useEffect(() => {
     if (selected) detail.current?.scrollIntoView({ block: "nearest" });
@@ -173,10 +211,37 @@ export default function CrmPage() {
     setActionError("");
     setNotice("");
     setImportResult(null);
-    const summary: ImportSummary = { leads: 0, calls: 0, duplicates: 0, rejected: [] };
+    const summary: ImportSummary = { leads: 0, calls: 0, duplicates: 0, emailsAdded: 0, rejected: [] };
     let processed = 0;
     try {
       const rows = await readCrmFile(file);
+      if (emailOnly) {
+        const candidates = rows.leads.filter(row => row.email);
+        if (!candidates.length) throw new Error("Choose a lead file with Phone and Email columns.");
+        const emailsByPhone = new Map<string, Set<string>>();
+        for (const row of candidates) {
+          const phone = row.phone.replace(/[^\d]/g, "").replace(/^00/, "");
+          const emails = emailsByPhone.get(phone) || new Set<string>();
+          emails.add(row.email.trim().toLowerCase());
+          emailsByPhone.set(phone, emails);
+        }
+        const matched = candidates.filter(row => {
+          if (emailsByPhone.get(row.phone.replace(/[^\d]/g, "").replace(/^00/, ""))?.size === 1) return true;
+          summary.rejected.push({ row: row.row, reason: "Conflicting email addresses for this phone.", area: "Emails" });
+          return false;
+        });
+        for (const batch of importBatches(matched.map(({ row, phone, email }) => ({ row, phone, email })))) {
+          const { data } = await api.post<{ emailsAdded: number; rejected: ImportResult["rejected"] }>(crmApi + "/import/emails", { rows: batch });
+          summary.emailsAdded += data.emailsAdded;
+          summary.rejected.push(...data.rejected.map(row => ({ ...row, area: "Emails" })));
+          processed += batch.length;
+          setImportProgress(number.format(processed) + " of " + number.format(matched.length) + " email rows checked");
+        }
+        setImportResult(summary);
+        setNotice(number.format(summary.emailsAdded) + " missing lead emails filled.");
+        setFile(null);
+        return;
+      }
       if (rows.hashmi.length) {
         summary.hashmi = { updated: 0, skipped: 0 };
         for (const batch of importBatches(rows.hashmi)) {
@@ -203,6 +268,7 @@ export default function CrmPage() {
         for (const batch of importBatches<{ row: number }>(group)) {
           const { data } = await api.post<ImportResult>(crmApi + endpoint, { rows: batch });
           summary[field] += data.imported;
+          summary.emailsAdded += data.emailsAdded || 0;
           summary.duplicates += data.duplicates;
           summary.rejected.push(...data.rejected.map(row => ({ ...row, area })));
           processed += batch.length;
@@ -237,7 +303,7 @@ export default function CrmPage() {
     setView(next);
     setLeadList(list);
     setPage(1);
-    setSelected(null);
+    openLead(null);
   }
   const views: { id: View; name: string }[] = [
     { id: "queue", name: "Work queue" },
@@ -262,13 +328,17 @@ export default function CrmPage() {
       </header>
       {(readError || actionError) && <p role="alert" className="rounded-lg border border-red-700/70 bg-red-950/50 p-3 text-sm text-red-200">{actionError || readError}</p>}
       {notice && <p role="status" className="rounded-lg border border-emerald-800 bg-emerald-950/40 p-3 text-sm text-emerald-200">{notice}</p>}
-      {overview && <>
-        <section aria-label="Calling progress" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {countsDelayed && (!overview || overview.day !== day) && <p role="status" className="text-sm text-amber-200">Dialer totals could not be refreshed for this date.</p>}
+      {overview && overview.day === day && <>
+        <section aria-label="Calling progress" className={"grid gap-3 sm:grid-cols-2 " + (team ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
           <Metric label="Verified call attempts" value={number.format(verified) + " / " + number.format(team ? agents.length * target : target)} />
           <Metric label="Ready leads and callbacks" value={number.format(ready)} />
           <Metric label="Outcomes logged" value={number.format(logged)} />
+          {team && <Metric label="Connected calls" value={number.format(agents.reduce((sum, agent) => sum + agent.connected, 0))} />}
           <Metric label={team ? "Available in data bank" : "Connected calls"} value={number.format(team ? overview.bank || 0 : agents[0]?.connected || 0)} />
         </section>
+        {day === dubaiDate() && countsCheckedAt && <p className="text-xs text-slate-400">{countsDelayed ? "Call totals delayed. Last checked " : "Dialer totals checked "}{new Date(countsCheckedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Dubai" })} Dubai · Refreshes every 15 seconds</p>}
+        {!team && myDialer === "9ance" && agents.length > 0 && !verified && <p className="text-sm text-amber-200">No confirmed 9ance call report has reached this CRM for the selected day.</p>}
         <p className="flex flex-wrap items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
           {myDialer === "9ance" ? (overview.indiaVoiceConfigured ? "9ance click-to-call is configured." : "9ance is awaiting provider API access.") : dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
             dialerMode === "developer" ? "Hashmi developer mode is configured for call tests." : "Hashmi click-to-call is configured."}
@@ -289,10 +359,9 @@ export default function CrmPage() {
         {!verified && logged > 0 && <p className="text-sm text-amber-200">CRM outcomes are logged. No provider-confirmed calls for this report yet.</p>}
       </>}
 
-      {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} />}
       {owner && <OwnerChannels day={day} key={version} />}
-      {canAssign && <WorkConnections owner={owner} />}
-      {canAssign && <CallAssistant />}
+      {owner && <WorkConnections owner />}
+      {owner && <CallAssistant />}
 
       {owner && (
         <section className={cardClass} aria-labelledby="crm-import">
@@ -309,12 +378,13 @@ export default function CrmPage() {
               <input type="file" accept=".xlsx,.csv" className={fieldClass + " mt-1 block max-w-full"} disabled={importing}
                 onChange={event => setFile(event.target.files?.[0] || null)} />
             </label>
+            <label className="flex items-center gap-2 py-2 text-sm"><input type="checkbox" checked={emailOnly} disabled={importing} onChange={event => setEmailOnly(event.target.checked)} />Only fill missing emails on existing leads</label>
             <button type="submit" disabled={!file || importing || assigning} className={buttonClass + " inline-flex items-center gap-2"}><Upload size={16} />Import file</button>
           </form>
           {importProgress && <p role="status" className="mt-3 text-sm text-slate-300">{importProgress}</p>}
           {importResult && <div className="mt-3 text-sm">
             {importResult.hashmi ? <p>{number.format(importResult.leads)} leads added · {number.format(importResult.calls)} Hashmi calls added · {number.format(importResult.hashmi.updated)} calls updated · {number.format(importResult.duplicates)} already current · {number.format(importResult.hashmi.skipped)} other call types skipped · {number.format(importResult.rejected.length)} rows to review</p> :
-              <p>{number.format(importResult.leads)} leads added · {number.format(importResult.calls)} call outcomes added · {number.format(importResult.duplicates)} duplicates · {number.format(importResult.rejected.length)} rows to review</p>}
+              <p>{number.format(importResult.leads)} leads added · {number.format(importResult.emailsAdded)} missing emails filled · {number.format(importResult.calls)} call outcomes added · {number.format(importResult.duplicates)} duplicates · {number.format(importResult.rejected.length)} rows to review</p>}
             {importResult.rejected.length > 0 && <ul className="mt-2 space-y-1 text-amber-200">
               {importResult.rejected.slice(0, 10).map((item, index) => <li key={item.row + "-" + index}>{item.area} row {item.row} · {item.reason}</li>)}
             </ul>}
@@ -336,8 +406,15 @@ export default function CrmPage() {
       </section>}
 
       <div ref={detail}>
-        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} readOnly={readOnly} mode={dialerMode} dialer={myDialer} onClose={() => setSelected(null)} onChange={name => {
-          if (name !== undefined) setSelected(current => current?.id === selected.id ? { ...current, name } : current);
+        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} readOnly={readOnly} mode={dialerMode} dialer={myDialer} allowNext={!team && view === "queue"} onClose={() => openLead(null)} onChange={fields => {
+          setSelected(current => current?.id === selected.id ? { ...current, ...fields } : current);
+          refresh();
+        }} onSaved={next => {
+          if (activeLead.current === selected.id) {
+            openLead(null);
+            if (next) { advanceAfter.current = selected.id; setPage(1); setLoading(true); }
+            setNotice("Outcome saved.");
+          }
           refresh();
         }} />}
       </div>
@@ -346,18 +423,19 @@ export default function CrmPage() {
           <nav className="flex flex-wrap items-end gap-2" aria-label="CRM views">
             {views.map(item => <button key={item.id} type="button" aria-pressed={view === item.id} className={view === item.id ? buttonClass : secondaryClass}
               onClick={() => changeView(item.id)}>{item.name}</button>)}
+            {!team && <button type="button" className={secondaryClass} onClick={() => changeView("leads", "follow_ups")}>My follow-ups</button>}
             <label className="block text-xs text-slate-300">Lead list
               <select className={fieldClass + " mt-1"} value={view === "leads" ? leadList : ""}
                 onChange={event => changeView("leads", event.target.value as LeadList | "all")}>
                 <option value="" disabled>Choose a list</option>
                 <option value="all">All leads</option>
-                {Object.entries(LEAD_LISTS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                {Object.entries(LEAD_LISTS).filter(([id]) => team || id !== "unassigned").map(([id, label]) => <option key={id} value={id}>{label}</option>)}
               </select>
             </label>
           </nav>
-          <form className="flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); setPage(1); setSelected(null); }}>
+          <form className="flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); setPage(1); openLead(null); }}>
             {team && <label className="block text-xs text-slate-300">Assigned agent
-              <select className={fieldClass + " mt-1"} value={agentFilter} onChange={event => { setAgentFilter(event.target.value); setPage(1); setSelected(null); }}>
+              <select className={fieldClass + " mt-1"} value={agentFilter} onChange={event => { setAgentFilter(event.target.value); setPage(1); openLead(null); }}>
                 <option value="">All agents</option>{agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
               </select>
             </label>}
@@ -367,6 +445,7 @@ export default function CrmPage() {
             <button type="submit" className={secondaryClass}>Search</button>
           </form>
         </div>
+        {!team && view === "queue" && !loading && !readError && leads.rows.length > 0 && !selected && <button type="button" className={buttonClass + " mt-4"} onClick={() => openLead(leads.rows[0])}>Open next lead</button>}
         {listTitle && <h2 className="mt-4 text-base font-semibold">{listTitle}{!loading && !readError && <span className="ml-2 text-sm font-normal text-slate-300">{number.format(leads.total)} leads</span>}</h2>}
         {loading ? <p role="status" className="mt-4 text-sm text-slate-300">Loading CRM records…</p> : readError ? null :
           leads.rows.length === 0 ? <p className="mt-4 text-sm text-slate-300">{view === "queue" ? "No leads or callbacks are due in this queue." : view === "clients" ? "No verified clients linked to these leads yet." : "No leads match this view."}</p> :
@@ -393,18 +472,21 @@ export default function CrmPage() {
                 </td>
                 <td className="px-3 py-3">{lead.outcome === "do_not_call" ? "Do not call back" : lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}</td>
                 <td className="whitespace-nowrap px-3 py-3">{lead.followUpAt ? dubaiTime(lead.followUpAt) : "—"}</td>
-                <td className="whitespace-nowrap px-3 py-3"><button type="button" className={secondaryClass} onClick={() => setSelected(lead)}>{team || view === "clients" || lead.status === "closed" || lead.outcome === "do_not_call" ? "View" : "Open to call"}</button></td>
+                <td className="whitespace-nowrap px-3 py-3"><button type="button" className={secondaryClass} onClick={() => openLead(lead)}>{team || view === "clients" || lead.status === "closed" || lead.outcome === "do_not_call" ? "View" : "Open to call"}</button></td>
               </tr>)}</tbody>
             </table>
           </div>}
         {!loading && !readError && (page > 1 || leads.total > leads.limit) && <nav aria-label="Lead pages" className="mt-4 flex flex-wrap items-center gap-3 text-sm">
           <div className="flex gap-2">
-            <button type="button" className={secondaryClass} disabled={page <= 1} onClick={() => { setPage(page - 1); setSelected(null); }}>Previous</button>
-            <button type="button" className={secondaryClass} disabled={page * leads.limit >= leads.total} onClick={() => { setPage(page + 1); setSelected(null); }}>Next</button>
+            <button type="button" className={secondaryClass} disabled={page <= 1} onClick={() => { setPage(page - 1); openLead(null); }}>Previous</button>
+            <button type="button" className={secondaryClass} disabled={page * leads.limit >= leads.total} onClick={() => { setPage(page + 1); openLead(null); }}>Next</button>
           </div>
           <p>{number.format(leads.total)} records · Page {leads.page} of {Math.max(1, Math.ceil(leads.total / leads.limit))}</p>
         </nav>}
       </section>}
+      {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} />}
+      {canAssign && !owner && <WorkConnections owner={false} />}
+      {canAssign && !owner && <CallAssistant />}
     </div>
   );
 }

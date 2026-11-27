@@ -106,7 +106,7 @@ function parseLeads(rows: Row[]): ImportLead[] {
     phone: find(...phoneHeaders),
     leadId: find("leadid", "externalid"),
     name: find("customername", "fullname", "name", "contactname"),
-    email: find("email", "emailaddress"),
+    email: find("email", "emailid", "emailaddress", "clientemail", "customeremail", "contactemail"),
     source: find("leadsource", "source", "campaign"),
     agent: find("creditedagent", "assignedagent", "assignedto", "agent"),
     assigned: find("assigneddate"),
