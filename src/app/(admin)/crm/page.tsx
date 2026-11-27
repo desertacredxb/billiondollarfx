@@ -7,6 +7,7 @@ import api from "../../../../lib/apiClient";
 import { useAdminSession } from "../../../../lib/adminSession";
 import LeadDetails from "../../../../components/crm/LeadDetails";
 import LeadBoard from "../../../../components/crm/LeadBoard";
+import BrowserPhone, { type PhoneControls } from "../../../../components/crm/BrowserPhone";
 import DialPad from "../../../../components/crm/DialPad";
 import OwnerChannels from "../../../../components/crm/OwnerChannels";
 import WorkConnections from "../../../../components/crm/WorkConnections";
@@ -14,7 +15,7 @@ import CallAssistant from "../../../../components/crm/CallAssistant";
 import { importBatches, readCrmFile } from "../../../../lib/crmImport";
 import {
   buttonClass, cardClass, crmApi, crmError, dubaiDate, dubaiTime, fieldClass,
-  BOARD_STAGES, OUTCOME_LABELS, type BoardStage, type LeadLane, LEAD_LISTS, secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
+  BOARD_STAGES, OUTCOME_LABELS, type BrowserDial, type BoardStage, type LeadLane, LEAD_LISTS, secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
 } from "../../../../lib/crm";
 
 type LeadList = keyof typeof LEAD_LISTS;
@@ -33,6 +34,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: number; editable: boolean; onSave: () => void }) {
   const [provider, setProvider] = useState<"hashmi" | "9ance">(agent.dialer || "hashmi");
   const [deskphone, setDeskphone] = useState(agent.indiaVoiceDeskphone || "");
+  const [sipUser, setSipUser] = useState(agent.indiaVoiceSipUser || "");
   const [agentNumber, setAgentNumber] = useState(agent.indiaVoiceAgentNumber || "");
   const [hashmiId, setHashmiId] = useState(agent.hashmiId);
   const [busy, setBusy] = useState(false);
@@ -41,7 +43,7 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
     setBusy(true);
     setError("");
     try {
-      const payload = provider === "9ance" ? { deskphone: deskphone.trim(), agentNumber: agentNumber.trim() } : { hashmiId: hashmiId.trim() };
+      const payload = provider === "9ance" ? { deskphone: deskphone.trim(), agentNumber: agentNumber.trim(), sipUser: sipUser.trim() } : { hashmiId: hashmiId.trim() };
       await api.patch(crmApi + "/team/" + agent.id + "/" + provider, payload);
       onSave();
     } catch (error) { setError(crmError(error, "Mapping could not be saved.")); }
@@ -69,11 +71,12 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
         </select>
         {provider === "9ance" ? <>
           <label className="text-xs">Provider deskphone<input className={fieldClass} maxLength={17} value={deskphone} onChange={event => setDeskphone(event.target.value)} /></label>
+          <label className="text-xs">SIP username for CRM headset<input className={fieldClass} maxLength={80} value={sipUser} onChange={event => setSipUser(event.target.value)} /></label>
           <label className="text-xs">Agent number with country code<input className={fieldClass} type="tel" maxLength={24} value={agentNumber} onChange={event => setAgentNumber(event.target.value)} /></label>
         </> :
         <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />}
         <button type="submit" className={secondaryClass} disabled={busy || (provider === "9ance"
-          ? deskphone.trim() === (agent.indiaVoiceDeskphone || "") && agentNumber.trim() === (agent.indiaVoiceAgentNumber || "")
+          ? deskphone.trim() === (agent.indiaVoiceDeskphone || "") && agentNumber.trim() === (agent.indiaVoiceAgentNumber || "") && sipUser.trim() === (agent.indiaVoiceSipUser || "")
           : hashmiId.trim() === agent.hashmiId)}>Save</button>
       </form>
       {error && <p role="alert" className="mt-1 text-xs text-red-300">{error}</p>}
@@ -112,6 +115,7 @@ export default function CrmPage() {
   const [importProgress, setImportProgress] = useState("");
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const headset = useRef<PhoneControls>(null);
   const detail = useRef<HTMLDivElement>(null);
   const activeLead = useRef<string | null>(null);
   const advanceAfter = useRef<string | null>(null);
@@ -303,6 +307,11 @@ export default function CrmPage() {
   const agentNames = new Map(agents.map(agent => [agent.id, agent.name]));
   const dialerMode = overview?.dialerMode || "unconfigured";
   const myDialer = !team && agents[0]?.dialer === "9ance" ? "9ance" : "hashmi";
+  const sipUser = myDialer === "9ance" && canAssign && session ? agents[0]?.indiaVoiceSipUser : undefined;
+  const browserDial: BrowserDial | undefined = sipUser ? async target => {
+    if (!headset.current) throw new Error("The CRM headset is loading.");
+    await headset.current.dial(target);
+  } : undefined;
   function changeView(next: View, list = leadList) {
     if (next !== view || list !== leadList || page !== 1) setLoading(true);
     setView(next);
@@ -342,6 +351,7 @@ export default function CrmPage() {
       {(readError || actionError) && <p role="alert" className="rounded-lg border border-red-700/70 bg-red-950/50 p-3 text-sm text-red-200">{actionError || readError}</p>}
       {notice && <p role="status" className="rounded-lg border border-emerald-800 bg-emerald-950/40 p-3 text-sm text-emerald-200">{notice}</p>}
       {countsDelayed && (!overview || overview.day !== day) && <p role="status" className="text-sm text-amber-200">Dialer totals could not be refreshed for this date.</p>}
+      {sipUser && <BrowserPhone key={[session?.email, sipUser].join(":")} user={sipUser} controls={headset} />}
       {overview && overview.day === day && <>
         <section aria-label="Calling progress" className={"grid gap-3 sm:grid-cols-2 " + (team ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
           <Metric label="Verified call attempts" value={number.format(verified) + " / " + number.format(team ? agents.length * target : target)} />
@@ -353,9 +363,9 @@ export default function CrmPage() {
         {day === dubaiDate() && countsCheckedAt && <p className="text-xs text-slate-400">{countsDelayed ? "Call totals delayed. Last checked " : "Dialer totals checked "}{new Date(countsCheckedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Dubai" })} Dubai · Refreshes every 15 seconds</p>}
         {!team && myDialer === "9ance" && agents.length > 0 && !verified && <p className="text-sm text-amber-200">No confirmed 9ance call report has reached this CRM for the selected day.</p>}
         <p className="flex flex-wrap items-center gap-2 text-sm text-slate-300"><Phone size={16} className="text-[#d6b659]" />
-          {myDialer === "9ance" ? (overview.indiaVoiceConfigured ? "9ance click-to-call is configured." : "9ance is awaiting provider API access.") : dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
+          {myDialer === "9ance" ? (sipUser ? "Use the CRM headset to call your assigned leads." : overview.indiaVoiceConfigured ? "9ance click-to-call is configured." : "9ance is awaiting provider API access.") : dialerMode === "unconfigured" ? "Hashmi connection pending API access." :
             dialerMode === "developer" ? "Hashmi developer mode is configured for call tests." : "Hashmi click-to-call is configured."}
-          {myDialer === "9ance" && overview.indiaVoiceConfigured && agents[0]?.dialerMapped && (
+          {myDialer === "9ance" && !sipUser && overview.indiaVoiceConfigured && agents[0]?.dialerMapped && (
             <span>
               Using a headset? <a className="text-[#e0bf65] underline underline-offset-4"
                 href="https://crm.9ance.com/telephony/web-dialer" target="_blank" rel="noopener noreferrer">Open 9ance Web Dialer</a>
@@ -413,14 +423,14 @@ export default function CrmPage() {
         {agents.length ? <div className="mt-4 overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-sm">
             <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Verified calls", "Calls left", "Connected", "Talk time", "Overdue now", "Member status", ...(owner ? ["Agent dialer"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
-            <tbody>{agents.map(agent => <AgentRow key={[agent.id, agent.hashmiId, agent.indiaVoiceDeskphone, agent.indiaVoiceAgentNumber].join(":")} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
+            <tbody>{agents.map(agent => <AgentRow key={[agent.id, agent.hashmiId, agent.indiaVoiceDeskphone, agent.indiaVoiceAgentNumber, agent.indiaVoiceSipUser].join(":")} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
           </table>
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
       </section>}
 
       {canAssign && !owner && <WorkConnections owner={false} />}
       <div ref={detail}>
-        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} agents={agents} readOnly={readOnly} mode={dialerMode} dialer={myDialer} allowNext={!team && view === "queue"} onClose={() => openLead(null)} onChange={fields => {
+        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} agents={agents} readOnly={readOnly} mode={dialerMode} dialer={myDialer} browserDial={browserDial} allowNext={!team && view === "queue"} onClose={() => openLead(null)} onChange={fields => {
           setSelected(current => current?.id === selected.id ? { ...current, ...fields } : current);
           refresh();
         }} onSaved={next => {
@@ -510,7 +520,7 @@ export default function CrmPage() {
           <p>{number.format(leads.total)} records · Page {leads.page} of {Math.max(1, Math.ceil(leads.total / leads.limit))}</p>
         </nav>}
       </section>}
-      {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} />}
+      {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} browserDial={browserDial} />}
 
       {canAssign && !owner && <CallAssistant />}
     </div>

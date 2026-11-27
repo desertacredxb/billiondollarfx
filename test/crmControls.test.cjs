@@ -75,6 +75,7 @@ test("a selected lead list stays selected when Data bank is opened again", async
     "../../../../lib/crmImport": {},
     "../../../../components/crm/LeadDetails": LeadDetails,
     "../../../../components/crm/LeadBoard": () => null,
+    "../../../../components/crm/BrowserPhone": () => null,
     "../../../../components/crm/DialPad": () => null,
     "../../../../components/crm/CallAssistant": () => null,
     "../../../../components/crm/OwnerChannels": () => null,
@@ -174,4 +175,71 @@ test("a stage preview opens a record or its full scoped list", () => {
   find(tree, n => n.type === "button" && n.props.className.includes("underline")).props.onClick();
   assert.equal(selected.id, lead.id);
   assert.equal(stage, "worked");
+});
+
+test("CRM headset calls the authorized number once and advances only on SIP progress and answer", async t => {
+  let cursor = 0;
+  const slots = [];
+  const useSlot = initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return i; };
+  const hooks = {
+    useState(initial) { const i = useSlot(initial); return [slots[i], value => { slots[i] = value; }]; },
+    useRef(initial) { return slots[useSlot({ current: initial })]; },
+    useEffect() {},
+    useImperativeHandle(ref, create) { ref.current = create(); },
+  };
+  let sip, sent = 0, played = 0;
+  class FixturePhone {
+    constructor(_server, options) { sip = this; assert.equal(options.userAgentOptions.authorizationUsername, "test-agent"); }
+    async connect() {}
+    async register() { this.delegate.onRegistered(); }
+    async call(target, _options, request) {
+      assert.equal(target, "sip:12025550100@sip.rpdigitalphone.com");
+      sent++; this.events = request.requestDelegate;
+    }
+    async hangup() { this.delegate.onCallHangup(); }
+  }
+  const transport = { post: async (path, body) => {
+    assert.ok(path.endsWith("/browser-dial")); assert.equal(body.leadId, "assigned");
+    return { data: { phone: "+12025550100" } };
+  } };
+  const context = class {
+    get destination() { return {}; }
+    async resume() {}
+    createOscillator() { return { frequency: {}, connect: volume => volume, start() {}, stop() {}, disconnect() {} }; }
+    createGain() { return { gain: { setValueAtTime() {} }, connect() {}, disconnect() {} }; }
+  };
+  t.mock.method(global, "setInterval", () => 1);
+  const previousWindow = global.window, previousAudio = global.AudioContext;
+  const previousMedia = Object.getOwnPropertyDescriptor(navigator, "mediaDevices");
+  global.window = { setInterval, clearInterval };
+  global.AudioContext = context;
+  Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia: async () => ({ getTracks: () => [] }) } });
+  t.after(() => {
+    if (previousWindow) global.window = previousWindow; else delete global.window;
+    if (previousAudio) global.AudioContext = previousAudio; else delete global.AudioContext;
+    if (previousMedia) Object.defineProperty(navigator, "mediaDevices", previousMedia); else delete navigator.mediaDevices;
+  });
+  const Phone = load("../components/crm/BrowserPhone.tsx", { react: hooks, "../../lib/crm": crm,
+    "../../lib/apiClient": transport, "sip.js/lib/platform/web": { SimpleUser: FixturePhone } }).default;
+  const controls = { current: null };
+  const render = () => { cursor = 0; return Phone({ user: "test-agent", controls }); };
+  let view = render();
+  find(view, node => node.type === "input").props.ref.current = { value: "test-only", focus() {} };
+  find(view, node => node.type === "audio").props.ref.current = { play: async () => { played++; } };
+  await assert.rejects(controls.current.dial({ leadId: "assigned" }), /Connect your headset/);
+  find(view, node => node.type === "form").props.onSubmit({ preventDefault() {} });
+  await new Promise(setImmediate);
+  assert.ok(renderToStaticMarkup(render()).includes("Headset ready"));
+  await controls.current.dial({ leadId: "assigned" });
+  await assert.rejects(controls.current.dial({ leadId: "assigned" }), /Finish the current call/);
+  assert.equal(sent, 1);
+  assert.doesNotMatch(renderToStaticMarkup(render()), /Connected|Ringing/);
+  sip.events.onProgress({ message: { statusCode: 180 } });
+  assert.match(renderToStaticMarkup(render()), /Ringing/);
+  sip.delegate.onCallAnswered();
+  assert.match(renderToStaticMarkup(render()), /Connected/);
+  assert.equal(played, 1);
+  view = render();
+  await find(view, node => node.type === "button" && node.props.children === "End call").props.onClick();
+  assert.match(renderToStaticMarkup(render()), /Call ended/);
 });
