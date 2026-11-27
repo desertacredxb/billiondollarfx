@@ -359,7 +359,7 @@ export default function CrmPage() {
         {!verified && logged > 0 && <p className="text-sm text-amber-200">CRM outcomes are logged. No provider-confirmed calls for this report yet.</p>}
       </>}
 
-      {owner && <OwnerChannels day={day} key={version} />}
+      {owner && <OwnerChannels day={day} refresh={version} />}
       {owner && <WorkConnections owner />}
       {owner && <CallAssistant />}
 
