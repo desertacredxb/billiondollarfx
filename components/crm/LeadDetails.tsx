@@ -4,19 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Phone, Send, X } from "lucide-react";
 import WorkChat from "./WorkChat";
 import api from "../../lib/apiClient";
-import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, dialMessage, leadChatLinks, OUTCOME_LABELS, secondaryClass, type Agent, type DialResponse, type Lead, type Replacement, type Overview } from "../../lib/crm";
+import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, dialMessage, leadChatLinks, OUTCOME_LABELS, secondaryClass, type Agent, type BrowserDial, type DialResponse, type Lead, type Replacement, type Overview } from "../../lib/crm";
 
 type Outcome = keyof typeof OUTCOME_LABELS;
 type Activity = { _id: string; kind: "outcome" | "hashmi" | "indiavoice"; occurredAt: string; outcome?: Outcome; note?: string; attempted?: boolean;
   followUpAt?: string; connected?: boolean; talkSeconds?: number; hashmiExportStatus?: string };
 const closedOutcomes = new Set<Outcome>(["wrong_number", "number_not_in_use", "not_interested", "do_not_call"]);
 
-export default function LeadDetails({ lead, owner, readOnly = false, mode, dialer = "hashmi", agents = [], onClose, onChange, onSaved, allowNext = false }: {
+export default function LeadDetails({ lead, owner, readOnly = false, mode, dialer = "hashmi", browserDial, agents = [], onClose, onChange, onSaved, allowNext = false }: {
   lead: Lead;
   owner: boolean;
   readOnly?: boolean;
   mode: Overview["dialerMode"];
   dialer?: "hashmi" | "9ance";
+  browserDial?: BrowserDial;
   agents?: Agent[];
   onClose: () => void;
   onChange: (fields: Partial<Pick<Lead, "name" | "email" | "status" | "followUpAt" | "assignedTo" | "assignmentPending">>) => void;
@@ -146,6 +147,7 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
     setError("");
     setResult("");
     try {
+      if (browserDial) { await browserDial({ leadId: lead.id }); return; }
       const response = await api.post<DialResponse>(
         crmApi + "/leads/" + lead.id + "/dial", { requestId: key },
       );
@@ -219,7 +221,7 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
           {canContact && <div>
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={dial} disabled={busy} className={buttonClass + " inline-flex items-center gap-2"}>
-                <Phone size={16} /> {dialer === "9ance" ? "Call via 9ance" : mode === "developer" ? "Test Hashmi" : "Call via Hashmi"}
+                <Phone size={16} /> {browserDial ? "Call from CRM" : dialer === "9ance" ? "Call via 9ance" : mode === "developer" ? "Test Hashmi" : "Call via Hashmi"}
               </button>
               <button type="button" className={secondaryClass + " inline-flex items-center gap-2"} aria-controls="crm-client-chat" onClick={() => {
                 setChat("telegram");
