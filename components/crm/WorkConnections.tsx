@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import api from "../../lib/apiClient";
 import { cardClass, crmApi, crmError, fieldClass, secondaryClass } from "../../lib/crm";
 type Settings = {
@@ -69,6 +70,20 @@ export default function WorkConnections({ owner }: {
     if (s?.whatsapp && consent && !owner)
       void loadSdk(s).then(setSdk).catch(e => notify(e.message));
   }, [s, consent, owner]);
+  useEffect(() => {
+    if (!link) return;
+    if (s?.state.telegram === "connected") {
+      setLink("");
+      notify("Telegram work account connected.");
+      return;
+    }
+    const timer = window.setInterval(() => { if (!document.hidden) void refresh().catch(() => {}); }, 5000);
+    const expiry = window.setTimeout(() => {
+      setLink("");
+      notify("Pairing link expired. Choose Connect to get a new code.");
+    }, 600000);
+    return () => { window.clearInterval(timer); window.clearTimeout(expiry); };
+  }, [link, refresh, s?.state.telegram === "connected"]);
   const finish = useCallback(async () => {
     const a = attempt.current;
     if (!a?.code || !a.waba || a.submitting || Date.now() > a.expires)
@@ -124,7 +139,7 @@ export default function WorkConnections({ owner }: {
       const { data } = await api.post(crmApi + "/inbox/connect/" + channel, { consent: true });
       if (channel === "telegram") {
         setLink(data.url);
-        notify("Open the bot and press Start. Then add @" + s.bot + " to your Telegram Business chatbots and select work chats.");
+        notify("");
       }
       else {
         attempt.current = { token: data.token, phone: phone.trim(), expires: Date.now() + 600000 };
@@ -166,7 +181,7 @@ export default function WorkConnections({ owner }: {
       notify(crmError(e, "Could not disconnect."));
     }
   }
-  return <details className={cardClass}>
+  return <details id="crm-work-accounts" className={cardClass}>
   <summary className="cursor-pointer font-semibold">Work messaging accounts</summary>
   <div className="mt-3 space-y-3 text-sm">
    {owner ? <p>Open a lead to read messages shared by its assigned agent.</p> :
@@ -196,7 +211,14 @@ export default function WorkConnections({ owner }: {
           }
         }}>Verify bot webhook</button>}
    </div>)}
-   {link && <a href={link} target="_blank" rel="noopener noreferrer" className="underline">Open Telegram and press Start</a>}
+   {link && <div className="flex flex-wrap items-center gap-4 rounded-lg border border-slate-700 p-3">
+     <QRCodeSVG value={link} size={144} marginSize={4} title="Connect your BDFX Telegram work account" />
+     <div className="max-w-sm space-y-2">
+       <p>Scan with your work phone’s camera, or <a href={link} target="_blank" rel="noopener noreferrer" className="underline">open Telegram</a> and press Start.</p>
+       <p>In Telegram Business settings, add @{s?.bot} under Chatbots and select your BDFX work chats.</p>
+       <p className="text-xs text-slate-400">This pairing code expires in 10 minutes.</p>
+     </div>
+   </div>}
    {consent && attempt.current && <button className={secondaryClass} onClick={openMeta}>Continue with Meta</button>}
    {notice && <p role="status">{notice}</p>}
   </div>

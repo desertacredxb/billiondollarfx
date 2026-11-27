@@ -15,11 +15,16 @@ type Thread = {
     text: string;
   }[];
 };
-export default function WorkChat({ lead, agent }: {
+type Channel = "all" | "telegram" | null;
+
+export default function WorkChat({ lead, agent, channel, onChannel }: {
   lead: string;
   agent: boolean;
+  channel: Channel;
+  onChannel: (value: Channel) => void;
 }) {
-  const [open, show] = useState(false), [threads, setThreads] = useState<Thread[]>([]), [notice, notify] = useState("");
+  const open = channel !== null;
+  const [threads, setThreads] = useState<Thread[] | null>(null), [notice, notify] = useState("");
   const [draft, setDraft] = useState<Record<string, string>>({}), [busy, lock] = useState(false);
   const keys = useRef(new Map<string, string>());
   const path = crmApi + "/inbox/leads/" + lead;
@@ -68,11 +73,16 @@ export default function WorkChat({ lead, agent }: {
       lock(false);
     }
   }
-  return <details className="mt-5" onToggle={e => show(e.currentTarget.open)}>
-  <summary className="cursor-pointer font-semibold">Client messages</summary>
+  const visibleThreads = threads?.filter(t => channel === "all" || channel === t.channel);
+  return <section className="mt-5 rounded-lg border border-slate-700 p-3">
+  <button type="button" aria-expanded={open} className="font-semibold" onClick={() => onChannel(open ? null : "all")}>Client messages</button>
   {open && <div className="mt-2 space-y-3 text-sm">
-   {!threads.length && <p>No shared client messages yet.</p>}
-   {threads.map(t => <section key={t.id} className="space-y-2">
+   <div className="flex gap-2">
+     {(["all", "telegram"] as const).map(tab => <button key={tab} type="button" className={secondaryClass} aria-pressed={channel === tab} onClick={() => onChannel(tab)}>{tab === "all" ? "All work chats" : "Telegram"}</button>)}
+   </div>
+   {threads === null && !notice && <p role="status">Loading client messages…</p>}
+   {visibleThreads?.length === 0 && <p>{channel === "telegram" ? "No Telegram conversation linked to this lead." : "No shared client messages yet."}</p>}
+   {visibleThreads?.map(t => <section key={t.id} className="space-y-2">
     <h4 className="font-medium">{t.channel === "telegram" ? "Telegram" : "WhatsApp Business"} · {t.agentName}</h4>
     <ul className="max-h-72 overflow-auto">{t.messages.map(m => <li key={m._id} className="border-b border-slate-700 py-2">
      <span className="text-xs text-slate-300">{m.outbound ? "Agent" : "Client"} · {dubaiTime(m.at)}{m.outbound ? " · " + m.state : ""}</span>
@@ -82,7 +92,7 @@ export default function WorkChat({ lead, agent }: {
      <button className={secondaryClass} disabled={busy || !draft[t.id]?.trim()}>Reply</button>
     </form>}
    </section>)}
-   {agent && !threads.some(t => t.channel === "telegram") && <button className={secondaryClass} onClick={async () => {
+   {agent && threads && !threads.some(t => t.channel === "telegram") && <button className={secondaryClass} onClick={async () => {
           try {
             const { data } = await api.post(path + "/telegram");
             notify("Send this code from your connected Telegram account in this client’s private work chat within 10 minutes: " + data.code);
@@ -91,7 +101,11 @@ export default function WorkChat({ lead, agent }: {
             notify(crmError(e, "Could not link Telegram chat."));
           }
         }}>Link this client’s Telegram chat</button>}
+   {agent && threads && !threads.some(t => t.channel === "telegram") && <a className="ml-2 underline" href="#crm-work-accounts" onClick={() => {
+     const accounts = document.getElementById("crm-work-accounts");
+     if (accounts instanceof HTMLDetailsElement) accounts.open = true;
+   }}>Connect my work account</a>}
    {notice && <p role="status">{notice}</p>}
   </div>}
- </details>;
+ </section>;
 }

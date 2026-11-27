@@ -2,6 +2,12 @@ import api from "./apiClient";
 
 export const crmApi = process.env.NEXT_PUBLIC_API_BASE + "/api/crm";
 export const OUTCOME_LABELS = {
+  ringing_but_no_response: "Ringing but no response",
+  switched_off: "Switched off",
+  not_reachable: "Not reachable",
+  call_back: "Call back",
+  follow_up: "Follow up",
+  number_forwarded_to_voicemail: "Number forwarded to voicemail",
   no_answer: "No answer",
   busy: "Busy",
   wrong_number: "Wrong number",
@@ -81,6 +87,13 @@ export type Lead = {
   outcome?: keyof typeof OUTCOME_LABELS;
   client?: { id: string; name: string; registeredAt: string; kycApproved: boolean; firstDeposit: boolean };
 };
+
+export const BOARD_STAGES = {
+  new: "New", follow_up: "Waiting for callback", worked: "In progress",
+  qualified: "Interested", account_opened: "Account opened", closed: "Closed",
+} as const;
+export type BoardStage = keyof typeof BOARD_STAGES;
+export type LeadLane = { stage: BoardStage; total: number; rows: Lead[] };
 
 export type LeadPage = { rows: Lead[]; total: number; page: number; limit: number };
 
