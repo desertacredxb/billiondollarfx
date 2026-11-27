@@ -46,6 +46,7 @@ export type Agent = {
   name: string;
   hashmiId: string;
   dialer?: "hashmi" | "9ance";
+  indiaVoiceExtension?: string;
   indiaVoiceSipUser?: string;
   indiaVoiceDeskphone?: string;
   indiaVoiceAgentNumber?: string;

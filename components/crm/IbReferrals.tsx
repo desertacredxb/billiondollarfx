@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import CrmIbCommission from "./CrmIbCommission";
 import api from "../../lib/apiClient";
 import { crmApi, crmError, dubaiTime, fieldClass, secondaryClass } from "../../lib/crm";
 
@@ -8,7 +9,7 @@ function paidText(paid: Activity["paid"]) {
   return Object.entries(paid).sort(([a], [b]) => a.localeCompare(b)).map(([currency, value]) => currency + " " + amount.format(value)).join(" · ") || "—";
 }
 type Referral = { id: string; name: string; phone: string; email: string; registeredAt: string; verified: boolean; agentName: string; activity?: Activity };
-type ReferralPage = { rows: Referral[]; total: number; limit: number; linkedAgents: number; referralCode?: string; activity?: Activity & { day: string; newRegistrations: number } };
+type ReferralPage = { rows: Referral[]; total: number; limit: number; linkedAgents: number; referralCode?: string; myReferralCode?: string; activity?: Activity & { day: string; newRegistrations: number } };
 
 export default function IbReferrals({ agent, search, owner, team, day, version }: {
   agent: string; search: string; owner: boolean; team: boolean; day: string; version: number;
@@ -19,6 +20,7 @@ export default function IbReferrals({ agent, search, owner, team, day, version }
   const [reload, setReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [copyState, setCopyState] = useState("");
   const [saveError, setSaveError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
@@ -44,6 +46,14 @@ export default function IbReferrals({ agent, search, owner, team, day, version }
   }
   return <section aria-label="IB referrals" className="my-5 rounded-lg border border-slate-700 p-4">
     <h2 className="text-lg font-semibold">IB referrals{!error && data && <span className="ml-2 text-sm font-normal text-slate-300">{data.total} clients</span>}</h2>
+    {!error && data?.myReferralCode && <div className="my-3">
+      <label className="block text-sm">My referral link<input readOnly className={fieldClass} value={"https://www.billiondollarfx.com/register?ref=" + encodeURIComponent(data.myReferralCode)} /></label>
+      <button type="button" className={secondaryClass + " mt-2"} onClick={async () => {
+        try { await navigator.clipboard.writeText("https://www.billiondollarfx.com/register?ref=" + encodeURIComponent(data.myReferralCode!)); setCopyState("Copied"); }
+        catch { setCopyState("Select and copy the referral link above."); }
+      }}>Copy referral link</button>{copyState && <span role="status" className="ml-2 text-sm">{copyState}</span>}
+    </div>}
+    {!error && !!data?.linkedAgents && (!team || (owner && agent)) && <CrmIbCommission key={agent} owner={owner} agent={agent} version={version + reload} />}
     {!error && data?.activity && data.linkedAgents > 0 && <div className="my-3">
       <h3 className="font-medium">IB activity · {data.activity.day} Dubai</h3>
       <div className="mt-2 flex flex-wrap gap-x-8 gap-y-2 text-sm">
