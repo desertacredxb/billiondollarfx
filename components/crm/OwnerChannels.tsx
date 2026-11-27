@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import api from "../../lib/apiClient";
 import { cardClass, crmApi, crmError, dubaiTime, secondaryClass } from "../../lib/crm";
 
@@ -10,8 +10,10 @@ type Entry = { id: string; label: string; at: string; connected?: boolean; talkS
 type Chat = { _id: string; text: string; outbound: boolean; at: string; state: string };
 type Page<T> = { rows: T[]; hasMore: boolean };
 const base = crmApi + "/owner/channels/";
+const ReportRefresh = createContext(0);
 
 function useData<T>(url: string) {
+  const refresh = useContext(ReportRefresh);
   const [result, set] = useState<{ url: string; data?: T; error?: string }>({ url: "" });
   useEffect(() => {
     const controller = new AbortController();
@@ -19,7 +21,7 @@ function useData<T>(url: string) {
       if (!controller.signal.aborted) set({ url, data });
     }).catch(e => { if (!controller.signal.aborted) set({ url, error: crmError(e, "Could not load the team activity.") }); });
     return () => controller.abort();
-  }, [url]);
+  }, [url, refresh]);
   return result.url === url ? result : { url };
 }
 
@@ -142,7 +144,7 @@ function DialerDashboard({ channel }: { channel: "hashmi" | "9ance" }) {
   </section>;
 }
 
-export default function OwnerChannels({ day }: { day: string }) {
+export default function OwnerChannels({ day, refresh = 0 }: { day: string; refresh?: number }) {
   const [channel, select] = useState<Channel | null>(null);
   return <section className={cardClass} aria-label="Team communications">
     <h2 className="mb-3 text-lg font-semibold">Team communications</h2>
@@ -150,6 +152,6 @@ export default function OwnerChannels({ day }: { day: string }) {
       <button key={key} aria-pressed={channel === key} className={secondaryClass + (channel === key ? " border-amber-400" : "")}
         onClick={() => select(key)}>{channels[key]}</button>)}</div>
     {(channel === "hashmi" || channel === "9ance") && <DialerDashboard key={channel} channel={channel} />}
-    {channel && <Team key={channel} channel={channel} day={day} />}
+    <ReportRefresh.Provider value={refresh}>{channel && <Team key={channel} channel={channel} day={day} />}</ReportRefresh.Provider>
   </section>;
 }
