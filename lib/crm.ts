@@ -27,6 +27,7 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const LEAD_LISTS = {
   unassigned: "Available for assignment",
+  awaiting_outcome: "Attempted · outcome pending",
   registrations: "Website registrations",
   follow_ups: "Follow-ups",
   interested: "Interested",
@@ -49,6 +50,8 @@ export type Agent = {
   indiaVoiceDeskphone?: string;
   indiaVoiceAgentNumber?: string;
   dialerMapped?: boolean;
+  uniqueConnected?: number;
+  attendance?: { firstIn: string; lastOut: string | null; onDuty: boolean; seconds: number } | null;
   lastActivityAt?: string | null;
   overdue?: number;
   ready: number;
@@ -95,6 +98,8 @@ export const BOARD_STAGES = {
 } as const;
 export type BoardStage = keyof typeof BOARD_STAGES;
 export type LeadLane = { stage: BoardStage; total: number; rows: Lead[] };
+
+export type Replacement = { state: "pending" | "assigned" | "inactive" | "none"; lead?: Lead };
 
 export type LeadPage = { rows: Lead[]; total: number; page: number; limit: number };
 

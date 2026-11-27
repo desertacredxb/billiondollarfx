@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Phone, Send, X } from "lucide-react";
 import WorkChat from "./WorkChat";
 import api from "../../lib/apiClient";
-import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, dialMessage, leadChatLinks, OUTCOME_LABELS, secondaryClass, type Agent, type BrowserDial, type DialResponse, type Lead, type Overview } from "../../lib/crm";
+import { buttonClass, cardClass, crmApi, crmError, dubaiTime, fieldClass, dialMessage, leadChatLinks, OUTCOME_LABELS, secondaryClass, type Agent, type BrowserDial, type DialResponse, type Lead, type Replacement, type Overview } from "../../lib/crm";
 
 type Outcome = keyof typeof OUTCOME_LABELS;
 type Activity = { _id: string; kind: "outcome" | "hashmi" | "indiavoice"; occurredAt: string; outcome?: Outcome; note?: string; attempted?: boolean;
@@ -21,7 +21,7 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
   agents?: Agent[];
   onClose: () => void;
   onChange: (fields: Partial<Pick<Lead, "name" | "email" | "status" | "followUpAt" | "assignedTo" | "assignmentPending">>) => void;
-  onSaved: (next: boolean) => void;
+  onSaved: (next: boolean, outcome: Outcome, replacement?: Replacement) => void;
   allowNext?: boolean;
 }) {
   const [history, setHistory] = useState<Activity[]>([]);
@@ -132,9 +132,9 @@ export default function LeadDetails({ lead, owner, readOnly = false, mode, diale
     setError("");
     setResult("");
     try {
-      await api.post(crmApi + "/leads/" + lead.id + "/outcome", { requestId: key, ...data });
+      const response = await api.post<{ replacement?: Replacement }>(crmApi + "/leads/" + lead.id + "/outcome", { requestId: key, ...data });
       setOutcomeRequest(undefined);
-      onSaved(next);
+      onSaved(next, nextOutcome, response.data.replacement);
     } catch (error) {
       setError(crmError(error, "The outcome could not be saved."));
     } finally { setBusy(false); }
