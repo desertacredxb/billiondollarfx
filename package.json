@@ -33,6 +33,7 @@
     "react-phone-input-2": "^2.15.1",
     "react-slick": "^0.30.3",
     "read-excel-file": "9.3.14",
+    "sip.js": "0.21.2",
     "slick-carousel": "^1.8.1",
     "sweetalert2": "^11.26.3",
     "typewriter-effect": "^2.22.0",

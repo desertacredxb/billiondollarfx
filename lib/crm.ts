@@ -45,6 +45,7 @@ export type Agent = {
   name: string;
   hashmiId: string;
   dialer?: "hashmi" | "9ance";
+  indiaVoiceSipUser?: string;
   indiaVoiceDeskphone?: string;
   indiaVoiceAgentNumber?: string;
   dialerMapped?: boolean;
@@ -97,6 +98,7 @@ export type LeadLane = { stage: BoardStage; total: number; rows: Lead[] };
 
 export type LeadPage = { rows: Lead[]; total: number; page: number; limit: number };
 
+export type BrowserDial = (target: { leadId: string } | { phone: string }) => Promise<void>;
 export type DialResponse = { provider?: Agent["dialer"]; state: string; mode: Overview["dialerMode"] };
 
 export function leadChatLinks(phone: string) {

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Phone } from "lucide-react";
 import api from "../../lib/apiClient";
-import { buttonClass, cardClass, crmApi, crmError, fieldClass, dialMessage, secondaryClass, type DialResponse } from "../../lib/crm";
+import { buttonClass, cardClass, crmApi, crmError, fieldClass, dialMessage, secondaryClass, type BrowserDial, type DialResponse } from "../../lib/crm";
 
-export default function DialPad({ dialer }: { dialer?: "hashmi" | "9ance" }) {
+export default function DialPad({ dialer, browserDial }: { dialer?: "hashmi" | "9ance"; browserDial?: BrowserDial }) {
   const [phone, setPhone] = useState("");
   const [requestId, setRequestId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,6 +26,7 @@ export default function DialPad({ dialer }: { dialer?: "hashmi" | "9ance" }) {
     setError("");
     setResult("");
     try {
+      if (browserDial) { await browserDial({ phone: phone.trim() }); return; }
       const { data } = await api.post<DialResponse>(crmApi + "/dial-by-number", { phone: phone.trim(), requestId: key });
       if (data.state === "accepted") setResult(dialMessage(data));
       else setError(dialMessage(data));
@@ -45,7 +46,7 @@ export default function DialPad({ dialer }: { dialer?: "hashmi" | "9ance" }) {
           <button key={key} type="button" className={secondaryClass} disabled={busy} onClick={() => changePhone(key === "Backspace" ? phone.slice(0, -1) : phone + key)}>{key}</button>)}
       </div>
       <button type="submit" className={buttonClass + " inline-flex items-center gap-2"} disabled={busy || !phone.trim()}>
-        <Phone size={16} /> {busy ? "Requesting call…" : dialer === "9ance" ? "Call via 9ance" : "Call via Hashmi"}
+        <Phone size={16} /> {busy ? "Requesting call…" : browserDial ? "Call from CRM" : dialer === "9ance" ? "Call via 9ance" : "Call via Hashmi"}
       </button>
       {result && <p role="status" className="text-sm text-emerald-300">{result}</p>}
       {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
