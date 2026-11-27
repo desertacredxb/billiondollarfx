@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import IbReferrals from "../../../../components/crm/IbReferrals";
 import { Phone, RefreshCw, Upload } from "lucide-react";
 import api from "../../../../lib/apiClient";
 import { useAdminSession } from "../../../../lib/adminSession";
 import LeadDetails from "../../../../components/crm/LeadDetails";
 import LeadBoard from "../../../../components/crm/LeadBoard";
+import CallPay from "../../../../components/crm/CallPay";
+import LeadDistribution from "../../../../components/crm/LeadDistribution";
 import DialPad from "../../../../components/crm/DialPad";
 import OwnerChannels from "../../../../components/crm/OwnerChannels";
 import WorkConnections from "../../../../components/crm/WorkConnections";
@@ -17,7 +20,8 @@ import {
   BOARD_STAGES, OUTCOME_LABELS, type BoardStage, type LeadLane, LEAD_LISTS, secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
 } from "../../../../lib/crm";
 
-type LeadList = keyof typeof LEAD_LISTS;
+type OutcomeList = `outcome_${keyof typeof OUTCOME_LABELS}`;
+type LeadList = keyof typeof LEAD_LISTS | OutcomeList;
 type View = "queue" | "board" | "leads" | "clients";
 type ImportResult = { imported: number; duplicates: number; emailsAdded?: number; rejected: { row: number; reason: string }[] };
 type HashmiImportResult = { added: number; updated: number; existing: number; leadsAdded: number; skipped: number; rejected: { row: number; reason: string }[] };
@@ -51,13 +55,14 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
     <th scope="row" className="px-3 py-3 text-left font-medium">{agent.name}</th>
     <td className="px-3 py-3 tabular-nums">{agent.ready}</td>
     <td className="px-3 py-3 tabular-nums">{agent.logged}</td>
-    <td className="px-3 py-3 tabular-nums">{agent.verified} / {target}</td>
-    <td className="px-3 py-3 tabular-nums">{Math.max(0, target - agent.verified)}</td>
+    <td className="px-3 py-3 tabular-nums">{agent.uniqueConnected ?? 0} / {target}</td>
+    <td className="px-3 py-3 tabular-nums">{Math.max(0, target - (agent.uniqueConnected ?? 0))}</td>
     <td className="px-3 py-3 tabular-nums">{agent.connected}</td>
     <td className="px-3 py-3 tabular-nums">{Math.floor(agent.talkSeconds / 60)}m {agent.talkSeconds % 60}s</td>
     <td className="px-3 py-3 tabular-nums">{agent.overdue ?? 0}</td>
     <td className="px-3 py-3">
       <p>{agent.dialer === "9ance" ? (agent.dialerMapped ? "9ance mapped" : "9ance awaiting API setup") : (agent.dialerMapped ?? Boolean(agent.hashmiId)) ? "Dialer mapped" : "Dialer setup pending"}</p>
+      {agent.attendance && <p className="text-xs">{agent.attendance.onDuty ? "On duty" : "Checked out"} · In {dubaiTime(agent.attendance.firstIn)}{agent.attendance.lastOut && " · Out " + dubaiTime(agent.attendance.lastOut)} · {Math.floor(agent.attendance.seconds / 3600)}h {Math.floor(agent.attendance.seconds / 60) % 60}m</p>}
       <p className="text-xs text-slate-300">{agent.lastActivityAt ? "Last CRM activity " + dubaiTime(agent.lastActivityAt) : "No CRM activity on report date"}</p>
     </td>
     {editable && <td className="min-w-52 px-3 py-3">
@@ -91,6 +96,7 @@ export default function CrmPage() {
   const [day, setDay] = useState(dubaiDate);
   const [view, setView] = useState<View>("queue");
   const [leadList, setLeadList] = useState<LeadList | "all">("all");
+  const [queueType, setQueueType] = useState("all");
   const [boardLayout, setBoardLayout] = useState<"board" | "board_list">("board");
   const [boardStage, setBoardStage] = useState<BoardStage | "">("");
   const [lanes, setLanes] = useState<LeadLane[]>([]);
@@ -107,6 +113,7 @@ export default function CrmPage() {
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [reserve, setReserve] = useState(false);
   const [emailOnly, setEmailOnly] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState("");
@@ -139,7 +146,7 @@ export default function CrmPage() {
     setLoading(true);
     setReadError("");
     const request = reportOnly ? Promise.resolve({ data: blank }) : api.get<LeadPage | { lanes: LeadLane[] }>(crmApi + "/leads", {
-      params: { view: requestedView, page, search, ...(requestedView === "board_list" && boardStage ? { stage: boardStage } : {}), ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
+      params: { view: requestedView, page, search, ...(requestedView === "queue" ? { queue: queueType } : {}), ...(requestedView === "board_list" && boardStage ? { stage: boardStage } : {}), ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
     });
     request.then(data => {
       if (controller.signal.aborted) return;
@@ -152,13 +159,13 @@ export default function CrmPage() {
       if (advanceAfter.current && requestedView === "queue") {
         const next = data.data.rows.find(lead => lead.id !== advanceAfter.current);
         openLead(next || null);
-        if (!next) setNotice("Outcome saved. No more leads match this queue.");
+        if (!next) setNotice(current => current + " No more leads match this queue.");
       }
     }).catch(error => {
       if (!controller.signal.aborted) setReadError(crmError(error, "CRM could not load."));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [requestedView, boardStage, page, search, agentFilter, version, reportOnly, session?.email]);
+  }, [requestedView, queueType, boardStage, page, search, agentFilter, version, reportOnly, session?.email]);
 
   useEffect(() => {
     if (!session) return;
@@ -197,13 +204,22 @@ export default function CrmPage() {
     };
   }, [importing]);
 
+  useEffect(() => {
+    if (session?.role !== "manager" || !session.permissions.includes("crm")) return;
+    const controller = new AbortController();
+    api.post(crmApi + "/attendance/session", {}, { signal: controller.signal }).then(() => {
+      if (!controller.signal.aborted) setVersion(v => v + 1);
+    }).catch(() => { if (!controller.signal.aborted) setActionError("Your check-in could not be verified. Refresh the CRM."); });
+    return () => controller.abort();
+  }, [session?.role, session?.email, session?.permissions]);
+
   async function assign() {
     setAssigning(true);
     setActionError("");
     setNotice("");
     try {
       const response = await api.post<{ assigned: number; busy?: boolean }>(crmApi + "/distribute");
-      setNotice(response.data.busy ? "Automatic assignment is running." : number.format(response.data.assigned) + " leads assigned.");
+      setNotice(response.data.busy ? "Automatic assignment is running." : response.data.assigned ? number.format(response.data.assigned) + " leads assigned." : "Agent queues already have fresh leads, or the data bank has no eligible numbers.");
       refresh();
     } catch (error) { setActionError(crmError(error, "Lead assignment could not run.")); }
     finally { setAssigning(false); }
@@ -271,7 +287,7 @@ export default function CrmPage() {
         ["Calls", "calls", "/import/outcomes", rows.outcomes],
       ] as const) {
         for (const batch of importBatches<{ row: number }>(group)) {
-          const { data } = await api.post<ImportResult>(crmApi + endpoint, { rows: batch });
+          const { data } = await api.post<ImportResult>(crmApi + endpoint, { rows: batch, ...(endpoint === "/import" && reserve ? { reserve: true } : {}) });
           summary[field] += data.imported;
           summary.emailsAdded += data.emailsAdded || 0;
           summary.duplicates += data.duplicates;
@@ -281,6 +297,12 @@ export default function CrmPage() {
         }
       }
       setImportResult(summary);
+      if (reserve) {
+        setNotice("New unassigned numbers are available under Distribute fresh leads.");
+        setFile(null);
+        refresh();
+        return;
+      }
       setImportProgress("Distributing available leads…");
       const { data } = await api.post<{ assigned: number; busy?: boolean }>(crmApi + "/distribute");
       setNotice(data.busy ? "Lead upload finished. Automatic assignment is running." : number.format(data.assigned) + " leads assigned.");
@@ -296,7 +318,8 @@ export default function CrmPage() {
   }
 
   const agents = overview?.agents || [];
-  const target = overview?.target || 300;
+  const target = overview?.target || 90;
+  const uniqueConnected = agents.reduce((sum, agent) => sum + (agent.uniqueConnected || 0), 0);
   const verified = agents.reduce((sum, agent) => sum + agent.verified, 0);
   const ready = agents.reduce((sum, agent) => sum + agent.ready, 0);
   const logged = agents.reduce((sum, agent) => sum + agent.logged, 0);
@@ -323,7 +346,8 @@ export default function CrmPage() {
     { id: "leads", name: team ? "Data bank" : "My leads" },
     { id: "clients", name: team ? "Clients" : "My clients" },
   ];
-  const listTitle = view === "leads" && leadList !== "all" ? LEAD_LISTS[leadList] : null;
+  const listTitle = view !== "leads" || leadList === "all" ? null : leadList.startsWith("outcome_")
+    ? OUTCOME_LABELS[leadList.slice(8) as keyof typeof OUTCOME_LABELS] : LEAD_LISTS[leadList as keyof typeof LEAD_LISTS];
 
   return (
     <div className="mx-auto max-w-[1450px] space-y-5">
@@ -344,7 +368,7 @@ export default function CrmPage() {
       {countsDelayed && (!overview || overview.day !== day) && <p role="status" className="text-sm text-amber-200">Dialer totals could not be refreshed for this date.</p>}
       {overview && overview.day === day && <>
         <section aria-label="Calling progress" className={"grid gap-3 sm:grid-cols-2 " + (team ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
-          <Metric label="Verified call attempts" value={number.format(verified) + " / " + number.format(team ? agents.length * target : target)} />
+          <Metric label="Unique connected customers" value={number.format(uniqueConnected) + " / " + number.format(team ? agents.length * target : target)} />
           <Metric label="Ready leads and callbacks" value={number.format(ready)} />
           <Metric label="Outcomes logged" value={number.format(logged)} />
           {team && <Metric label="Connected calls" value={number.format(agents.reduce((sum, agent) => sum + agent.connected, 0))} />}
@@ -392,6 +416,7 @@ export default function CrmPage() {
                 onChange={event => setFile(event.target.files?.[0] || null)} />
             </label>
             <label className="flex items-center gap-2 py-2 text-sm"><input type="checkbox" checked={emailOnly} disabled={importing} onChange={event => setEmailOnly(event.target.checked)} />Only fill missing emails on existing leads</label>
+            {!emailOnly && <label className="flex items-center gap-2 py-2 text-sm"><input type="checkbox" disabled={importing} checked={reserve} onChange={event => setReserve(event.target.checked)} />Reserve fresh numbers for selected agents</label>}
             <button type="submit" disabled={!file || importing || assigning} className={buttonClass + " inline-flex items-center gap-2"}><Upload size={16} />Import file</button>
           </form>
           {importProgress && <p role="status" className="mt-3 text-sm text-slate-300">{importProgress}</p>}
@@ -412,22 +437,28 @@ export default function CrmPage() {
         </div>
         {agents.length ? <div className="mt-4 overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-sm">
-            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Verified calls", "Calls left", "Connected", "Talk time", "Overdue now", "Member status", ...(owner ? ["Agent dialer"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
+            <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Unique pickups", "Pickups left", "Connected calls", "Talk time", "Overdue now", "Member status", ...(owner ? ["Agent dialer"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
             <tbody>{agents.map(agent => <AgentRow key={[agent.id, agent.hashmiId, agent.indiaVoiceDeskphone, agent.indiaVoiceAgentNumber].join(":")} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
           </table>
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
       </section>}
 
+      {!team && agents[0] && <p className="text-sm" role="status">{agents[0].attendance?.onDuty ? "Checked in · " + dubaiTime(agents[0].attendance.firstIn) + " Dubai" : "No active CRM shift recorded"}</p>}
+      {owner && <CallPay day={day} agents={agents} version={version} />}
+      {owner && <LeadDistribution agents={agents} version={version} onSave={refresh} />}
       {canAssign && !owner && <WorkConnections owner={false} />}
       <div ref={detail}>
         {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} agents={agents} readOnly={readOnly} mode={dialerMode} dialer={myDialer} allowNext={!team && view === "queue"} onClose={() => openLead(null)} onChange={fields => {
           setSelected(current => current?.id === selected.id ? { ...current, ...fields } : current);
           refresh();
-        }} onSaved={next => {
+        }} onSaved={(next, outcome, replacement) => {
           if (activeLead.current === selected.id) {
             openLead(null);
-            if (next) { advanceAfter.current = selected.id; setPage(1); setLoading(true); }
-            setNotice("Outcome saved.");
+            if (next && replacement?.lead) openLead(replacement.lead);
+            else if (next) { advanceAfter.current = selected.id; setPage(1); setLoading(true); }
+            const saved = OUTCOME_LABELS[outcome] + " saved.";
+            setNotice(replacement?.state === "assigned" ? saved + " A fresh number was assigned." :
+              replacement?.state === "pending" ? saved + " A fresh number will be assigned when the Data Bank has stock." : saved);
           }
           refresh();
         }} />}
@@ -444,8 +475,15 @@ export default function CrmPage() {
                 <option value="" disabled>Choose a list</option>
                 <option value="all">All leads</option>
                 {Object.entries(LEAD_LISTS).filter(([id]) => team || id !== "unassigned").map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                <optgroup label="Saved call outcome">{Object.entries(OUTCOME_LABELS).map(([id, label]) =>
+                  <option key={id} value={"outcome_" + id}>{label}</option>)}</optgroup>
               </select>
             </label>
+            {view === "queue" && <label className="block text-xs text-slate-300">Work queue filter
+              <select className={fieldClass + " mt-1"} value={queueType} onChange={e => { setQueueType(e.target.value); setPage(1); openLead(null); }}>
+                <option value="all">All ready numbers</option><option value="fresh">Fresh numbers</option><option value="callbacks">Due callbacks</option>
+              </select>
+            </label>}
           </nav>
           <form className="flex flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); setPage(1); openLead(null); }}>
             {team && <label className="block text-xs text-slate-300">Assigned agent
@@ -469,6 +507,8 @@ export default function CrmPage() {
           </select>}
         </div>}
         {!team && view === "queue" && !loading && !readError && leads.rows.length > 0 && !selected && <button type="button" className={buttonClass + " mt-4"} onClick={() => openLead(leads.rows[0])}>Open next lead</button>}
+        {view === "clients" && <><IbReferrals key={[session?.email, agentFilter, search].join("|")} agent={agentFilter} search={search} owner={owner} team={team} version={version} />
+          <h2 className="text-lg font-semibold">Clients linked to CRM leads</h2></>}
         {listTitle && <h2 className="mt-4 text-base font-semibold">{listTitle}{!loading && !readError && <span className="ml-2 text-sm font-normal text-slate-300">{number.format(leads.total)} leads</span>}</h2>}
         {loading ? <p role="status" className="mt-4 text-sm text-slate-300">Loading CRM records…</p> : readError ? null :
           requestedView === "board" ? <LeadBoard lanes={lanes} agentNames={team ? agentNames : undefined} onOpen={openLead} onStage={stage => showBoard("board_list", stage)} /> :

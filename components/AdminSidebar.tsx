@@ -51,7 +51,22 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
     fetchCounts();
   }, []);
 
-  const handleSignOut = () => {
+  const [checkoutError, setCheckoutError] = useState("");
+  const [checkingOut, setCheckingOut] = useState(false);
+  const isCaller = session?.role === "manager" && session.permissions.includes("crm");
+  const handleSignOut = async () => {
+    if (checkingOut) return;
+    if (isCaller) {
+      setCheckingOut(true);
+      try { await axios.post(process.env.NEXT_PUBLIC_API_BASE + "/api/crm/check-out", {}, { timeout: 8000 }); }
+      catch (err) {
+        if (!axios.isAxiosError(err) || err.response?.status !== 401) {
+          setCheckoutError("Check-out could not be confirmed. Retry when connected.");
+          setCheckingOut(false);
+          return;
+        }
+      }
+    }
     localStorage.removeItem("adminToken");
     localStorage.removeItem("admin");
     localStorage.removeItem("adminUser");
@@ -159,12 +174,13 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
         </Section>
         <Section title="Account">
           <button
-            onClick={handleSignOut}
+            disabled={checkingOut} onClick={handleSignOut}
             className="flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium hover:bg-[#1e293b] text-white/80 w-full cursor-pointer"
           >
             <LogOut size={18} />
-            Sign Out
+            {isCaller ? "Check out & sign out" : "Sign Out"}
           </button>
+          {checkoutError && <p role="alert" className="px-4 text-sm text-red-300">{checkoutError}</p>}
         </Section>
       </div>
     </aside>
