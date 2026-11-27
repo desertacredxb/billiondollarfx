@@ -74,6 +74,7 @@ test("a selected lead list stays selected when Data bank is opened again", async
     "../../../../lib/crm": crm,
     "../../../../lib/crmImport": {},
     "../../../../components/crm/LeadDetails": LeadDetails,
+    "../../../../components/crm/LeadBoard": () => null,
     "../../../../components/crm/DialPad": () => null,
     "../../../../components/crm/CallAssistant": () => null,
     "../../../../components/crm/OwnerChannels": () => null,
@@ -143,4 +144,34 @@ test("9ance agents see their dialer on an assigned lead and cannot call an opted
   assert.doesNotMatch(view(lead), /Call via Hashmi/);
   assert.doesNotMatch(view({ ...lead, outcome: "do_not_call" }), /Call via 9ance/);
   assert.match(crm.dialMessage({ provider: "9ance", state: "unconfirmed", mode: "live" }), /not been confirmed/);
+});
+
+test("agents have the requested call outcomes, in-CRM Telegram and standalone reminders on an open lead", () => {
+  const view = props => renderToStaticMarkup(React.createElement(LeadDetails, { lead, owner: false, mode: "live", ...props }));
+  const markup = view({});
+  for (const label of ["Ringing but no response", "Switched off", "Not reachable", "Call back", "Follow up", "Number forwarded to voicemail"]) {
+    assert.match(markup, new RegExp(">" + label + "</option>"));
+  }
+  assert.match(markup, /Telegram inbox/);
+  assert.match(markup, /Chat on WhatsApp/);
+  assert.match(markup, /Set reminder/);
+  assert.match(markup, /Feedback and call history/);
+  assert.doesNotMatch(markup, /Transfer lead/);
+  assert.match(view({ owner: true }), /Transfer lead/);
+  assert.doesNotMatch(view({ lead: { ...lead, outcome: "do_not_call" } }), /Telegram inbox|Set reminder|Chat on WhatsApp/);
+});
+
+test("a stage preview opens a record or its full scoped list", () => {
+  const Board = load("../components/crm/LeadBoard.tsx", { "../../lib/crm": crm }).default;
+  let selected, stage;
+  const tree = Board({ lanes: [{ stage: "worked", total: 52, rows: [{ ...lead, outcome: "switched_off", note: "Test note" }] }],
+    onOpen(value) { selected = value; }, onStage(value) { stage = value; } });
+  const html = renderToStaticMarkup(tree);
+  assert.match(html, /In progress/);
+  assert.match(html, /Switched off/);
+  assert.match(html, /Test note/);
+  find(tree, n => n.type === "button" && n.props.className.includes("text-left")).props.onClick();
+  find(tree, n => n.type === "button" && n.props.className.includes("underline")).props.onClick();
+  assert.equal(selected.id, lead.id);
+  assert.equal(stage, "worked");
 });

@@ -6,6 +6,7 @@ import { Phone, RefreshCw, Upload } from "lucide-react";
 import api from "../../../../lib/apiClient";
 import { useAdminSession } from "../../../../lib/adminSession";
 import LeadDetails from "../../../../components/crm/LeadDetails";
+import LeadBoard from "../../../../components/crm/LeadBoard";
 import DialPad from "../../../../components/crm/DialPad";
 import OwnerChannels from "../../../../components/crm/OwnerChannels";
 import WorkConnections from "../../../../components/crm/WorkConnections";
@@ -13,11 +14,11 @@ import CallAssistant from "../../../../components/crm/CallAssistant";
 import { importBatches, readCrmFile } from "../../../../lib/crmImport";
 import {
   buttonClass, cardClass, crmApi, crmError, dubaiDate, dubaiTime, fieldClass,
-  LEAD_LISTS, secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
+  BOARD_STAGES, OUTCOME_LABELS, type BoardStage, type LeadLane, LEAD_LISTS, secondaryClass, STATUS_LABELS, type Agent, type Lead, type LeadPage, type Overview,
 } from "../../../../lib/crm";
 
 type LeadList = keyof typeof LEAD_LISTS;
-type View = "queue" | "leads" | "clients";
+type View = "queue" | "board" | "leads" | "clients";
 type ImportResult = { imported: number; duplicates: number; emailsAdded?: number; rejected: { row: number; reason: string }[] };
 type HashmiImportResult = { added: number; updated: number; existing: number; leadsAdded: number; skipped: number; rejected: { row: number; reason: string }[] };
 type ImportSummary = { leads: number; calls: number; duplicates: number; emailsAdded: number; rejected: { row: number; reason: string; area: string }[];
@@ -90,6 +91,9 @@ export default function CrmPage() {
   const [day, setDay] = useState(dubaiDate);
   const [view, setView] = useState<View>("queue");
   const [leadList, setLeadList] = useState<LeadList | "all">("all");
+  const [boardLayout, setBoardLayout] = useState<"board" | "board_list">("board");
+  const [boardStage, setBoardStage] = useState<BoardStage | "">("");
+  const [lanes, setLanes] = useState<LeadLane[]>([]);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -119,7 +123,7 @@ export default function CrmPage() {
     setSelected(lead);
   }
   const refresh = () => setVersion(current => current + 1);
-  const requestedView = view === "leads" && leadList !== "all" ? leadList : view;
+  const requestedView = view === "board" ? boardLayout : view === "leads" && leadList !== "all" ? leadList : view;
 
   useEffect(() => {
     if (!canAssign) return;
@@ -134,11 +138,12 @@ export default function CrmPage() {
     const controller = new AbortController();
     setLoading(true);
     setReadError("");
-    const request = reportOnly ? Promise.resolve({ data: blank }) : api.get<LeadPage>(crmApi + "/leads", {
-      params: { view: requestedView, page, search, ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
+    const request = reportOnly ? Promise.resolve({ data: blank }) : api.get<LeadPage | { lanes: LeadLane[] }>(crmApi + "/leads", {
+      params: { view: requestedView, page, search, ...(requestedView === "board_list" && boardStage ? { stage: boardStage } : {}), ...(agentFilter ? { agent: agentFilter } : {}) }, signal: controller.signal,
     });
     request.then(data => {
       if (controller.signal.aborted) return;
+      if ("lanes" in data.data) { setLanes(data.data.lanes); setLeads(blank); return; }
       if (!data.data.rows.length && data.data.total > 0 && page > 1) {
         setPage(Math.max(1, Math.ceil(data.data.total / data.data.limit)));
         return;
@@ -153,7 +158,7 @@ export default function CrmPage() {
       if (!controller.signal.aborted) setReadError(crmError(error, "CRM could not load."));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [requestedView, page, search, agentFilter, version, reportOnly, session?.email]);
+  }, [requestedView, boardStage, page, search, agentFilter, version, reportOnly, session?.email]);
 
   useEffect(() => {
     if (!session) return;
@@ -305,8 +310,16 @@ export default function CrmPage() {
     setPage(1);
     openLead(null);
   }
+  function showBoard(layout: "board" | "board_list", stage: BoardStage | "" = "") {
+    if (layout !== boardLayout || stage !== boardStage || page !== 1) setLoading(true);
+    setBoardLayout(layout);
+    setBoardStage(stage);
+    setPage(1);
+    openLead(null);
+  }
   const views: { id: View; name: string }[] = [
     { id: "queue", name: "Work queue" },
+    { id: "board", name: "Lead board" },
     { id: "leads", name: team ? "Data bank" : "My leads" },
     { id: "clients", name: team ? "Clients" : "My clients" },
   ];
@@ -405,8 +418,9 @@ export default function CrmPage() {
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
       </section>}
 
+      {canAssign && !owner && <WorkConnections owner={false} />}
       <div ref={detail}>
-        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} readOnly={readOnly} mode={dialerMode} dialer={myDialer} allowNext={!team && view === "queue"} onClose={() => openLead(null)} onChange={fields => {
+        {selected && <LeadDetails key={selected.id} lead={selected} owner={owner} agents={agents} readOnly={readOnly} mode={dialerMode} dialer={myDialer} allowNext={!team && view === "queue"} onClose={() => openLead(null)} onChange={fields => {
           setSelected(current => current?.id === selected.id ? { ...current, ...fields } : current);
           refresh();
         }} onSaved={next => {
@@ -439,15 +453,25 @@ export default function CrmPage() {
                 <option value="">All agents</option>{agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
               </select>
             </label>}
-            <label className="block text-xs text-slate-300">Search by name, phone or Lead ID
+            <label className="block text-xs text-slate-300">Search by name, phone, email or Lead ID
               <input className={fieldClass + " mt-1"} maxLength={80} value={searchInput} onChange={event => setSearchInput(event.target.value)} />
             </label>
             <button type="submit" className={secondaryClass}>Search</button>
           </form>
         </div>
+        {view === "board" && <div className="mt-5 flex flex-wrap items-center gap-2">
+          <h2 className="mr-auto text-lg font-semibold">{team ? "Assigned leads" : "My assigned leads"}</h2>
+          <button type="button" aria-pressed={boardLayout === "board"} className={boardLayout === "board" ? buttonClass : secondaryClass} onClick={() => showBoard("board")}>Board</button>
+          <button type="button" aria-pressed={boardLayout === "board_list"} className={boardLayout === "board_list" ? buttonClass : secondaryClass} onClick={() => showBoard("board_list")}>List</button>
+          {boardLayout === "board_list" && <select aria-label="Filter by lead stage" className={fieldClass + " sm:w-auto"} value={boardStage} onChange={e => showBoard("board_list", e.target.value as BoardStage | "")}>
+            <option value="">All stages</option>
+            {Object.entries(BOARD_STAGES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>}
+        </div>}
         {!team && view === "queue" && !loading && !readError && leads.rows.length > 0 && !selected && <button type="button" className={buttonClass + " mt-4"} onClick={() => openLead(leads.rows[0])}>Open next lead</button>}
         {listTitle && <h2 className="mt-4 text-base font-semibold">{listTitle}{!loading && !readError && <span className="ml-2 text-sm font-normal text-slate-300">{number.format(leads.total)} leads</span>}</h2>}
         {loading ? <p role="status" className="mt-4 text-sm text-slate-300">Loading CRM records…</p> : readError ? null :
+          requestedView === "board" ? <LeadBoard lanes={lanes} agentNames={team ? agentNames : undefined} onOpen={openLead} onStage={stage => showBoard("board_list", stage)} /> :
           leads.rows.length === 0 ? <p className="mt-4 text-sm text-slate-300">{view === "queue" ? "No leads or callbacks are due in this queue." : view === "clients" ? "No verified clients linked to these leads yet." : "No leads match this view."}</p> :
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -470,7 +494,9 @@ export default function CrmPage() {
                   {lead.source}
                   {lead.registeredAt && <p className="mt-1 text-xs text-slate-300">{lead.source === "Website registration" ? "" : "Registered · "}{dubaiTime(lead.registeredAt)}</p>}
                 </td>
-                <td className="px-3 py-3">{lead.outcome === "do_not_call" ? "Do not call back" : lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}</td>
+                <td className="px-3 py-3">{lead.outcome === "do_not_call" ? "Do not call back" : lead.client ? <span>{lead.client.firstDeposit ? "First deposit" : lead.client.kycApproved ? "KYC approved" : "Registered"}</span> : lead.outcome === "number_not_in_use" ? "Number not in use" : lead.accountOpened ? "Account opened" : STATUS_LABELS[lead.status] || lead.status}
+                  {lead.outcome && lead.outcome !== "do_not_call" && lead.outcome !== "number_not_in_use" && <p className="mt-1 text-xs text-slate-300">{OUTCOME_LABELS[lead.outcome]}</p>}
+                </td>
                 <td className="whitespace-nowrap px-3 py-3">{lead.followUpAt ? dubaiTime(lead.followUpAt) : "—"}</td>
                 <td className="whitespace-nowrap px-3 py-3"><button type="button" className={secondaryClass} onClick={() => openLead(lead)}>{team || view === "clients" || lead.status === "closed" || lead.outcome === "do_not_call" ? "View" : "Open to call"}</button></td>
               </tr>)}</tbody>
@@ -485,7 +511,7 @@ export default function CrmPage() {
         </nav>}
       </section>}
       {!team && (myDialer === "9ance" ? overview?.indiaVoiceConfigured && agents[0]?.dialerMapped : Boolean(agents[0]?.hashmiId) && dialerMode !== "unconfigured") && <DialPad dialer={myDialer} />}
-      {canAssign && !owner && <WorkConnections owner={false} />}
+
       {canAssign && !owner && <CallAssistant />}
     </div>
   );
