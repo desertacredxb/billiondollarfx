@@ -32,6 +32,22 @@ const crm = load("../lib/crm.ts", { "./apiClient": api });
 const LeadDetails = load("../components/crm/LeadDetails.tsx", { "../../lib/crm": crm, "../../lib/apiClient": api, "./WorkChat": () => null }).default;
 const lead = { id: "lead-1", leadId: "BDFX-test", name: "Fixture", phone: "+12025550101", status: "new", source: "COMEXFOREX" };
 
+test("agent work queue offers email editing and explicit outcomes before advancing", () => {
+  const view = props => renderToStaticMarkup(React.createElement(LeadDetails, {
+    lead, owner: false, mode: "unconfigured", onClose() {}, onChange() {}, onSaved() {}, ...props,
+  }));
+  assert.match(view({ allowNext: true }), /Add email/);
+  assert.match(view({ allowNext: true }), /disabled=""[^>]*>Save &amp; open next lead/);
+  assert.match(view({ lead: { ...lead, email: "contact@example.test" } }), /Edit email/);
+  assert.doesNotMatch(view({ readOnly: true }), /Add email|Edit email|Save outcome/);
+});
+
+test("lead CSV accepts the Email ID heading", async () => {
+  const { readCrmFile } = load("../lib/crmImport.ts", {});
+  const data = await readCrmFile({ name: "contacts.csv", text: async () => "Phone,Email ID\n+12025550101,contact@example.test" });
+  assert.equal(data.leads[0].email, "contact@example.test");
+});
+
 test("a selected lead list stays selected when Data bank is opened again", async () => {
   let cursor;
   let effects;

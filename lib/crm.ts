@@ -20,6 +20,7 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const LEAD_LISTS = {
+  unassigned: "Available for assignment",
   registrations: "Website registrations",
   follow_ups: "Follow-ups",
   interested: "Interested",
