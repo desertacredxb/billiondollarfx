@@ -38,6 +38,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: number; editable: boolean; onSave: () => void }) {
   const [provider, setProvider] = useState<"hashmi" | "9ance">(agent.dialer || "hashmi");
   const [deskphone, setDeskphone] = useState(agent.indiaVoiceDeskphone || "");
+  const [extension, setExtension] = useState(agent.indiaVoiceExtension || "");
   const [sipUser, setSipUser] = useState(agent.indiaVoiceSipUser || "");
   const [agentNumber, setAgentNumber] = useState(agent.indiaVoiceAgentNumber || "");
   const [hashmiId, setHashmiId] = useState(agent.hashmiId);
@@ -47,7 +48,7 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
     setBusy(true);
     setError("");
     try {
-      const payload = provider === "9ance" ? { deskphone: deskphone.trim(), agentNumber: agentNumber.trim(), sipUser: sipUser.trim() } : { hashmiId: hashmiId.trim() };
+      const payload = provider === "9ance" ? { deskphone: deskphone.trim(), extension: extension.trim(), agentNumber: agentNumber.trim(), sipUser: sipUser.trim() } : { hashmiId: hashmiId.trim() };
       await api.patch(crmApi + "/team/" + agent.id + "/" + provider, payload);
       onSave();
     } catch (error) { setError(crmError(error, "Mapping could not be saved.")); }
@@ -76,12 +77,13 @@ function AgentRow({ agent, target, editable, onSave }: { agent: Agent; target: n
         </select>
         {provider === "9ance" ? <>
           <label className="text-xs">Provider deskphone<input className={fieldClass} maxLength={17} value={deskphone} onChange={event => setDeskphone(event.target.value)} /></label>
+          <label className="text-xs">Provider extension<input className={fieldClass} maxLength={17} value={extension} onChange={event => setExtension(event.target.value)} /></label>
           <label className="text-xs">SIP username for CRM headset<input className={fieldClass} maxLength={80} value={sipUser} onChange={event => setSipUser(event.target.value)} /></label>
           <label className="text-xs">Agent number with country code<input className={fieldClass} type="tel" maxLength={24} value={agentNumber} onChange={event => setAgentNumber(event.target.value)} /></label>
         </> :
         <input className={fieldClass + " min-w-24"} inputMode="numeric" aria-label={"Hashmi ID for " + agent.name} value={hashmiId} onChange={event => { setHashmiId(event.target.value); setError(""); }} />}
         <button type="submit" className={secondaryClass} disabled={busy || (provider === "9ance"
-          ? deskphone.trim() === (agent.indiaVoiceDeskphone || "") && agentNumber.trim() === (agent.indiaVoiceAgentNumber || "") && sipUser.trim() === (agent.indiaVoiceSipUser || "")
+          ? deskphone.trim() === (agent.indiaVoiceDeskphone || "") && agentNumber.trim() === (agent.indiaVoiceAgentNumber || "") && sipUser.trim() === (agent.indiaVoiceSipUser || "") && extension.trim() === (agent.indiaVoiceExtension || "")
           : hashmiId.trim() === agent.hashmiId)}>Save</button>
       </form>
       {error && <p role="alert" className="mt-1 text-xs text-red-300">{error}</p>}
@@ -354,7 +356,7 @@ export default function CrmPage() {
     { id: "queue", name: "Work queue" },
     { id: "board", name: "Lead board" },
     { id: "leads", name: team ? "Data bank" : "My leads" },
-    { id: "clients", name: team ? "Clients" : "My clients" },
+    { id: "clients", name: team ? "Clients" : "My IB & clients" },
   ];
   const listTitle = view !== "leads" || leadList === "all" ? null : leadList.startsWith("outcome_")
     ? OUTCOME_LABELS[leadList.slice(8) as keyof typeof OUTCOME_LABELS] : LEAD_LISTS[leadList as keyof typeof LEAD_LISTS];
@@ -442,7 +444,7 @@ export default function CrmPage() {
         {agents.length ? <div className="mt-4 overflow-x-auto">
           <table className="w-full whitespace-nowrap text-left text-sm">
             <thead className="text-xs text-slate-300"><tr>{["Agent", "Ready", "Logged", "Unique pickups", "Pickups left", "Connected calls", "Talk time", "Overdue now", "Member status", ...(owner ? ["Agent dialer"] : [])].map(label => <th scope="col" className="px-3 py-2" key={label}>{label}</th>)}</tr></thead>
-            <tbody>{agents.map(agent => <AgentRow key={[agent.id, agent.hashmiId, agent.indiaVoiceDeskphone, agent.indiaVoiceAgentNumber, agent.indiaVoiceSipUser].join(":")} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
+            <tbody>{agents.map(agent => <AgentRow key={[agent.id, agent.hashmiId, agent.indiaVoiceDeskphone, agent.indiaVoiceAgentNumber, agent.indiaVoiceSipUser, agent.indiaVoiceExtension].join(":")} agent={agent} target={target} editable={owner} onSave={refresh} />)}</tbody>
           </table>
         </div> : <p className="mt-3 text-sm text-slate-300">Enable CRM-only access in Staff Users to start assigning leads.</p>}
       </section>}
