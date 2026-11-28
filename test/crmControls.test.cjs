@@ -191,14 +191,20 @@ test("CRM headset calls the authorized number once and advances only on SIP prog
     useImperativeHandle(ref, create) { ref.current = create(); },
   };
   let sip, sent = 0, played = 0;
+  const holdRequests = [];
   class FixturePhone {
     constructor(_server, options) { sip = this; assert.equal(options.userAgentOptions.authorizationUsername, "test-agent"); }
     async connect() {}
     async register() { this.delegate.onRegistered(); }
     async call(target, _options, request) {
       assert.equal(target, "sip:12025550100@sip.rpdigitalphone.com");
-      sent++; this.events = request.requestDelegate;
+      sent++; this.events = request.requestDelegate; this.muted = false;
     }
+    mute() { this.muted = true; }
+    unmute() { this.muted = false; }
+    isMuted() { return this.muted; }
+    async hold() { holdRequests.push("hold"); }
+    async unhold() { holdRequests.push("resume"); }
     async hangup() { this.delegate.onCallHangup(); }
   }
   const transport = { post: async (path, body) => {
@@ -226,6 +232,7 @@ test("CRM headset calls the authorized number once and advances only on SIP prog
     "../../lib/apiClient": transport, "sip.js/lib/platform/web": { SimpleUser: FixturePhone } }).default;
   const controls = { current: null };
   const render = () => { cursor = 0; return Phone({ user: "test-agent", controls }); };
+  const button = label => find(render(), node => node.type === "button" && node.props.children === label);
   let view = render();
   find(view, node => node.type === "input").props.ref.current = { value: "test-only", focus() {} };
   find(view, node => node.type === "audio").props.ref.current = { play: async () => { played++; } };
@@ -239,10 +246,37 @@ test("CRM headset calls the authorized number once and advances only on SIP prog
   assert.doesNotMatch(renderToStaticMarkup(render()), /Connected|Ringing/);
   sip.events.onProgress({ message: { statusCode: 180 } });
   assert.match(renderToStaticMarkup(render()), /Ringing/);
+  assert.equal(button("Hold call"), undefined);
+  assert.equal(button("Mute"), undefined);
   sip.delegate.onCallAnswered();
   assert.match(renderToStaticMarkup(render()), /Connected/);
   assert.equal(played, 1);
-  view = render();
-  await find(view, node => node.type === "button" && node.props.children === "End call").props.onClick();
+  button("Mute").props.onClick();
+  assert.equal(sip.isMuted(), true);
+  const holdButton = button("Hold call");
+  await Promise.all([holdButton.props.onClick(), holdButton.props.onClick()]);
+  assert.equal(button("Hold call").props.disabled, true);
+  assert.deepEqual(holdRequests, ["hold"]);
+  sip.delegate.onCallHold(false);
+  assert.match(renderToStaticMarkup(render()), /Hold declined/);
+  assert.equal(button("Hold call").props.disabled, false);
+  await button("Hold call").props.onClick();
+  sip.delegate.onCallHold(true);
+  await button("Resume call").props.onClick();
+  sip.delegate.onCallHold(false);
+  assert.deepEqual(holdRequests, ["hold", "hold", "resume"]);
+  assert.equal(button("Hold call").props.disabled, false);
+  button("Unmute").props.onClick();
+  assert.equal(sip.isMuted(), false);
+  button("Mute").props.onClick();
+  await button("Hold call").props.onClick();
+  await button("End call").props.onClick();
+  sip.delegate.onCallHold(true);
   assert.match(renderToStaticMarkup(render()), /Call ended/);
+  assert.equal(button("Unmute"), undefined);
+  await controls.current.dial({ leadId: "assigned" });
+  sip.delegate.onCallAnswered();
+  assert.ok(button("Mute"));
+  assert.equal(button("Hold call").props.disabled, false);
+  await button("End call").props.onClick();
 });

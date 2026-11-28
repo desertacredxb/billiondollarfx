@@ -6,7 +6,14 @@ import api from "../../lib/apiClient";
 import { buttonClass, cardClass, crmApi, crmError, fieldClass, secondaryClass, type BrowserDial } from "../../lib/crm";
 
 const domain = "sip.rpdigitalphone.com";
-type Call = { controller: AbortController; invited: boolean; stopTone?: () => void; rejected?: string };
+type Call = {
+  controller: AbortController;
+  invited: boolean;
+  ending?: boolean;
+  stopTone?: () => void;
+  rejected?: string;
+  requestedHold?: boolean;
+};
 export type PhoneControls = { dial: BrowserDial };
 
 // Play local ringback only after the provider signals ringing. 183 with SDP carries provider audio.
@@ -29,7 +36,9 @@ function ring(context: AudioContext) {
 export default function BrowserPhone({ user, controls }: { user: string; controls: Ref<PhoneControls> }) {
   const [connection, setConnection] = useState<"offline" | "connecting" | "ready">("offline");
   const [message, setMessage] = useState("");
-  const [active, setActive] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "dialing" | "answered" | "ending">("idle");
+  const [muted, setMuted] = useState(false);
+  const [hold, setHold] = useState<"off" | "holding" | "on" | "resuming">("off");
   const [playBlocked, setPlayBlocked] = useState(false);
   const password = useRef<HTMLInputElement>(null);
   const audio = useRef<HTMLAudioElement>(null);
@@ -45,7 +54,7 @@ export default function BrowserPhone({ user, controls }: { user: string; control
     attempt.current?.controller.abort();
     attempt.current?.stopTone?.();
     attempt.current = null;
-    setActive(false);
+    setPhase("idle");
     setPlayBlocked(false);
     setMessage(text);
   }
@@ -78,7 +87,7 @@ export default function BrowserPhone({ user, controls }: { user: string; control
       context.current = null;
     }
     // pagehide also runs when a browser puts this page in its back/forward cache.
-    const onHide = () => { close(); setConnection("offline"); setActive(false); setMessage(""); };
+    const onHide = () => { close(); setConnection("offline"); setPhase("idle"); setPlayBlocked(false); setMessage(""); };
     window.addEventListener("pagehide", onHide);
     return () => { window.removeEventListener("pagehide", onHide); close(); };
   }, []);
@@ -118,11 +127,21 @@ export default function BrowserPhone({ user, controls }: { user: string; control
         onServerDisconnect() { if (current()) disconnect("Connection to 9ance was lost. Reconnect to call."); },
         onCallReceived() { void client.decline().catch(() => {}); },
         onCallAnswered() {
-          if (!current() || !attempt.current) return;
+          if (!current() || !attempt.current || attempt.current.ending) return;
           attempt.current.stopTone?.();
           attempt.current.stopTone = undefined;
+          setPhase("answered");
           setMessage("Connected");
           void audio.current?.play().catch(() => { if (current() && attempt.current) setPlayBlocked(true); });
+        },
+        onCallHold(held) {
+          const call = attempt.current;
+          if (!current() || !call || call.requestedHold === undefined) return;
+          const accepted = held === call.requestedHold;
+          delete call.requestedHold;
+          setHold(held ? "on" : "off");
+          setMessage(accepted ? (held ? "Call on hold." : "Connected") :
+            (held ? "Resume declined. Call is still on hold." : "Hold declined. Call is still connected."));
         },
         onCallHangup() {
           if (current() && attempt.current?.invited) finish(attempt.current.rejected || "Call ended.");
@@ -150,7 +169,9 @@ export default function BrowserPhone({ user, controls }: { user: string; control
     if (attempt.current) throw new Error("Finish the current call first.");
     const call: Call = { controller: new AbortController(), invited: false };
     attempt.current = call;
-    setActive(true);
+    setPhase("dialing");
+    setMuted(false);
+    setHold("off");
     setMessage("Preparing call…");
     try {
       context.current ??= new AudioContext();
@@ -166,7 +187,7 @@ export default function BrowserPhone({ user, controls }: { user: string; control
       await client.call("sip:" + data.phone.slice(1) + "@" + domain, { earlyMedia: true }, {
         requestDelegate: {
           onProgress: ({ message }) => {
-            if (attempt.current !== call) return;
+            if (attempt.current !== call || call.ending) return;
             if (message.statusCode === 180) {
               setMessage("Ringing " + data.phone);
               if (!call.stopTone && context.current) call.stopTone = ring(context.current);
@@ -193,10 +214,41 @@ export default function BrowserPhone({ user, controls }: { user: string; control
   };
   useImperativeHandle(controls, () => ({ dial }));
 
+  function toggleMute() {
+    const client = phone.current;
+    if (!client || phase !== "answered") return;
+    if (client.isMuted()) client.unmute();
+    else client.mute();
+    setMuted(client.isMuted());
+  }
+
+  async function toggleHold() {
+    const client = phone.current;
+    const call = attempt.current;
+    if (!client || !call || phase !== "answered" || call.requestedHold !== undefined) return;
+    const placingOnHold = hold === "off";
+    call.requestedHold = placingOnHold;
+    setHold(placingOnHold ? "holding" : "resuming");
+    setMessage(placingOnHold ? "Requesting hold…" : "Resuming call…");
+    try {
+      if (placingOnHold) await client.hold();
+      else await client.unhold();
+      // SIP.js resolves when the request is sent. onCallHold confirms the result.
+    } catch {
+      if (attempt.current !== call || call.requestedHold === undefined) return;
+      delete call.requestedHold;
+      setHold(placingOnHold ? "off" : "on");
+      setMessage(placingOnHold ? "Could not hold the call. Try again." : "Could not resume the call. Try again.");
+    }
+  }
+
   async function hangup() {
     const call = attempt.current;
-    if (!call) return;
+    if (!call || call.ending) return;
     if (!call.invited) { finish("Call cancelled."); return; }
+    call.ending = true;
+    delete call.requestedHold;
+    setPhase("ending");
     setMessage("Ending call…");
     try { await phone.current?.hangup(); }
     catch { if (attempt.current === call) disconnect("Headset disconnected to end the call."); }
@@ -212,10 +264,18 @@ export default function BrowserPhone({ user, controls }: { user: string; control
       <button className={buttonClass}>Connect headset</button>
     </form>}
     {message && <p role="status" className="mt-2 text-sm">{message}</p>}
-    {active && <button type="button" onClick={hangup} className={secondaryClass + " mt-2"}>End call</button>}
+    {phase !== "idle" && <div className="mt-2 flex flex-wrap gap-2">
+      {phase === "answered" && <>
+        <button type="button" onClick={toggleMute} className={secondaryClass}>{muted ? "Unmute" : "Mute"}</button>
+        <button type="button" onClick={toggleHold} disabled={hold === "holding" || hold === "resuming"} className={secondaryClass}>
+          {hold === "on" || hold === "resuming" ? "Resume call" : "Hold call"}
+        </button>
+      </>}
+      <button type="button" onClick={hangup} disabled={phase === "ending"} className={secondaryClass}>End call</button>
+    </div>}
     {playBlocked && <button type="button" className={secondaryClass} onClick={() => {
       void audio.current?.play().then(() => setPlayBlocked(false)).catch(() => setMessage("Check this tab’s audio permission."));
     }}>Enable speaker</button>}
-    {connection !== "offline" && !active && <button type="button" className={secondaryClass + " mt-2"} onClick={() => disconnect("Headset disconnected.")}>Disconnect headset</button>}
+    {connection !== "offline" && phase === "idle" && <button type="button" className={secondaryClass + " mt-2"} onClick={() => disconnect("Headset disconnected.")}>Disconnect headset</button>}
   </section>;
 }
