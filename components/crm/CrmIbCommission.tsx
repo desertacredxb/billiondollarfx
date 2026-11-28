@@ -56,6 +56,7 @@ export default function CrmIbCommission({ owner, agent, version }: { owner: bool
       <p className="text-sm">Commission transfers require the agent’s own verified IB email and approved account.</p> :
       wallet?.belongsToAgent && <>
         <h3 className="font-semibold">Available IB commission · USD {(wallet.balance || 0).toFixed(2)}</h3>
+        {!wallet.enabled && <p className="mt-2 text-sm text-slate-300">Transfers to your trading account are disabled for this staff login.</p>}
         {wallet.enabled && <form className="mt-2 flex flex-wrap items-end gap-3" onSubmit={submit}>
           <label className="text-sm">My live USD account<select className={fieldClass} value={target} disabled={busy || review} onChange={e => { requestId.current = ""; setAccount(e.target.value); }}>
             {!wallet.accounts?.length && <option value="">No eligible account</option>}
