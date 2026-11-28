@@ -8,8 +8,8 @@ const amount = new Intl.NumberFormat("en", { maximumFractionDigits: 8 });
 function paidText(paid: Activity["paid"]) {
   return Object.entries(paid).sort(([a], [b]) => a.localeCompare(b)).map(([currency, value]) => currency + " " + amount.format(value)).join(" · ") || "—";
 }
-type Referral = { id: string; name: string; phone: string; email: string; registeredAt: string; verified: boolean; agentName: string; activity?: Activity };
-type ReferralPage = { rows: Referral[]; total: number; limit: number; linkedAgents: number; referralCode?: string; myReferralCode?: string; activity?: Activity & { day: string; newRegistrations: number } };
+type Referral = { id: string; name: string; phone: string; email: string; registeredAt: string; verified: boolean; isKycVerified?: boolean; tradingAccounts?: number[]; agentName: string; activity?: Activity };
+type ReferralPage = { rows: Referral[]; total: number; limit: number; linkedAgents: number; ownDashboard?: boolean; referralCode?: string; myReferralCode?: string; activity?: Activity & { day: string; newRegistrations: number } };
 
 export default function IbReferrals({ agent, search, owner, team, day, version }: {
   agent: string; search: string; owner: boolean; team: boolean; day: string; version: number;
@@ -45,7 +45,7 @@ export default function IbReferrals({ agent, search, owner, team, day, version }
     finally { setSaving(false); }
   }
   return <section aria-label="IB referrals" className="my-5 rounded-lg border border-slate-700 p-4">
-    <h2 className="text-lg font-semibold">IB referrals{!error && data && <span className="ml-2 text-sm font-normal text-slate-300">{data.total} clients</span>}</h2>
+    <h2 className="text-lg font-semibold">{data?.ownDashboard ? "My IB dashboard" : "IB referrals"}{!error && data && <span className="ml-2 text-sm font-normal text-slate-300">{data.total} {search ? "matching" : "referred"} {data.total === 1 ? "client" : "clients"}</span>}</h2>
     {!error && data?.myReferralCode && <div className="my-3">
       <label className="block text-sm">My referral link<input readOnly className={fieldClass} value={"https://www.billiondollarfx.com/register?ref=" + encodeURIComponent(data.myReferralCode)} /></label>
       <button type="button" className={secondaryClass + " mt-2"} onClick={async () => {
@@ -75,11 +75,15 @@ export default function IbReferrals({ agent, search, owner, team, day, version }
       !data.rows.length ? <p className="mt-2 text-sm text-slate-300">{search ? "No IB referrals match this search." : "No clients registered under the linked IB accounts yet."}</p> :
       <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-slate-300"><tr>
         <th className="p-2">Client</th><th className="p-2">Contact</th>{team && <th className="p-2">Referring agent</th>}
-        <th className="p-2">Registered · Dubai</th><th className="p-2">Registration</th><th className="p-2">Deposits · USD credit</th><th className="p-2">Completed withdrawals</th>
+        <th className="p-2">Registered · Dubai</th><th className="p-2">Registration</th>
+        {data.ownDashboard && <><th className="p-2">KYC status</th><th className="p-2">MT5 trading accounts</th></>}
+        <th className="p-2">Deposits · USD credit</th><th className="p-2">Completed withdrawals</th>
       </tr></thead><tbody>{data.rows.map(row => <tr key={row.id} className="border-t border-slate-700">
         <th scope="row" className="p-2">{row.name}</th><td className="p-2">{row.phone}<div>{row.email}</div></td>
         {team && <td className="p-2">{row.agentName}</td>}<td className="p-2">{dubaiTime(row.registeredAt)}</td>
         <td className="p-2">{row.verified ? "Verified" : "Pending verification"}</td>
+        {data.ownDashboard && <><td className="p-2">{row.isKycVerified ? "Verified" : "Pending"}</td>
+          <td className="p-2">{row.tradingAccounts?.join(", ") || "—"}</td></>}
         <td className="p-2">{row.activity ? row.activity.deposits + " · USD " + amount.format(row.activity.creditedUsd) : "—"}</td>
         <td className="p-2">{row.activity ? row.activity.withdrawals + " · " + paidText(row.activity.paid) : "—"}</td>
       </tr>)}</tbody></table></div>}
